@@ -88,7 +88,7 @@ class AuthController extends Controller
             ]);
         }
 
-        return response()->json(['error' => 'Unauthorized role'], 400);
+        return response()->json(['error' => 'Unauthorized role'], 403);
     }
 
 
@@ -126,7 +126,7 @@ class AuthController extends Controller
         $admin = Admin::where('email', $request->email)->first();
         if (!$admin || !Hash::check($request->password, $admin->password)) {
             return response()->json(['error' => 'Admin not found or incorrect password'], 400);
-        }
+        } 
 
         // Set expiration date to 2 weeks from now
         $expiresAt = Carbon::now()->addWeeks(2);
