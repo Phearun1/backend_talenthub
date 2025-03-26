@@ -88,7 +88,7 @@ class AuthController extends Controller
             ]);
         }
 
-        return response()->json(['error' => 'Unauthorized role'], 403);
+        return response()->json(['error' => 'Unauthorized role'], 400);
     }
 
 
