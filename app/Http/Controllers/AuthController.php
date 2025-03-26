@@ -2,17 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
 use App\Models\User;
 use App\Models\Admin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
+use App\Models\Portfolio;
 
 class AuthController extends Controller
 {
-    /**
-     * Login or Register using Google OAuth.
-     */
+
     public function loginWithGoogle(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -28,23 +28,86 @@ class AuthController extends Controller
 
         $profile = $request->input('profile');
 
-        // Check if the user already exists or create a new one using Eloquent
+        // ✅ First, try finding user by Google ID
         $user = User::where('google_id', $profile['sub'])->first();
 
+        // ✅ If not found, try matching by email
         if (!$user) {
+            $user = User::where('email', $profile['email'])->first();
+
+            // If user exists but doesn't have google_id linked, update it
+            if ($user && !$user->google_id) {
+                $user->google_id = $profile['sub'];
+                $user->save();
+            }
+        }
+
+        // ✅ If user doesn't exist at all, create new
+        if (!$user) {
+            $roleId = $this->assignRoleBasedOnEmail($profile['email']);
+
+            if ($roleId === null) {
+                return response()->json(['error' => 'Invalid email domain (Gmail accounts are not allowed).'], 400);
+            }
+
             $user = User::create([
                 'google_id' => $profile['sub'],
                 'email' => $profile['email'],
                 'name' => $profile['name'],
                 'photo' => null,
-                'role_id' => 1,  // Default role_id is 1 (student)
+                'role_id' => $roleId,
             ]);
         }
 
-        $token = $user->createToken('API Token')->plainTextToken;
+        // 🔥 Auto-create portfolio only if not already created
+        $existingPortfolio = Portfolio::where('user_id', $user->google_id)->first();
+        if (!$existingPortfolio) {
+            Portfolio::create([
+                'user_id' => $user->google_id, // ✅ Use the correct user ID
+                'major_id' => null,
+                'phone_number' => '',
+                'about' => '',
+                'working_status' => 2,
+                'status' => 1,
+            ]);
+        }
 
-        return response()->json(['token' => $token]);
+        // ✅ Token & role check
+        $roleId = $user->role_id;
+        if ($roleId === 1 || $roleId === 2) {
+            $expiresAt = Carbon::now()->addWeeks(2);
+            $token = $user->createToken('API Token')->plainTextToken;
+
+            $user->tokens->last()->update([
+                'expires_at' => $expiresAt,
+            ]);
+
+            return response()->json([
+                'token' => $token,
+                'role_id' => $roleId,
+            ]);
+        }
+
+        return response()->json(['error' => 'Unauthorized role'], 403);
     }
+
+
+
+    /**
+     * Dynamically assign a role based on email or other business logic
+     */
+    private function assignRoleBasedOnEmail($email)
+    {
+        // Check if the email is from Gmail
+        if (strpos($email, '@gmail.com') !== false) {
+            return null; // Reject Gmail emails by returning null
+        }
+        // If it's not a Gmail email, assign role_id = 1 (student)
+        return 1; // Default to student if no other condition matches
+    }
+
+
+
 
     /**
      * Admin login
@@ -65,9 +128,21 @@ class AuthController extends Controller
             return response()->json(['error' => 'Admin not found or incorrect password'], 400);
         }
 
+        // Set expiration date to 2 weeks from now
+        $expiresAt = Carbon::now()->addWeeks(2);
+
+        // Create the token
         $token = $admin->createToken('API Token')->plainTextToken;
 
-        return response()->json(['token' => $token]);
+        // Store the expiration date in the personal_access_tokens table
+        $admin->tokens->last()->update([
+            'expires_at' => $expiresAt,
+        ]);
+
+        return response()->json([
+            'token' => $token,
+            'role_id' => $admin->role_id,
+        ]);
     }
 
     /**
@@ -94,9 +169,10 @@ class AuthController extends Controller
 
         $user = User::create([
             'email' => $request->email,
-            'role_id' => 2, // Endorser role
             'name' => null, // No name initially
             'photo' => null,
+            'google_id' => null,
+            'role_id' => 2, // Endorser role
         ]);
 
         return response()->json(['message' => 'Success', 'user' => $user]);
@@ -123,6 +199,7 @@ class AuthController extends Controller
         $admin = Admin::create([
             'email' => $request->email,
             'password' => Hash::make($defaultPassword), // Hash the default password
+            'role_id' => 3, // Admin role
             'photo' => null, // Default photo is set to null
         ]);
 

@@ -14,11 +14,10 @@ return new class extends Migration
         Schema::create('portfolios', function (Blueprint $table) {
             $table->id();
             $table->integer('user_id');
-            $table->integer('major_id');
-            $table->string('phone_number');
-            $table->string('about');
-            $table->integer('open_to_work');
-            $table->integer('working');
+            $table->integer('major_id')->nullable();
+            $table->string('phone_number')->nullable();
+            $table->string('about')->nullable();
+            $table->integer('working_status')->nullable();
             $table->integer('status');
             $table->timestamps();
         });
