@@ -143,6 +143,6 @@ class ProjectController extends Controller
     }
     public function deleteProject($id){
         $project = DB::table('projects')->where('id', $id)->delete();
-        return response()->json($project);
+        return response()->json(['message' => 'Project deleted successfully.'], 200);
     }
 }
