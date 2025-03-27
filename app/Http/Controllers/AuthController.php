@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Google_Client;
 use Carbon\Carbon;
 use App\Models\User;
 use App\Models\Admin;
@@ -9,6 +10,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
 use App\Models\Portfolio;
+use Illuminate\Support\Facades\Log;
+
+
 
 class AuthController extends Controller
 {
@@ -94,6 +98,109 @@ class AuthController extends Controller
         }
 
         return response()->json(['error' => 'Unauthorized role'], 403);
+    }
+
+
+    public function loginWithGoogleTest(Request $request)
+    {
+        // Validate the incoming request
+        $validator = Validator::make($request->all(), [
+            'token' => 'required|string', // Expect the Google ID token
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => 'Invalid token'], 400);
+        }
+
+        $token = $request->input('token');
+
+        // Initialize the Google Client
+        $googleClient = new Google_Client(['client_id' => env('GOOGLE_CLIENT_ID')]); // Use the Google Client ID from .env
+
+        try {
+            // Verify the Google ID token
+            $payload = $googleClient->verifyIdToken($token);
+
+            if ($payload) {
+                // The token is valid, extract user info
+                $googleId = $payload['sub']; // Google user ID (unique identifier)
+                $email = $payload['email'];
+                $name = $payload['name'];
+                $photo = $payload['picture'] ?? null; // Optional
+
+                // ✅ First, try finding user by Google ID
+                $user = User::where('google_id', $googleId)->first();
+
+                // ✅ If not found, try matching by email
+                if (!$user) {
+                    $user = User::where('email', $email)->first();
+
+                    // If user exists but doesn't have google_id linked, update it
+                    if ($user && !$user->google_id) {
+                        $user->google_id = $googleId;
+                        $user->save();
+                    }
+                }
+
+                // ✅ If user doesn't exist at all, create new
+                if (!$user) {
+                    // Check if the email is an organization email (e.g., @paragoniu.edu.kh)
+                    $organizationDomain = 'paragoniu.edu.kh';
+                    if (strpos($email, $organizationDomain) === false) {
+                        return response()->json(['error' => 'Only organization emails are allowed to login.'], 403);
+                    }
+
+                    // Assign role_id = 1 (student) for all users
+                    $roleId = 1;
+
+                    $user = User::create([
+                        'google_id' => $googleId,
+                        'email' => $email,
+                        'name' => $name,
+                        'photo' => $photo,
+                        'role_id' => $roleId,
+                    ]);
+                }
+
+                // 🔥 Auto-create portfolio only if not already created
+                $existingPortfolio = Portfolio::where('user_id', $user->google_id)->first();
+                if (!$existingPortfolio) {
+                    Portfolio::create([
+                        'user_id' => $user->google_id,
+                        'major_id' => null,
+                        'phone_number' => '',
+                        'about' => '',
+                        'working_status' => 2,
+                        'status' => 1,
+                    ]);
+                }
+
+                // ✅ Token & role check
+                $roleId = $user->role_id;
+                if ($roleId === 1 || $roleId === 2) {
+                    $expiresAt = Carbon::now()->addWeeks(2);
+                    $token = $user->createToken('API Token')->plainTextToken;
+
+                    $user->tokens->last()->update([
+                        'expires_at' => $expiresAt,
+                    ]);
+
+                    return response()->json([
+                        'token' => $token,
+                        'role_id' => $roleId,
+                        'google_id' => $user->google_id,
+                    ]);
+                }
+
+                return response()->json(['error' => 'Unauthorized role'], 403);
+            } else {
+                return response()->json(['error' => 'Invalid Google ID token'], 401);
+            }
+        } catch (\Exception $e) {
+            // Log any errors during the token verification process
+            Log::error('Error verifying Google ID token: ' . $e->getMessage());
+            return response()->json(['error' => 'Error verifying Google ID token'], 500);
+        }
     }
 
 
