@@ -93,102 +93,84 @@ class AuthController extends Controller
 
 
     public function loginWithGoogle(Request $request)
-{
-    // Validate query parameters
-    $validator = Validator::make($request->all(), [
-        'sub' => 'required|string',
-        'email' => 'required|email',
-        'name' => 'required|string',
-    ]);
-
-    if ($validator->fails()) {
-        return response()->json(['error' => 'Invalid profile data'], 400);
-    }
-
-    // Retrieve parameters directly from query string
-    $profile = [
-        'sub' => $request->query('sub'),
-        'email' => $request->query('email'),
-        'name' => $request->query('name'),
-    ];
-
-    // ✅ First, try finding user by Google ID
-    $user = User::where('google_id', $profile['sub'])->first();
-
-    // ✅ If not found, try matching by email
-    if (!$user) {
-        $user = User::where('email', $profile['email'])->first();
-
-        // If user exists but doesn't have google_id linked, update it
-        if ($user && !$user->google_id) {
-            $user->google_id = $profile['sub'];
-            $user->save();
-        }
-    }
-
-    // ✅ If user doesn't exist at all, create new
-    if (!$user) {
-        $roleId = $this->assignRoleBasedOnEmail($profile['email']);
-
-        if ($roleId === null) {
-            return response()->json(['error' => 'Invalid email domain (Gmail accounts are not allowed).'], 400);
-        }
-
-        $user = User::create([
-            'google_id' => $profile['sub'],
-            'email' => $profile['email'],
-            'name' => $profile['name'],
-            'photo' => null,
-            'role_id' => $roleId,
-        ]);
-    }
-
-    // 🔥 Auto-create portfolio only if not already created
-    $existingPortfolio = Portfolio::where('user_id', $user->google_id)->first();
-    if (!$existingPortfolio) {
-        Portfolio::create([
-            'user_id' => $user->google_id, // ✅ Use the correct user ID
-            'major_id' => null,
-            'phone_number' => '',
-            'about' => '',
-            'working_status' => 2,
-            'status' => 1,
-        ]);
-    }
-
-    // ✅ Token & role check
-    $roleId = $user->role_id;
-    if ($roleId === 1 || $roleId === 2) {
-        $expiresAt = Carbon::now()->addWeeks(2);
-        $token = $user->createToken('API Token')->plainTextToken;
-
-        $user->tokens->last()->update([
-            'expires_at' => $expiresAt,
-        ]);
-
-        return response()->json([
-            'token' => $token,
-            'role_id' => $roleId,
-        ]);
-    }
-
-    return response()->json(['error' => 'Unauthorized role'], 403);
-}
-
-
-    /**
-     * Dynamically assign a role based on email or other business logic
-     */
-    private function assignRoleBasedOnEmail($email)
     {
-        // Check if the email is from Gmail
-        if (strpos($email, '@gmail.com') !== false) {
-            return null; // Reject Gmail emails by returning null
-        }
-        // If it's not a Gmail email, assign role_id = 1 (student)
-        return 1; // Default to student if no other condition matches
-    }
+        // Validate query parameters
+        $validator = Validator::make($request->all(), [
+            'sub' => 'required|string',
+            'email' => 'required|email',
+            'name' => 'required|string',
+        ]);
 
+        if ($validator->fails()) {
+            return response()->json(['error' => 'Invalid profile data'], 400);
+        }
+
+        // Retrieve parameters directly from query string
+        $profile = [
+            'sub' => $request->query('sub'),
+            'email' => $request->query('email'),
+            'name' => $request->query('name'),
+        ];
+
+        // ✅ First, try finding user by Google ID
+        $user = User::where('google_id', $profile['sub'])->first();
+
+        // ✅ If not found, try matching by email
+        if (!$user) {
+            $user = User::where('email', $profile['email'])->first();
+
+            // If user exists but doesn't have google_id linked, update it
+            if ($user && !$user->google_id) {
+                $user->google_id = $profile['sub'];
+                $user->save();
+            }
+        }
+
+        // ✅ If user doesn't exist at all, create new
+        if (!$user) {
+            // Assign role_id = 1 (student) for all users
+            $roleId = 1;
+
+            $user = User::create([
+                'google_id' => $profile['sub'],
+                'email' => $profile['email'],
+                'name' => $profile['name'],
+                'photo' => null,
+                'role_id' => $roleId,
+            ]);
+        }
+
+        // 🔥 Auto-create portfolio only if not already created
+        $existingPortfolio = Portfolio::where('user_id', $user->google_id)->first();
+        if (!$existingPortfolio) {
+            Portfolio::create([
+                'user_id' => $user->google_id, // ✅ Use the correct user ID
+                'major_id' => null,
+                'phone_number' => '',
+                'about' => '',
+                'working_status' => 2,
+                'status' => 1,
+            ]);
+        }
+
+        // ✅ Token & role check
+        $roleId = $user->role_id;
+        if ($roleId === 1 || $roleId === 2) {
+            $expiresAt = Carbon::now()->addWeeks(2);
+            $token = $user->createToken('API Token')->plainTextToken;
+
+            $user->tokens->last()->update([
+                'expires_at' => $expiresAt,
+            ]);
+
+            return response()->json([
+                'token' => $token,
+                'role_id' => $roleId,
+            ]);
+        }
+
+        return response()->json(['error' => 'Unauthorized role'], 403);
+    }
 
 
 
@@ -209,7 +191,7 @@ class AuthController extends Controller
         $admin = Admin::where('email', $request->email)->first();
         if (!$admin || !Hash::check($request->password, $admin->password)) {
             return response()->json(['error' => 'Admin not found or incorrect password'], 400);
-        } 
+        }
 
         // Set expiration date to 2 weeks from now
         $expiresAt = Carbon::now()->addWeeks(2);
