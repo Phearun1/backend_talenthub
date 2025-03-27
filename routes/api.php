@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AchievementController;
 use App\Http\Controllers\ExperienceController;
 use App\Http\Controllers\PortfolioController;
+use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -47,9 +48,9 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
 
     
 
+    
 
-
-
+    Route::middleware('auth:sanctum')->post('/create_project', [ProjectController::class, 'createProject']);
 
 
     // Achievements
