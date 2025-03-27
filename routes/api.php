@@ -5,6 +5,7 @@ use App\Http\Controllers\AchievementController;
 use App\Http\Controllers\ExperienceController;
 use App\Http\Controllers\PortfolioController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\SkillController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -52,14 +53,18 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
 
 
 
+    //skill
 
+    Route::middleware('auth:sanctum')->post('/create_skill', [SkillController::class, 'createSkill']);  // Create skill
+    Route::middleware('auth:sanctum')->put('/update_skill/{id}', [SkillController::class, 'editSkill']);  // Edit skill
+    Route::middleware('auth:sanctum')->delete('/delete_skill/{id}', [SkillController::class, 'deleteSkill']);  // Delete skill
 
 
     Route::middleware('auth:sanctum')->post('/create_project', [ProjectController::class, 'createProject']);
     Route::middleware('auth:sanctum')->put('/update_project/{id}', [ProjectController::class, 'updateProject']);
     Route::middleware('auth:sanctum')->delete('/delete_project/{id}', [ProjectController::class, 'deleteProject']);
 
-    
+
     // Achievements
     // Create Achievement
     Route::post('/create_achievement', [AchievementController::class, 'createAchievement']);
