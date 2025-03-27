@@ -92,6 +92,89 @@ class AuthController extends Controller
     }
 
 
+    public function loginWithGoogletest(Request $request)
+{
+    // Validate query parameters
+    $validator = Validator::make($request->all(), [
+        'sub' => 'required|string',
+        'email' => 'required|email',
+        'name' => 'required|string',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json(['error' => 'Invalid profile data'], 400);
+    }
+
+    // Retrieve parameters directly from query string
+    $profile = [
+        'sub' => $request->query('sub'),
+        'email' => $request->query('email'),
+        'name' => $request->query('name'),
+    ];
+
+    // ✅ First, try finding user by Google ID
+    $user = User::where('google_id', $profile['sub'])->first();
+
+    // ✅ If not found, try matching by email
+    if (!$user) {
+        $user = User::where('email', $profile['email'])->first();
+
+        // If user exists but doesn't have google_id linked, update it
+        if ($user && !$user->google_id) {
+            $user->google_id = $profile['sub'];
+            $user->save();
+        }
+    }
+
+    // ✅ If user doesn't exist at all, create new
+    if (!$user) {
+        $roleId = $this->assignRoleBasedOnEmail($profile['email']);
+
+        if ($roleId === null) {
+            return response()->json(['error' => 'Invalid email domain (Gmail accounts are not allowed).'], 400);
+        }
+
+        $user = User::create([
+            'google_id' => $profile['sub'],
+            'email' => $profile['email'],
+            'name' => $profile['name'],
+            'photo' => null,
+            'role_id' => $roleId,
+        ]);
+    }
+
+    // 🔥 Auto-create portfolio only if not already created
+    $existingPortfolio = Portfolio::where('user_id', $user->google_id)->first();
+    if (!$existingPortfolio) {
+        Portfolio::create([
+            'user_id' => $user->google_id, // ✅ Use the correct user ID
+            'major_id' => null,
+            'phone_number' => '',
+            'about' => '',
+            'working_status' => 2,
+            'status' => 1,
+        ]);
+    }
+
+    // ✅ Token & role check
+    $roleId = $user->role_id;
+    if ($roleId === 1 || $roleId === 2) {
+        $expiresAt = Carbon::now()->addWeeks(2);
+        $token = $user->createToken('API Token')->plainTextToken;
+
+        $user->tokens->last()->update([
+            'expires_at' => $expiresAt,
+        ]);
+
+        return response()->json([
+            'token' => $token,
+            'role_id' => $roleId,
+        ]);
+    }
+
+    return response()->json(['error' => 'Unauthorized role'], 403);
+}
+
 
     /**
      * Dynamically assign a role based on email or other business logic
