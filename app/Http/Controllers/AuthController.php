@@ -103,23 +103,22 @@ class AuthController extends Controller
 
     public function loginWithGoogleTest(Request $request)
     {
-        // Validate the incoming request
-        $validator = Validator::make($request->all(), [
-            'token' => 'required|string', // Expect the Google ID token
-        ]);
+        // Retrieve parameters from query string
+        $sub = $request->query('sub');
+        $email = $request->query('email');
+        $name = $request->query('name');
 
-        if ($validator->fails()) {
-            return response()->json(['error' => 'Invalid token'], 400);
+        // Validate the parameters
+        if (!$sub || !$email || !$name) {
+            return response()->json(['error' => 'Missing parameters'], 400);
         }
 
-        $token = $request->input('token');
-
         // Initialize the Google Client
-        $googleClient = new Google_Client(['client_id' => env('GOOGLE_CLIENT_ID')]); // Use the Google Client ID from .env
+        $googleClient = new Google_Client(['client_id' => env('GOOGLE_CLIENT_ID')]);
 
         try {
             // Verify the Google ID token
-            $payload = $googleClient->verifyIdToken($token);
+            $payload = $googleClient->verifyIdToken($sub);
 
             if ($payload) {
                 // The token is valid, extract user info
@@ -144,14 +143,7 @@ class AuthController extends Controller
 
                 // ✅ If user doesn't exist at all, create new
                 if (!$user) {
-                    // Check if the email is an organization email (e.g., @paragoniu.edu.kh)
-                    $organizationDomain = 'paragoniu.edu.kh';
-                    if (strpos($email, $organizationDomain) === false) {
-                        return response()->json(['error' => 'Only organization emails are allowed to login.'], 403);
-                    }
-
-                    // Assign role_id = 1 (student) for all users
-                    $roleId = 1;
+                    $roleId = 1; // Default role (student)
 
                     $user = User::create([
                         'google_id' => $googleId,
@@ -202,6 +194,7 @@ class AuthController extends Controller
             return response()->json(['error' => 'Error verifying Google ID token'], 500);
         }
     }
+
 
 
 
