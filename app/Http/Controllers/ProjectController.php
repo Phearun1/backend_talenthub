@@ -96,4 +96,53 @@ class ProjectController extends Controller
             'project' => $project,
         ], 200);
     }
+
+    public function updateProject(Request $request, $id)
+    {
+        // Validate the incoming request data
+        $request->validate([
+            'portfolio_id' => 'required|integer',
+            'title' => 'required|string|max:255',
+            'description' => 'required|string|max:255',
+            'instruction' => 'required|string|max:255',
+            'link' => 'nullable|string|max:255',
+            'file' => 'nullable|string|max:255',
+            'programming_language_id' => 'required|integer',
+            'project_visibility_status' => 'required|integer',
+        ]);
+
+
+        // Check if the project exists
+        $project = DB::table('projects')->where('id', $id)->first();
+    
+        if (!$project) {
+            return response()->json(['error' => 'Project not found.'], 404);
+        }
+    
+        // Update the project in the database
+        DB::table('projects')->where('id', $id)->update([
+            'portfolio_id' => $request->input('portfolio_id'),
+            'title' => $request->input('title'),
+            'description' => $request->input('description'),
+            'instruction' => $request->input('instruction'),
+            'link' => $request->input('link'),
+            'file' => $request->input('file'),
+            'programming_language_id' => $request->input('programming_language_id'),
+            'project_visibility_status' => $request->input('project_visibility_status'),
+            'updated_at' => now(),
+        ]);
+    
+        // Fetch the updated project
+        $updatedProject = DB::table('projects')->where('id', $id)->first();
+    
+        // Return a success response
+        return response()->json([
+            'message' => 'Project updated successfully.',
+            'project' => $updatedProject,
+        ], 200);
+    }
+    public function deleteProject($id){
+        $project = DB::table('projects')->where('id', $id)->delete();
+        return response()->json($project);
+    }
 }
