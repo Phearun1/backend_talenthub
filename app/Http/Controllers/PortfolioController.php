@@ -25,6 +25,8 @@ class PortfolioController extends Controller
                 'portfolios.created_at',
                 'portfolios.updated_at',
                 'users.name as name',
+                'users.email',
+                'users.photo',
                 'users.role_id as role'
             )
             ->get();
@@ -83,7 +85,10 @@ class PortfolioController extends Controller
             'experiences' => $experiences,
         ]);
     }
-    public function createPortfolio(Request $request){
+    
+
+    public function updatePortfolio(Request $request, $id){
+        // Validate input fields
         $request->validate([
             'user_id' => 'required|string',
             'major_id' => 'nullable|integer',
@@ -92,20 +97,14 @@ class PortfolioController extends Controller
             'working_status' => 'nullable|integer',
             'status' => 'required|integer',
         ]);
-        
 
-        $portfolio = DB::table('portfolios')->create([
-            'user_id' => $request->input('user_id'),
-            'major_id' => $request->input('major_id'),
-            'phone_number' => $request->input('phone_number'),
-            'about' => $request->input('about'),
-            'working_status' => $request->input('working_status'),
-            'status' => $request->input('status'),
-        ]);
-        return response()->json($portfolio);
-    }
+        // Find the portfolio by ID and update it
+        $portfolio = DB::table('') ($id);
 
-    public function updatePortfolio(Request $request, $id){
+        if (!$portfolio) {
+            return response()->json(['error' => 'Portfolio not found.'], 404);
+        }
+
         $portfolio = DB::table('portfolios')->where('id', $id)->update([
             'user_id' => $request->input('user_id'),
             'major_id' => $request->input('major_id'),
