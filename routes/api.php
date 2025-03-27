@@ -27,7 +27,7 @@ Route::get('/view_experience/{id}', [ExperienceController::class, 'viewExperienc
 
 // View all portfolios
 Route::get('/view_all_portfolio', [PortfolioController::class, 'viewAllPortfolio']);
-Route::get('/view_portfolio_details', [PortfolioController::class, 'viewPortfolioDetails']);
+Route::get('/view_portfolio_details/{userID}', [PortfolioController::class, 'viewPortfolioDetails']);
 
 
 
