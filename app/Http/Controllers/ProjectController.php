@@ -23,7 +23,7 @@ public function createProject(Request $request)
     ]);
 
     // Get the authenticated user's ID
-    $userId = $request->user()->id;
+    $userId = $request->user()->google_id;
 
     // Log the authenticated user's ID
     Log::info('Authenticated User ID: ' . $userId);
