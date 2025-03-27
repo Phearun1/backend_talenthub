@@ -83,4 +83,43 @@ class PortfolioController extends Controller
             'experiences' => $experiences,
         ]);
     }
+    public function createPortfolio(Request $request){
+        $request->validate([
+            'user_id' => 'required|string',
+            'major_id' => 'nullable|integer',
+            'phone_number' => 'nullable|string',
+            'about' => 'nullable|string',
+            'working_status' => 'nullable|integer',
+            'status' => 'required|integer',
+        ]);
+        
+
+        $portfolio = DB::table('portfolios')->create([
+            'user_id' => $request->input('user_id'),
+            'major_id' => $request->input('major_id'),
+            'phone_number' => $request->input('phone_number'),
+            'about' => $request->input('about'),
+            'working_status' => $request->input('working_status'),
+            'status' => $request->input('status'),
+        ]);
+        return response()->json($portfolio);
+    }
+
+    public function updatePortfolio(Request $request, $id){
+        $portfolio = DB::table('portfolios')->where('id', $id)->update([
+            'user_id' => $request->input('user_id'),
+            'major_id' => $request->input('major_id'),
+            'phone_number' => $request->input('phone_number'),
+            'about' => $request->input('about'),
+            'working_status' => $request->input('working_status'),
+            'status' => $request->input('status'),
+        ]);
+        return response()->json($portfolio);
+    }
+
+    public function deletePortfolio($id){
+        $portfolio = DB::table('portfolios')->where('id', $id)->delete();
+        return response()->json($portfolio);
+    }
+
 }

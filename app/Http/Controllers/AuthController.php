@@ -99,6 +99,7 @@ class AuthController extends Controller
             'sub' => 'required|string',
             'email' => 'required|email',
             'name' => 'required|string',
+            'photo' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -110,6 +111,7 @@ class AuthController extends Controller
             'sub' => $request->query('sub'),
             'email' => $request->query('email'),
             'name' => $request->query('name'),
+            'photo' => $request->query('photo'),
         ];
 
         // ✅ First, try finding user by Google ID
@@ -135,7 +137,7 @@ class AuthController extends Controller
                 'google_id' => $profile['sub'],
                 'email' => $profile['email'],
                 'name' => $profile['name'],
-                'photo' => null,
+                'photo' => $profile['photo'],
                 'role_id' => $roleId,
             ]);
         }
