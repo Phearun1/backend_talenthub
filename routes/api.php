@@ -35,11 +35,13 @@ Route::get('/view_project_detail/{projectId}', [ProjectController::class, 'viewP
 
 
 
+
+
 Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
-    
+
     // Protected route for logout (requires authentication via Sanctum)
     Route::post('/logout', [AuthController::class, 'logout']);
-    
+
 
     // User route
 
@@ -48,10 +50,10 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
     // Create an experience
     Route::middleware('role:1')->post('/create_experience', [ExperienceController::class, 'createExperience']);
 
-    
-    
 
-    
+
+
+
 
     Route::middleware('auth:sanctum')->post('/create_project', [ProjectController::class, 'createProject']);
 
@@ -74,7 +76,7 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
 
 
     // Endorser route
-    
+
 
 
 
@@ -84,5 +86,4 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
     Route::middleware('role:3')->post('/admin/create_admin_account', [AuthController::class, 'addCreateAdminAccount']);
     Route::middleware('role:3')->post('/admin/create_endorser_account', [AuthController::class, 'adminCreateEndorserAccount']);
     Route::middleware('role:3')->post('/admin/logout', [AuthController::class, 'adminLogout']);
-
 });
