@@ -13,7 +13,7 @@ use App\Models\Portfolio;
 class AuthController extends Controller
 {
 
-    public function loginWithGoogle(Request $request)
+    public function loginWithGoogleTest(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'profile' => 'required|array',
@@ -92,7 +92,7 @@ class AuthController extends Controller
     }
 
 
-    public function loginWithGoogleTest(Request $request)
+    public function loginWithGoogle(Request $request)
 {
     // Validate query parameters
     $validator = Validator::make($request->all(), [

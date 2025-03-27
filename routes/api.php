@@ -4,16 +4,19 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AchievementController;
 use App\Http\Controllers\ExperienceController;
 use App\Http\Controllers\PortfolioController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 
 // Public route for Google login
-Route::post('/login_google', [AuthController::class, 'loginWithGoogle']);
 Route::post('/login_google_test', [AuthController::class, 'loginWithGoogleTest']);
+Route::post('/login_google', [AuthController::class, 'loginWithGoogle']);
 
 Route::post('/admin_login', [AuthController::class, 'adminLogin']);
 
 
+
+Route::get('/users', [UserController::class, 'view_all_user']);
 
 
 //view achievement
