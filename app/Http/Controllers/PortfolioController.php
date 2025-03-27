@@ -37,53 +37,111 @@ class PortfolioController extends Controller
 
 
 
+    // public function viewPortfolioDetails($userID)
+    // {
+
+    //     // Retrieve the specific portfolio with user info
+    //     $portfolio = DB::table('portfolios')
+    //         ->join('users', 'portfolios.user_id', '=', 'users.google_id')
+    //         ->select(
+    //             'portfolios.id',
+    //             'portfolios.user_id',
+    //             'portfolios.major_id as major', 
+    //             'portfolios.phone_number',
+    //             'portfolios.about',
+    //             'portfolios.working_status',
+    //             'portfolios.status',
+    //             'portfolios.created_at',
+    //             'portfolios.updated_at',
+    //             'users.name as user_name',
+    //             'users.email',
+    //             'users.photo',
+    //             'users.role_id'
+    //         )
+    //         ->where('portfolios.user_id', $userID)
+    //         ->first();
+
+    //     if (!$portfolio) {
+    //         return response()->json(['error' => 'Portfolio not found.'], 404);
+    //     }
+
+    //     // Get the real portfolio ID to fetch related records
+    //     $portfolioId = $portfolio->id;
+
+    //     // Retrieve related data using portfolio_id
+    //     $projects = DB::table('projects')->where('portfolio_id', $portfolioId)->get();
+    //     $education = DB::table('education')->where('portfolio_id', $portfolioId)->get();
+    //     $achievements = DB::table('achievements')->where('portfolio_id', $portfolioId)->get();
+    //     $skills = DB::table('skills')->where('portfolio_id', $portfolioId)->get();
+    //     $experiences = DB::table('experiences')->where('portfolio_id', $portfolioId)->get();
+
+    //     return response()->json([
+    //         'portfolio' => $portfolio,
+    //         'projects' => $projects,
+    //         'education' => $education,
+    //         'achievements' => $achievements,
+    //         'skills' => $skills,
+    //         'experiences' => $experiences,
+    //     ]);
+    // }
+
+
     public function viewPortfolioDetails($userID)
-    {
+{
+    // Retrieve the specific portfolio with user info
+    $portfolio = DB::table('portfolios')
+        ->join('users', 'portfolios.user_id', '=', 'users.google_id')
+        ->select(
+            'portfolios.id',
+            'portfolios.user_id',
+            'portfolios.major_id as major', 
+            'portfolios.phone_number',
+            'portfolios.about',
+            'portfolios.working_status',
+            'portfolios.status',
+            'portfolios.created_at',
+            'portfolios.updated_at',
+            'users.name as user_name',
+            'users.email',
+            'users.photo',
+            'users.role_id'
+        )
+        ->where('portfolios.user_id', $userID)
+        ->first();
 
-        // Retrieve the specific portfolio with user info
-        $portfolio = DB::table('portfolios')
-            ->join('users', 'portfolios.user_id', '=', 'users.google_id')
-            ->select(
-                'portfolios.id',
-                'portfolios.user_id',
-                'portfolios.major_id as major', // alias
-                'portfolios.phone_number',
-                'portfolios.about',
-                'portfolios.working_status',
-                'portfolios.status',
-                'portfolios.created_at',
-                'portfolios.updated_at',
-                'users.name as user_name',
-                'users.email',
-                'users.photo',
-                'users.role_id'
-            )
-            ->where('portfolios.user_id', $userID)
-            ->first();
-
-        if (!$portfolio) {
-            return response()->json(['error' => 'Portfolio not found.'], 404);
-        }
-
-        // Get the real portfolio ID to fetch related records
-        $portfolioId = $portfolio->id;
-
-        // Retrieve related data using portfolio_id
-        $projects = DB::table('projects')->where('portfolio_id', $portfolioId)->get();
-        $education = DB::table('education')->where('portfolio_id', $portfolioId)->get();
-        $achievements = DB::table('achievements')->where('portfolio_id', $portfolioId)->get();
-        $skills = DB::table('skills')->where('portfolio_id', $portfolioId)->get();
-        $experiences = DB::table('experiences')->where('portfolio_id', $portfolioId)->get();
-
-        return response()->json([
-            'portfolio' => $portfolio,
-            'projects' => $projects,
-            'education' => $education,
-            'achievements' => $achievements,
-            'skills' => $skills,
-            'experiences' => $experiences,
-        ]);
+    if (!$portfolio) {
+        return response()->json(['error' => 'Portfolio not found.'], 404);
     }
+
+    // Get the real portfolio ID to fetch related records
+    $portfolioId = $portfolio->id;
+
+    // Retrieve related data using portfolio_id
+    $projects = DB::table('projects')->where('portfolio_id', $portfolioId)->get();
+    $education = DB::table('education')->where('portfolio_id', $portfolioId)->get();
+    $achievements = DB::table('achievements')->where('portfolio_id', $portfolioId)->get();
+    $skills = DB::table('skills')->where('portfolio_id', $portfolioId)->get();
+    $experiences = DB::table('experiences')->where('portfolio_id', $portfolioId)->get();
+
+    // Retrieve endorsers for each skill
+    foreach ($skills as $skill) {
+        $skill->endorsers = DB::table('skill_endorsers')
+            ->join('users', 'skill_endorsers.user_id', '=', 'users.google_id')
+            ->select('users.id', 'users.name')
+            ->where('skill_endorsers.skill_id', $skill->id)
+            ->get();
+    }
+
+    return response()->json([
+        'portfolio' => $portfolio,
+        'projects' => $projects,
+        'education' => $education,
+        'achievements' => $achievements,
+        'skills' => $skills,
+        'experiences' => $experiences,
+    ]);
+}
+
 
 
     public function updatePortfolio(Request $request, $id)

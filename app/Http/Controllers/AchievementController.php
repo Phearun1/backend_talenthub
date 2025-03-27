@@ -8,17 +8,9 @@ use Illuminate\Support\Facades\Validator;
 
 class AchievementController extends Controller
 {
-    // View All Achievements
-    // public function viewAllAchievement()
-    // {
-    //     $achievements = DB::table('achievements')->get();
-    //     return response()->json($achievements);
-    // }
-
-
-
+    
     // View Single Achievement by ID
-    public function viewAchievement($id)
+    public function viewAchievementDetail($id)
     {
         $achievement = DB::table('achievements')->where('id', $id)->first();
         if (!$achievement) {
@@ -26,6 +18,7 @@ class AchievementController extends Controller
         }
         return response()->json(['achievement' => $achievement]);
     }
+    
 
     // Create New Achievement
     public function createAchievement(Request $request)
