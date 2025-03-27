@@ -59,40 +59,41 @@ class ProjectController extends Controller
         ], 201);
     }
 
-public function viewProjectDetail($projectId)
-{
-    // Retrieve the project details
-    $project = DB::table('projects')
-        ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
-        ->select(
-            'projects.id as project_id',
-            'projects.title',
-            'projects.description',
-            'projects.instruction',
-            'projects.link',
-            'projects.file',
-            'projects.programming_language_id',
-            'projects.project_visibility_status',
-            'projects.created_at',
-            'projects.updated_at',
-            'portfolios.id as portfolio_id',
-            
-        )
-        ->where('projects.id', $projectId)
-        ->first();
+    public function viewProjectDetail($projectId)
+    {
+        // Retrieve the project details
+        $project = DB::table('projects')
+            ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
+            ->select(
+                'portfolios.id as portfolio_id',
+                'projects.id as project_id',
+                'projects.title',
+                'projects.description',
+                'projects.instruction',
+                'projects.link',
+                'projects.file',
+                'projects.programming_language_id',
+                'projects.project_visibility_status',
+                'projects.created_at',
+                'projects.updated_at',
 
-    // Log the query result for debugging
-    Log::info('Project Query Result: ', (array) $project);
 
-    // Check if the project exists
-    if (!$project) {
-        return response()->json(['error' => 'Project not found.'], 404);
+            )
+            ->where('projects.id', $projectId)
+            ->first();
+
+        // Log the query result for debugging
+        Log::info('Project Query Result: ', (array) $project);
+
+        // Check if the project exists
+        if (!$project) {
+            return response()->json(['error' => 'Project not found.'], 404);
+        }
+
+        // Return the project details
+        return response()->json([
+            'message' => 'Project details retrieved successfully.',
+            'project' => $project,
+        ], 200);
     }
-
-    // Return the project details
-    return response()->json([
-        'message' => 'Project details retrieved successfully.',
-        'project' => $project,
-    ], 200);
-}
 }
