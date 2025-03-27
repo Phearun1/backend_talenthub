@@ -92,7 +92,7 @@ class AuthController extends Controller
     }
 
 
-    public function loginWithGoogletest(Request $request)
+    public function loginWithGoogleTest(Request $request)
 {
     // Validate query parameters
     $validator = Validator::make($request->all(), [
