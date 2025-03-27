@@ -30,6 +30,8 @@ Route::get('/view_experience/{id}', [ExperienceController::class, 'viewExperienc
 Route::get('/view_all_portfolio', [PortfolioController::class, 'viewAllPortfolio']);
 Route::get('/view_portfolio_details/{userID}', [PortfolioController::class, 'viewPortfolioDetails']);
 
+// view all projects
+Route::get('/view_project_detail/{projectId}', [ProjectController::class, 'viewProjectDetail']);
 
 
 
@@ -46,6 +48,7 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
     // Create an experience
     Route::middleware('role:1')->post('/create_experience', [ExperienceController::class, 'createExperience']);
 
+    
     
 
     
