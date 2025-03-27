@@ -55,6 +55,7 @@ class PortfolioController extends Controller
                 'portfolios.updated_at',
                 'users.name as user_name',
                 'users.email',
+                'users.photo',
                 'users.role_id'
             )
             ->where('portfolios.user_id', $userID)
