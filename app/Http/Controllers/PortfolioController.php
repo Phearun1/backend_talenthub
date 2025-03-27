@@ -75,7 +75,7 @@ class PortfolioController extends Controller
         $experiences = DB::table('experiences')->where('portfolio_id', $portfolioId)->get();
 
         return response()->json([
-            'portfolio' => $portfolio,
+            $portfolio,
             'projects' => $projects,
             'education' => $education,
             'achievements' => $achievements,
