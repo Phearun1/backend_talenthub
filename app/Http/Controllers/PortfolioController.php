@@ -127,7 +127,7 @@ class PortfolioController extends Controller
     foreach ($skills as $skill) {
         $skill->endorsers = DB::table('skill_endorsers')
             ->join('users', 'skill_endorsers.user_id', '=', 'users.google_id')
-            ->select('users.id', 'users.name')
+            ->select('users.google_id', 'users.name')
             ->where('skill_endorsers.skill_id', $skill->id)
             ->get();
     }
