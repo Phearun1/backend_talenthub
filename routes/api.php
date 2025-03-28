@@ -70,8 +70,7 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
     Route::middleware('auth:sanctum')->post('/create_achievement', [AchievementController::class, 'createAchievement']);
 
     // Update Achievement by ID
-    Route::middleware('auth:sanctum')->put('/update_achievement/{id}', [AchievementController::class, 'updateAchievement']);
-
+    Route::middleware('auth:sanctum')->post('/update_achievement/{id}', [AchievementController::class, 'updateAchievement']);
     // Delete Achievement by ID
     Route::middleware('auth:sanctum')->delete('/delete_achievement/{id}', [AchievementController::class, 'deleteAchievement']);
 

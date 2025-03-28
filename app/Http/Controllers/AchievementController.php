@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Validator;
 
 class AchievementController extends Controller
 {
-    
+
     // View Single Achievement by ID
     public function viewAchievementDetail($id)
     {
@@ -18,7 +18,7 @@ class AchievementController extends Controller
         }
         return response()->json(['achievement' => $achievement]);
     }
-    
+
 
     // Create New Achievement
     public function createAchievement(Request $request)
@@ -57,7 +57,6 @@ class AchievementController extends Controller
     {
         // Validation
         $validator = Validator::make($request->all(), [
-            'portfolio_id' => 'required|integer',
             'title' => 'required|string|max:255',
             'issued_by' => 'nullable|string|max:255',
             'issue_date' => 'nullable|date',
@@ -69,9 +68,15 @@ class AchievementController extends Controller
             return response()->json(['error' => $validator->errors()], 400);
         }
 
+        // Check if the achievement exists
+        $achievement = DB::table('achievements')->where('id', $id)->first();
+
+        if (!$achievement) {
+            return response()->json(['error' => 'Achievement not found'], 404);
+        }
+
         // Update the achievement
-        $achievement = DB::table('achievements')->where('id', $id)->update([
-            'portfolio_id' => $request->portfolio_id,
+        DB::table('achievements')->where('id', $id)->update([
             'title' => $request->title,
             'issued_by' => $request->issued_by,
             'issue_date' => $request->issue_date,
@@ -80,12 +85,9 @@ class AchievementController extends Controller
             'updated_at' => now(),
         ]);
 
-        if (!$achievement) {
-            return response()->json(['error' => 'Achievement not found'], 404);
-        }
-
         return response()->json(['message' => 'Achievement updated successfully']);
     }
+    
 
     // Delete Achievement by ID
     public function deleteAchievement($id)
