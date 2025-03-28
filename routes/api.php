@@ -21,8 +21,8 @@ Route::post('/admin_login', [AuthController::class, 'adminLogin']);
 Route::get('/users', [UserController::class, 'view_all_user']);
 
 
-//view achievement
-Route::get('view_achievement/{id}', [AchievementController::class, 'viewAchievement']);
+//view achievement detail
+Route::get('view_achievement_detail/{id}', [AchievementController::class, 'viewAchievementDetail']);
 
 // View a specific experience by ID
 Route::get('/view_experience/{id}', [ExperienceController::class, 'viewExperience']);

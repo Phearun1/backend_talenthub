@@ -103,14 +103,12 @@ class AuthController extends Controller
 
     public function loginWithGoogleTest(Request $request)
     {
-        // Retrieve parameters from query string
-        $sub = $request->query('sub');
-        $email = $request->query('email');
-        $name = $request->query('name');
+        // Retrieve the id_token parameter from the request
+        $idToken = $request->input('id_token');
 
-        // Validate the parameters
-        if (!$sub || !$email || !$name) {
-            return response()->json(['error' => 'Missing parameters'], 400);
+        // Validate the id_token
+        if (!$idToken) {
+            return response()->json(['error' => 'Missing id_token parameter'], 400);
         }
 
         // Initialize the Google Client
@@ -118,7 +116,7 @@ class AuthController extends Controller
 
         try {
             // Verify the Google ID token
-            $payload = $googleClient->verifyIdToken($sub);
+            $payload = $googleClient->verifyIdToken($idToken);
 
             if ($payload) {
                 // The token is valid, extract user info
