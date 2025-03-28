@@ -7,6 +7,7 @@ use App\Http\Controllers\PortfolioController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\SkillController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\EducationController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -35,7 +36,7 @@ Route::get('/view_portfolio_details/{userID}', [PortfolioController::class, 'vie
 Route::get('/view_project_detail/{projectId}', [ProjectController::class, 'viewProjectDetail']);
 
 
-
+Route::get('/view_education_detail/{id}', [EducationController::class, 'viewEducationDetail']);
 
 
 Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
@@ -75,6 +76,11 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
     Route::middleware('auth:sanctum')->delete('/delete_achievement/{id}', [AchievementController::class, 'deleteAchievement']);
 
 
+
+    Route::middleware('auth:sanctum')->post('/create_education', [EducationController::class, 'createEducation']);
+
+    Route::middleware('auth:sanctum')->put('/update_education/{id}', [EducationController::class, 'updateEducation']);
+    Route::middleware('auth:sanctum')->delete('/delete_education/{id}', [EducationController::class, 'deleteEducation']);
 
 
 
