@@ -123,6 +123,14 @@ class PortfolioController extends Controller
     $skills = DB::table('skills')->where('portfolio_id', $portfolioId)->get();
     $experiences = DB::table('experiences')->where('portfolio_id', $portfolioId)->get();
 
+    foreach ($achievements as $achievement) {
+        $achievement->endorsers = DB::table('achievement_endorsers')
+            ->join('users', 'achievement_endorsers.user_id', '=', 'users.google_id')
+            ->select('users.google_id', 'users.name')
+            ->where('achievement_endorsers.achievement_id', $achievement->id)
+            ->get();
+    }
+    
     // Retrieve endorsers for each skill
     foreach ($skills as $skill) {
         $skill->endorsers = DB::table('skill_endorsers')
