@@ -16,7 +16,7 @@ class AchievementController extends Controller
         if (!$achievement) {
             return response()->json(['error' => 'Achievement not found'], 404);
         }
-        return response()->json(['achievement' => $achievement]);
+        return response()->json($achievement);
     }
 
 

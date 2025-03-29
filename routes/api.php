@@ -2,19 +2,17 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AchievementController;
-use App\Http\Controllers\ExperienceController;
 use App\Http\Controllers\PortfolioController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\SkillController;
+use App\Http\Controllers\ExperienceController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\EducationController;
 use Illuminate\Support\Facades\Route;
 
 
 // Public route for Google login
-Route::post('/login_google_test', [AuthController::class, 'loginWithGoogleTest']);
 Route::post('/login_google', [AuthController::class, 'loginWithGoogle']);
-
 Route::post('/admin_login', [AuthController::class, 'adminLogin']);
 
 
@@ -28,15 +26,15 @@ Route::get('view_achievement_detail/{id}', [AchievementController::class, 'viewA
 // View a specific experience by ID
 Route::get('/view_experience/{id}', [ExperienceController::class, 'viewExperience']);
 
-// View all portfolios
-// Route::get('/view_all_portfolio', [PortfolioController::class, 'viewAllPortfolio']);
-// Route::get('/view_portfolio_details/{userID}', [PortfolioController::class, 'viewPortfolioDetails']);
+
 
 // view all projects
-Route::get('/view_project_detail/{projectId}', [ProjectController::class, 'viewProjectDetail']);
+Route::get('/view_project_detail/{id}', [ProjectController::class, 'viewProjectDetail']);
 
 
 Route::get('/view_education_detail/{id}', [EducationController::class, 'viewEducationDetail']);
+
+
 
 Route::middleware([\Fruitcake\Cors\HandleCors::class])->get('/view_all_portfolio', [PortfolioController::class, 'viewAllPortfolio']);
 Route::middleware([\Fruitcake\Cors\HandleCors::class])->get('/view_portfolio_details/{userID}', [PortfolioController::class, 'viewPortfolioDetails']);
@@ -77,14 +75,22 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
     Route::middleware('auth:sanctum')->delete('/delete_achievement/{id}', [AchievementController::class, 'deleteAchievement']);
 
 
-
+    //education
     Route::middleware('auth:sanctum')->post('/create_education', [EducationController::class, 'createEducation']);
-
     Route::middleware('auth:sanctum')->put('/update_education/{id}', [EducationController::class, 'updateEducation']);
     Route::middleware('auth:sanctum')->delete('/delete_education/{id}', [EducationController::class, 'deleteEducation']);
 
 
 
+    // Experience
+
+    Route::post('/create_experience', [ExperienceController::class, 'createExperience']);
+
+    // Edit an existing experience
+    Route::put('/update_experience/{id}', [ExperienceController::class, 'editExperience']);
+
+    // Delete an experience
+    Route::delete('/delete_experience/{id}', [ExperienceController::class, 'deleteExperience']);
 
 
 
