@@ -38,8 +38,8 @@ Route::get('/view_project_detail/{projectId}', [ProjectController::class, 'viewP
 
 Route::get('/view_education_detail/{id}', [EducationController::class, 'viewEducationDetail']);
 
-Route::middleware(['cors'])->get('/view_all_portfolio', [PortfolioController::class, 'viewAllPortfolio']);
-Route::middleware(['cors'])->get('/view_portfolio_details/{userID}', [PortfolioController::class, 'viewPortfolioDetails']);
+Route::middleware([\Fruitcake\Cors\HandleCors::class])->get('/view_all_portfolio', [PortfolioController::class, 'viewAllPortfolio']);
+Route::middleware([\Fruitcake\Cors\HandleCors::class])->get('/view_portfolio_details/{userID}', [PortfolioController::class, 'viewPortfolioDetails']);
 
 
 Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
