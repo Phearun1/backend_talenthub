@@ -9,7 +9,6 @@
     "license": "MIT",
     "require": {
         "php": ">=8.1",
-        "fruitcake/laravel-cors": "dev-develop",
         "google/apiclient": "^2.18",
         "guzzlehttp/guzzle": "^7.2",
         "laravel/framework": "^10.0",
