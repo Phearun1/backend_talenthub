@@ -64,8 +64,10 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
     Route::middleware('auth:sanctum')->delete('/delete_skill/{id}', [SkillController::class, 'deleteSkill']);  // Delete skill
 
 
+
+    // project
     Route::middleware('auth:sanctum')->post('/create_project', [ProjectController::class, 'createProject']);
-    Route::middleware('auth:sanctum')->post('/update_project/{id}', [ProjectController::class, 'updateProject']);
+    Route::middleware('auth:sanctum')->put('/update_project/{id}', [ProjectController::class, 'updateProject']);
     Route::middleware('auth:sanctum')->delete('/delete_project/{id}', [ProjectController::class, 'deleteProject']);
 
 

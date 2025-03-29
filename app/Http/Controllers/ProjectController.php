@@ -99,9 +99,8 @@ class ProjectController extends Controller
 
     public function updateProject(Request $request, $id)
     {
-        // Validate the incoming request data
+        // Validate the incoming request data (remove portfolio_id from validation)
         $request->validate([
-            'portfolio_id' => 'required|integer',
             'title' => 'required|string|max:255',
             'description' => 'required|string|max:255',
             'instruction' => 'required|string|max:255',
@@ -111,17 +110,23 @@ class ProjectController extends Controller
             'project_visibility_status' => 'required|integer',
         ]);
 
-
         // Check if the project exists
         $project = DB::table('projects')->where('id', $id)->first();
-    
+
         if (!$project) {
             return response()->json(['error' => 'Project not found.'], 404);
         }
-    
-        // Update the project in the database
+
+        // Ensure that the project belongs to the authenticated user and their portfolio
+        $portfolio = DB::table('portfolios')->where('id', $project->portfolio_id)->first();
+        $userId = $request->user()->google_id;
+
+        if (!$portfolio || $portfolio->user_id != $userId) {
+            return response()->json(['error' => 'You are not authorized to update this project.'], 403);
+        }
+
+        // Update the project in the database, excluding portfolio_id
         DB::table('projects')->where('id', $id)->update([
-            'portfolio_id' => $request->input('portfolio_id'),
             'title' => $request->input('title'),
             'description' => $request->input('description'),
             'instruction' => $request->input('instruction'),
@@ -131,17 +136,19 @@ class ProjectController extends Controller
             'project_visibility_status' => $request->input('project_visibility_status'),
             'updated_at' => now(),
         ]);
-    
+
         // Fetch the updated project
         $updatedProject = DB::table('projects')->where('id', $id)->first();
-    
+
         // Return a success response
         return response()->json([
             'message' => 'Project updated successfully.',
             'project' => $updatedProject,
         ], 200);
     }
-    public function deleteProject($id){
+
+    public function deleteProject($id)
+    {
         $project = DB::table('projects')->where('id', $id)->delete();
         return response()->json(['message' => 'Project deleted successfully.'], 200);
     }
