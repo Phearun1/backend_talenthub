@@ -2,13 +2,12 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;  // Use Authenticatable class
 use Laravel\Sanctum\HasApiTokens;
 
-class User extends Model
+class User extends Authenticatable  // Extend Authenticatable
 {
-    use HasFactory, HasApiTokens;
+    use HasApiTokens;
 
     // Define the fillable fields (columns that can be mass-assigned)
     protected $fillable = [
