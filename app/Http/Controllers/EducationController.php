@@ -19,7 +19,7 @@ class EducationController extends Controller
             return response()->json(['error' => 'Education not found.'], 404);
         }
 
-        return response()->json(['education' => $education]);
+        return response()->json($education);
     }
 
     /**

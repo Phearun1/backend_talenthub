@@ -91,10 +91,7 @@ class ProjectController extends Controller
         }
 
         // Return the project details
-        return response()->json([
-            'message' => 'Project details retrieved successfully.',
-            'project' => $project,
-        ], 200);
+        return response()->json($project);
     }
 
     public function updateProject(Request $request, $id)
