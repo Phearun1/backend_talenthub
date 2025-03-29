@@ -64,7 +64,7 @@ class ExperienceController extends Controller
         return response()->json(['message' => 'Experience created successfully!']);
     }
 
-    public function editExperience(Request $request, $id)
+    public function updateExperience(Request $request, $id)
     {
         // Validate the input data
         $request->validate([

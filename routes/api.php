@@ -20,24 +20,18 @@ Route::post('/admin_login', [AuthController::class, 'adminLogin']);
 Route::get('/users', [UserController::class, 'view_all_user']);
 
 
-//view achievement detail
-Route::get('view_achievement_detail/{id}', [AchievementController::class, 'viewAchievementDetail']);
-
-// View a specific experience by ID
-Route::get('/view_experience/{id}', [ExperienceController::class, 'viewExperience']);
-
-
-
 // view all projects
-Route::get('/view_project_detail/{id}', [ProjectController::class, 'viewProjectDetail']);
 
 
-Route::get('/view_education_detail/{id}', [EducationController::class, 'viewEducationDetail']);
+Route::middleware([\Fruitcake\Cors\HandleCors::class])->group(function () {
+
+    Route::get('/view_all_portfolio', [PortfolioController::class, 'viewAllPortfolio']);
+    Route::get('/view_portfolio_details/{userID}', [PortfolioController::class, 'viewPortfolioDetails']);
+    Route::get('/view_project_detail/{id}', [ProjectController::class, 'viewProjectDetail']);
+    Route::get('view_achievement_detail/{id}', [AchievementController::class, 'viewAchievementDetail']);
+});
 
 
-
-Route::middleware([\Fruitcake\Cors\HandleCors::class])->get('/view_all_portfolio', [PortfolioController::class, 'viewAllPortfolio']);
-Route::middleware([\Fruitcake\Cors\HandleCors::class])->get('/view_portfolio_details/{userID}', [PortfolioController::class, 'viewPortfolioDetails']);
 
 
 Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
@@ -50,8 +44,6 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
 
     Route::middleware('role:1')->post('/create_company', [ExperienceController::class, 'createCompany']);
 
-    // Create an experience
-    Route::middleware('role:1')->post('/create_experience', [ExperienceController::class, 'createExperience']);
 
 
 
@@ -87,7 +79,7 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
     Route::post('/create_experience', [ExperienceController::class, 'createExperience']);
 
     // Edit an existing experience
-    Route::put('/update_experience/{id}', [ExperienceController::class, 'editExperience']);
+    Route::put('/update_experience/{id}', [ExperienceController::class, 'updateExperience']);
 
     // Delete an experience
     Route::delete('/delete_experience/{id}', [ExperienceController::class, 'deleteExperience']);
