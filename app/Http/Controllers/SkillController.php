@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+
 
 
 class SkillController extends Controller
@@ -11,28 +13,34 @@ class SkillController extends Controller
     // Create a new skill
     public function createSkill(Request $request)
     {
-        // Validate the incoming request
-        $request->validate([
-            'portfolio_id' => 'required|integer',
-            'title' => 'required|string|max:255',
-            'description' => 'required|string|max:255',
-        ]);
+        try {
+            // Validate the incoming request
+            $request->validate([
+                'portfolio_id' => 'required|integer',
+                'title' => 'required|string|max:255',
+                'description' => 'required|string|max:255',
+            ]);
 
-        // Insert new skill into the database
-        $skill = DB::table('skills')->insertGetId([
-            'portfolio_id' => $request->input('portfolio_id'),
-            'title' => $request->input('title'),
-            'description' => $request->input('description'),
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+            // Insert new skill into the database
+            $skill = DB::table('skills')->insertGetId([
+                'portfolio_id' => $request->input('portfolio_id'),
+                'title' => $request->input('title'),
+                'description' => $request->input('description'),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
 
-        // Return the created skill as a response
-        return response()->json([
-            'message' => 'Skill created successfully.',
-            'skill_id' => $skill
-        ], 201);
+            return response()->json([
+                'message' => 'Skill created successfully.',
+                'skill_id' => $skill
+            ], 201);
+        } catch (\Exception $e) {
+            // Log the error and return a generic error message
+            Log::error('Error creating skill: ' . $e->getMessage());
+            return response()->json(['message' => 'Something went wrong.'], 500);
+        }
     }
+
 
     // Edit a skill
     public function editSkill(Request $request, $id)
@@ -69,4 +77,3 @@ class SkillController extends Controller
         }
     }
 }
-
