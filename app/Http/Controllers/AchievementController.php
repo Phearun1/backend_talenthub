@@ -28,10 +28,10 @@ class AchievementController extends Controller
             ->join('achievement_endorsement_statuses', 'achievement_endorsers.achievement_id', '=', 'achievement_endorsement_statuses.achievement_id')
             ->join('endorsement_statuses', 'achievement_endorsement_statuses.endorsement_status_id', '=', 'endorsement_statuses.id')
             ->select(
-                'users.name as endorser_name',
-                'users.email as endorser_email',
-                'endorsement_statuses.status as endorsement_status',
-                'achievement_endorsement_statuses.created_at as endorsement_created_at'
+                'users.name as name',
+                'users.email as email',
+                'endorsement_statuses.id as status_id',
+                'endorsement_statuses.status as status',
             )
             ->where('achievement_endorsers.achievement_id', $id)
             ->get();
