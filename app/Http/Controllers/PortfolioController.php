@@ -146,7 +146,7 @@ class PortfolioController extends Controller
 
         // Update the user's photo if provided
         if ($request->has('photo')) {
-            DB::table('users')->where('id', $userId)->update([
+            DB::table('users')->where('google_id', $userId)->update([
                 'photo' => $request->input('photo'),
                 'updated_at' => now(),
             ]);
@@ -156,7 +156,7 @@ class PortfolioController extends Controller
         $updatedPortfolio = DB::table('portfolios')->where('id', $id)->first();
 
         // Fetch the updated user details
-        $updatedUser = DB::table('users')->where('id', $userId)->first();
+        $updatedUser = DB::table('users')->where('google_id', $userId)->first();
 
         // Return only the desired fields (portfolio and user) without additional structure
         return response()->json([
