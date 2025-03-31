@@ -89,32 +89,98 @@ class SkillController extends Controller
         }
     }
 
-
-
-
-
     // Edit a skill
-    public function editSkill(Request $request, $id)
+    public function updateSkill(Request $request, $id)
     {
-        // Validate the incoming request
-        $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'required|string|max:255',
-        ]);
+        DB::beginTransaction();
 
-        // Update the skill in the database
-        $updated = DB::table('skills')->where('id', $id)->update([
-            'title' => $request->input('title'),
-            'description' => $request->input('description'),
-            'updated_at' => now(),
-        ]);
+        try {
+            // Validate the incoming request
+            $request->validate([
+                'title' => 'required|string|max:255',
+                'description' => 'required|string|max:255',
+                'endorsers' => 'nullable|array',
+                'endorsers.*' => 'email',
+            ]);
 
-        if ($updated) {
+            // Check if skill exists
+            $skill = DB::table('skills')->where('id', $id)->first();
+
+            if (!$skill) {
+                return response()->json(['error' => 'Skill not found.'], 404);
+            }
+
+            // Log the incoming request data
+            Log::info('EditSkill Request:', $request->all());
+
+            // Update the skill in the database
+            DB::table('skills')->where('id', $id)->update([
+                'title' => $request->input('title'),
+                'description' => $request->input('description'),
+                'updated_at' => now(),
+            ]);
+
+            // Clear existing endorsers and endorsements for the skill
+            DB::table('skill_endorsers')->where('skill_id', $id)->delete();
+            DB::table('skill_endorsement_statuses')->where('skill_id', $id)->delete();
+
+            // Handle new endorsers
+            $endorsers = $request->input('endorsers', []);
+            $endorserLinkData = [];
+            $endorsementStatusData = [];
+
+            foreach ($endorsers as $email) {
+                $user = DB::table('users')->where('email', $email)->first();
+
+                if ($user && $user->google_id) {
+                    // Log user info
+                    Log::info("Processing updated endorser: {$email}, Google ID: {$user->google_id}");
+
+                    // For skill_endorsers
+                    $endorserLinkData[] = [
+                        'skill_id' => $id,
+                        'user_id' => $user->google_id,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+
+                    // For skill_endorsement_statuses
+                    $endorsementStatusData[] = [
+                        'skill_id' => $id,
+                        'endorser_id' => $user->google_id,
+                        'endorsement_status_id' => 1, // Pending
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                } else {
+                    Log::warning("Skipped endorser: {$email} — user not found or missing google_id.");
+                }
+            }
+
+            // Insert new endorsers into skill_endorsers
+            if (!empty($endorserLinkData)) {
+                DB::table('skill_endorsers')->insert($endorserLinkData);
+                Log::info('Updated skill_endorsers:', $endorserLinkData);
+            }
+
+            // Insert new endorsement statuses into skill_endorsement_statuses
+            if (!empty($endorsementStatusData)) {
+                DB::table('skill_endorsement_statuses')->insert($endorsementStatusData);
+                Log::info('Updated skill_endorsement_statuses:', $endorsementStatusData);
+            }
+
+            // Commit the transaction
+            DB::commit();
+
             return response()->json(['message' => 'Skill updated successfully.'], 200);
-        } else {
-            return response()->json(['error' => 'Skill not found.'], 404);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error updating skill: ' . $e->getMessage());
+            return response()->json(['message' => 'Something went wrong.'], 500);
         }
     }
+
+
 
     // Delete a skill
     public function deleteSkill($id)

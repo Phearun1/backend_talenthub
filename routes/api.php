@@ -50,7 +50,7 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
     //skill
 
     Route::middleware('auth:sanctum')->post('/create_skill', [SkillController::class, 'createSkill']);  // Create skill
-    Route::middleware('auth:sanctum')->put('/update_skill/{id}', [SkillController::class, 'editSkill']);  // Edit skill
+    Route::middleware('auth:sanctum')->put('/update_skill/{id}', [SkillController::class, 'updateSkill']);  // Edit skill
     Route::middleware('auth:sanctum')->delete('/delete_skill/{id}', [SkillController::class, 'deleteSkill']);  // Delete skill
 
 
