@@ -80,7 +80,8 @@ class SkillController extends Controller
             DB::commit();
 
             return response()->json([
-                'message' => 'Skill created successfully.'
+                'message' => 'Skill created successfully.',
+                'skill_id' => $skillId,
             ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
