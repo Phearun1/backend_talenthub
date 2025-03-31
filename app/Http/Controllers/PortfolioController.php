@@ -93,7 +93,7 @@ class PortfolioController extends Controller
             ->select(
                 'portfolios.id',
                 'portfolios.user_id',
-                'portfolios.major_id as major', 
+                'portfolios.major_id as major',
                 'portfolios.phone_number',
                 'portfolios.about',
                 'portfolios.working_status',
@@ -107,21 +107,22 @@ class PortfolioController extends Controller
             )
             ->where('portfolios.user_id', $userID)
             ->first();
-    
+
         if (!$portfolio) {
             return response()->json(['error' => 'Portfolio not found.'], 404);
         }
-    
-        // Get the real portfolio ID to fetch related records
+
+        // Get the real portfolio ID
         $portfolioId = $portfolio->id;
-    
-        // Retrieve related data using portfolio_id
+
+        // Get related data
         $projects = DB::table('projects')->where('portfolio_id', $portfolioId)->get();
         $education = DB::table('education')->where('portfolio_id', $portfolioId)->get();
         $achievements = DB::table('achievements')->where('portfolio_id', $portfolioId)->get();
         $skills = DB::table('skills')->where('portfolio_id', $portfolioId)->get();
         $experiences = DB::table('experiences')->where('portfolio_id', $portfolioId)->get();
-    
+
+        // Add achievement endorsers
         foreach ($achievements as $achievement) {
             $achievement->endorsers = DB::table('achievement_endorsers')
                 ->join('users', 'achievement_endorsers.user_id', '=', 'users.google_id')
@@ -129,14 +130,15 @@ class PortfolioController extends Controller
                 ->where('achievement_endorsers.achievement_id', $achievement->id)
                 ->get();
         }
-        
-        // Retrieve endorsers and endorsement statuses for each skill
+
+        // Add skill endorsers with endorsement statuses
         foreach ($skills as $skill) {
-            $skill->endorsers = DB::table('skill_endorsement_statuses')
-                ->join('users', 'skill_endorsement_statuses.endorser_id', '=', 'users.id')
+            // From skill_endorsement_statuses
+            $skill->endorsement_statuses = DB::table('skill_endorsement_statuses')
+                ->join('users', 'skill_endorsement_statuses.endorser_id', '=', 'users.google_id')
                 ->join('endorsement_statuses', 'skill_endorsement_statuses.endorsement_status_id', '=', 'endorsement_statuses.id')
                 ->select(
-                    'users.id as endorser_id',
+                    'users.google_id as endorser_id',
                     'users.name as endorser_name',
                     'users.email as endorser_email',
                     'endorsement_statuses.id as endorsement_status_id',
@@ -144,8 +146,19 @@ class PortfolioController extends Controller
                 )
                 ->where('skill_endorsement_statuses.skill_id', $skill->id)
                 ->get();
+
+            // From skill_endorsers table (basic links without status)
+            $skill->endorsers = DB::table('skill_endorsers')
+                ->join('users', 'skill_endorsers.user_id', '=', 'users.google_id')
+                ->select(
+                    'users.google_id as endorser_id',
+                    'users.name as endorser_name',
+                    'users.email as endorser_email'
+                )
+                ->where('skill_endorsers.skill_id', $skill->id)
+                ->get();
         }
-    
+
         return response()->json([
             'portfolio' => $portfolio,
             'projects' => $projects,
@@ -155,6 +168,7 @@ class PortfolioController extends Controller
             'experiences' => $experiences,
         ]);
     }
+
 
 
 
@@ -186,7 +200,7 @@ class PortfolioController extends Controller
             'about' => $request->input('about'),
             'working_status' => $request->input('working_status'),
             'status' => $request->input('status'),
-            'updated_at' => now(), 
+            'updated_at' => now(),
         ]);
 
         // Update the user's photo if provided
@@ -217,6 +231,4 @@ class PortfolioController extends Controller
         $portfolio = DB::table('portfolios')->where('id', $id)->delete();
         return response()->json($portfolio);
     }
-
-
 }

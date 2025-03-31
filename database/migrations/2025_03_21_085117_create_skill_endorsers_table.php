@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('skill_verifiers', function (Blueprint $table) {
             $table->id();
             $table->integer('skill_id');
-            $table->integer('user_id');
+            $table->string('user_id');
             $table->timestamps();
         });
     }

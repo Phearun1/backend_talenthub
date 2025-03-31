@@ -17,6 +17,8 @@ return new class extends Migration
             $table->string('education_center');
             $table->string('field_of_study');
             $table->string('description');
+            $table->string('start_month');
+            $table->string('end_month')->nullable();
             $table->string('start_year');
             $table->string('end_year')->nullable();
             $table->timestamps();
