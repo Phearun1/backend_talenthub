@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             PortfolioSeeder::class,
             MajorSeeder::class,
+            EndorsementStatusSeeder::class,
         ]);
     }
 }
