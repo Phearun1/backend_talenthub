@@ -81,7 +81,8 @@ class EducationController extends Controller
         ]);
 
         if ($education) {
-            return response()->json(['message' => 'Education updated successfully!']);
+            return response()->json(['message' => 'Education updated successfully!', 
+        'education_id' => $id]);
         }
 
         return response()->json(['error' => 'Education not found.'], 404);
