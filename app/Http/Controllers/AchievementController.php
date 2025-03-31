@@ -31,9 +31,10 @@ class AchievementController extends Controller
                 'users.name as name',
                 'users.email as email',
                 'endorsement_statuses.id as status_id',
-                'endorsement_statuses.status as status',
+                'endorsement_statuses.status as status'
             )
             ->where('achievement_endorsers.achievement_id', $id)
+            ->distinct() // Ensures no duplicates for endorsers
             ->get();
 
         // Include endorsers in the response
@@ -41,6 +42,7 @@ class AchievementController extends Controller
 
         return response()->json($achievement);
     }
+
 
 
 
