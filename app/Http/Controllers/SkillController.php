@@ -172,7 +172,7 @@ class SkillController extends Controller
             // Commit the transaction
             DB::commit();
 
-            return response()->json(['message' => 'Skill updated successfully.'], 200);
+            return response()->json(['message' => 'Skill updated successfully.', 'skill_id'=> $id], 200);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error updating skill: ' . $e->getMessage());
