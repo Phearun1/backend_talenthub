@@ -161,7 +161,7 @@ class PortfolioController extends Controller
         // Return only the desired fields (portfolio and user) without additional structure
         return response()->json([
             'id' => $updatedPortfolio->id,
-            'user_id' => $updatedPortfolio->user_id,
+            'google_id' => $updatedPortfolio->user_id,
             'name' => $updatedUser->name,
             'email' => $updatedUser->email,
             'major_id' => $updatedPortfolio->major_id,
