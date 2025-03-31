@@ -11,17 +11,19 @@ class SkillController extends Controller
 {
     public function createSkill(Request $request)
     {
+        DB::beginTransaction();
+
         try {
             // Validate the incoming request
             $request->validate([
                 'portfolio_id' => 'required|integer',
                 'title' => 'required|string|max:255',
                 'description' => 'required|string|max:255',
-                'endorsers' => 'nullable|array',
-                'endorsers.*' => 'email',
+                'endorsers' => 'nullable|array', // Optional array of endorser emails
+                'endorsers.*' => 'email', // Validate each email in the array
             ]);
 
-            // Insert the skill
+            // Insert new skill into the database
             $skillId = DB::table('skills')->insertGetId([
                 'portfolio_id' => $request->input('portfolio_id'),
                 'title' => $request->input('title'),
@@ -30,15 +32,19 @@ class SkillController extends Controller
                 'updated_at' => now(),
             ]);
 
+            // Prepare endorsers
             $endorsers = $request->input('endorsers', []);
-            $endorsementData = [];
             $endorserLinkData = [];
+            $endorsementStatusData = [];
 
             foreach ($endorsers as $email) {
                 $user = DB::table('users')->where('email', $email)->first();
 
-                if ($user) {
-                    // For skill_endorsers
+                if ($user && $user->google_id) {
+                    // Log user info
+                    Log::info("Processing endorser: {$email}, Google ID: {$user->google_id}");
+
+                    // Prepare data for skill_endorsers table
                     $endorserLinkData[] = [
                         'skill_id' => $skillId,
                         'user_id' => $user->google_id,
@@ -46,8 +52,8 @@ class SkillController extends Controller
                         'updated_at' => now(),
                     ];
 
-                    // For skill_endorsement_statuses
-                    $endorsementData[] = [
+                    // Prepare data for skill_endorsement_statuses table
+                    $endorsementStatusData[] = [
                         'skill_id' => $skillId,
                         'endorser_id' => $user->google_id,
                         'endorsement_status_id' => 1, // Pending
@@ -55,26 +61,34 @@ class SkillController extends Controller
                         'updated_at' => now(),
                     ];
                 } else {
-                    Log::warning("User with email {$email} not found.");
+                    Log::warning("User with email {$email} not found or missing google_id.");
                 }
             }
 
             // Insert into skill_endorsers
             if (!empty($endorserLinkData)) {
                 DB::table('skill_endorsers')->insert($endorserLinkData);
+                Log::info('Inserted into skill_endorsers:', $endorserLinkData);
             }
 
             // Insert into skill_endorsement_statuses
-            if (!empty($endorsementData)) {
-                DB::table('skill_endorsement_statuses')->insert($endorsementData);
+            if (!empty($endorsementStatusData)) {
+                DB::table('skill_endorsement_statuses')->insert($endorsementStatusData);
+                Log::info('Inserted into skill_endorsement_statuses:', $endorsementStatusData);
             }
 
-            return response()->json(['message' => 'Skill created successfully.']);
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Skill created successfully.',
+            ]);
         } catch (\Exception $e) {
+            DB::rollBack();
             Log::error('Error creating skill: ' . $e->getMessage());
             return response()->json(['message' => 'Something went wrong.'], 500);
         }
     }
+
 
 
 
