@@ -13,12 +13,35 @@ class AchievementController extends Controller
     // View Single Achievement by ID
     public function viewAchievementDetail($id)
     {
-        $achievement = DB::table('achievements')->where('id', $id)->first();
+        // Retrieve the achievement details
+        $achievement = DB::table('achievements')
+            ->where('id', $id)
+            ->first();
+
         if (!$achievement) {
             return response()->json(['error' => 'Achievement not found'], 404);
         }
+
+        // Retrieve related endorsers and their endorsement statuses
+        $endorsers = DB::table('achievement_endorsers')
+            ->join('users', 'achievement_endorsers.user_id', '=', 'users.google_id')
+            ->join('achievement_endorsement_statuses', 'achievement_endorsers.achievement_id', '=', 'achievement_endorsement_statuses.achievement_id')
+            ->join('endorsement_statuses', 'achievement_endorsement_statuses.endorsement_status_id', '=', 'endorsement_statuses.id')
+            ->select(
+                'users.name as endorser_name',
+                'users.email as endorser_email',
+                'endorsement_statuses.status as endorsement_status',
+                'achievement_endorsement_statuses.created_at as endorsement_created_at'
+            )
+            ->where('achievement_endorsers.achievement_id', $id)
+            ->get();
+
+        // Include endorsers in the response
+        $achievement->endorsers = $endorsers;
+
         return response()->json($achievement);
     }
+
 
 
     // Create New Achievement
@@ -116,50 +139,136 @@ class AchievementController extends Controller
     // Update Achievement by ID
     public function updateAchievement(Request $request, $id)
     {
-        // Validation
-        $validator = Validator::make($request->all(), [
-            'title' => 'required|string|max:255',
-            'issued_by' => 'nullable|string|max:255',
-            'issue_date' => 'nullable|date',
-            'description' => 'nullable|string|max:255',
-            'image' => 'nullable|string|max:255',
-        ]);
+        DB::beginTransaction();
 
-        if ($validator->fails()) {
-            return response()->json(['error' => $validator->errors()], 400);
+        try {
+            // Validation
+            $validator = Validator::make($request->all(), [
+                'title' => 'required|string|max:255',
+                'issued_by' => 'nullable|string|max:255',
+                'issue_date' => 'nullable|date',
+                'description' => 'nullable|string|max:255',
+                'image' => 'nullable|string|max:255',
+                'endorsers' => 'nullable|array', // Array of endorser emails
+                'endorsers.*' => 'email', // Validate each email in the array
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json(['error' => $validator->errors()], 400);
+            }
+
+            // Check if the achievement exists
+            $achievement = DB::table('achievements')->where('id', $id)->first();
+
+            if (!$achievement) {
+                return response()->json(['error' => 'Achievement not found'], 404);
+            }
+
+            // Update the achievement data
+            DB::table('achievements')->where('id', $id)->update([
+                'title' => $request->title,
+                'issued_by' => $request->issued_by,
+                'issue_date' => $request->issue_date,
+                'description' => $request->description,
+                'image' => $request->image,
+                'updated_at' => now(),
+            ]);
+
+            // Handle endorsers if provided
+            $endorsers = $request->input('endorsers', []);
+            $endorserData = [];
+            $endorsementStatusData = [];
+
+            // Remove existing endorsers and endorsement statuses before adding new ones
+            DB::table('achievement_endorsers')->where('achievement_id', $id)->delete();
+            DB::table('achievement_endorsement_statuses')->where('achievement_id', $id)->delete();
+
+            // Insert new endorsers and their endorsement statuses
+            foreach ($endorsers as $email) {
+                // Find the user by email
+                $user = DB::table('users')->where('email', $email)->first();
+
+                if ($user && $user->google_id) {
+                    // Log user info
+                    Log::info("Processing updated endorser: {$email}, Google ID: {$user->google_id}");
+
+                    // Prepare data for achievement_endorsers table
+                    $endorserData[] = [
+                        'achievement_id' => $id,
+                        'user_id' => $user->google_id,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+
+                    // Prepare data for achievement_endorsement_statuses table (default to Pending)
+                    $endorsementStatusData[] = [
+                        'achievement_id' => $id,
+                        'endorsement_status_id' => 1, // Pending
+                        'endorser_id' => $user->google_id,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                } else {
+                    Log::warning("Skipped endorser: {$email} — user not found or missing google_id.");
+                }
+            }
+
+            // Insert endorsers into achievement_endorsers table
+            if (!empty($endorserData)) {
+                DB::table('achievement_endorsers')->insert($endorserData);
+                Log::info('Updated achievement_endorsers:', $endorserData);
+            }
+
+            // Insert endorsement statuses into achievement_endorsement_statuses table
+            if (!empty($endorsementStatusData)) {
+                DB::table('achievement_endorsement_statuses')->insert($endorsementStatusData);
+                Log::info('Updated achievement_endorsement_statuses:', $endorsementStatusData);
+            }
+
+            // Commit the transaction
+            DB::commit();
+
+            return response()->json(['message' => 'Achievement updated successfully'], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error updating achievement: ' . $e->getMessage());
+            return response()->json(['message' => 'Something went wrong.'], 500);
         }
-
-        // Check if the achievement exists
-        $achievement = DB::table('achievements')->where('id', $id)->first();
-
-        if (!$achievement) {
-            return response()->json(['error' => 'Achievement not found'], 404);
-        }
-
-        // Update the achievement
-        DB::table('achievements')->where('id', $id)->update([
-            'title' => $request->title,
-            'issued_by' => $request->issued_by,
-            'issue_date' => $request->issue_date,
-            'description' => $request->description,
-            'image' => $request->image,
-            'updated_at' => now(),
-        ]);
-
-        return response()->json(['message' => 'Achievement updated successfully']);
     }
+
 
 
     // Delete Achievement by ID
     public function deleteAchievement($id)
     {
-        // Delete achievement
-        $deleted = DB::table('achievements')->where('id', $id)->delete();
+        DB::beginTransaction();
 
-        if (!$deleted) {
-            return response()->json(['error' => 'Achievement not found'], 404);
+        try {
+            // Check if the achievement exists
+            $achievement = DB::table('achievements')->where('id', $id)->first();
+
+            if (!$achievement) {
+                return response()->json(['error' => 'Achievement not found'], 404);
+            }
+
+            // Delete endorsers and endorsement statuses related to the achievement
+            DB::table('achievement_endorsers')->where('achievement_id', $id)->delete();
+            DB::table('achievement_endorsement_statuses')->where('achievement_id', $id)->delete();
+
+            // Delete the achievement itself
+            $deleted = DB::table('achievements')->where('id', $id)->delete();
+
+            if ($deleted) {
+                DB::commit();
+                return response()->json(['message' => 'Achievement and its endorsers deleted successfully']);
+            } else {
+                DB::rollBack();
+                return response()->json(['error' => 'Error deleting achievement'], 500);
+            }
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error deleting achievement: ' . $e->getMessage());
+            return response()->json(['message' => 'Something went wrong'], 500);
         }
-
-        return response()->json(['message' => 'Achievement deleted successfully']);
     }
 }
