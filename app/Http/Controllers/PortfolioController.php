@@ -72,8 +72,8 @@ class PortfolioController extends Controller
         $skills = DB::table('skills')->where('portfolio_id', $portfolioId)->get();
         $experiences = DB::table('experiences')->where('portfolio_id', $portfolioId)->get();
 
-        
-        
+
+
         // Add achievement endorsers
         foreach ($achievements as $achievement) {
             // Retrieve endorsers for the achievement
@@ -131,19 +131,22 @@ class PortfolioController extends Controller
             return response()->json(['error' => 'Portfolio not found.'], 404);
         }
 
-        // Update the portfolio
+        // Get the user_id from the portfolio
+        $userId = $portfolio->user_id;
+
+        // Update the portfolio details
         DB::table('portfolios')->where('id', $id)->update([
             'major_id' => $request->input('major_id'),
             'phone_number' => $request->input('phone_number'),
             'about' => $request->input('about'),
             'working_status' => $request->input('working_status'),
-            'status' => '1',
+            'status' => 1, // Setting status to '1' (active) as per your schema
             'updated_at' => now(),
         ]);
 
         // Update the user's photo if provided
         if ($request->has('photo')) {
-            DB::table('users')->where('id', $request->input('user_id'))->update([
+            DB::table('users')->where('id', $userId)->update([
                 'photo' => $request->input('photo'),
                 'updated_at' => now(),
             ]);
@@ -152,16 +155,25 @@ class PortfolioController extends Controller
         // Fetch the updated portfolio
         $updatedPortfolio = DB::table('portfolios')->where('id', $id)->first();
 
-        // Fetch the updated user
-        $updatedUser = DB::table('users')->where('id', $request->input('user_id'))->first();
+        // Fetch the updated user details
+        $updatedUser = DB::table('users')->where('id', $userId)->first();
 
-        // Return the updated portfolio and user
+        // Return only the desired fields (portfolio and user) without additional structure
         return response()->json([
-            'message' => 'Portfolio and user photo updated successfully.',
-            $updatedPortfolio,
-            $updatedUser,
+            'id' => $updatedPortfolio->id,
+            'user_id' => $updatedPortfolio->user_id,
+            'name' => $updatedUser->name,
+            'email' => $updatedUser->email,
+            'major_id' => $updatedPortfolio->major_id,
+            'phone_number' => $updatedPortfolio->phone_number,
+            'about' => $updatedPortfolio->about,
+            'working_status' => $updatedPortfolio->working_status,
+            'status' => $updatedPortfolio->status,
+            'photo' => $updatedUser->photo
         ], 200);
     }
+
+
 
 
     public function deletePortfolio($id)
