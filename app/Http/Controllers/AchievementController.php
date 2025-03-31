@@ -230,7 +230,7 @@ class AchievementController extends Controller
             // Commit the transaction
             DB::commit();
 
-            return response()->json(['message' => 'Achievement updated successfully'], 200);
+            return response()->json(['message' => 'Achievement updated successfully','achievement_id'=>$id], 200);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error updating achievement: ' . $e->getMessage());
