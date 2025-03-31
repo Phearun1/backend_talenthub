@@ -74,9 +74,12 @@ class PortfolioController extends Controller
 
         // Add achievement endorsers
         foreach ($achievements as $achievement) {
+            // Retrieve endorsers for the achievement
             $achievement->endorsers = DB::table('achievement_endorsers')
                 ->join('users', 'achievement_endorsers.user_id', '=', 'users.google_id')
-                ->select('users.google_id', 'users.name', 'users.email', 'endorsement_statuses.id as status_id', 'endorsement_statuses.status')
+                ->join('achievement_endorsement_statuses', 'achievement_endorsers.achievement_id', '=', 'achievement_endorsement_statuses.achievement_id')
+                ->join('endorsement_statuses', 'achievement_endorsement_statuses.endorsement_status_id', '=', 'endorsement_statuses.id')
+                ->select('users.google_id', 'users.name', 'users.email', 'endorsement_statuses.status as status', 'endorsement_statuses.id as status_id')
                 ->where('achievement_endorsers.achievement_id', $achievement->id)
                 ->get();
         }
