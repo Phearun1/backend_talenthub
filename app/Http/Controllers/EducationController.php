@@ -33,6 +33,8 @@ class EducationController extends Controller
             'education_center' => 'required|string|max:255',
             'field_of_study' => 'required|string|max:255',
             'description' => 'required|string|max:255',
+            'start_month' => 'required|string|max:255',
+            'end_month' => 'nullable|string|max:255',
             'start_year' => 'required|string|max:255',
             'end_year' => 'nullable|string|max:255',
         ]);
@@ -43,6 +45,8 @@ class EducationController extends Controller
             'education_center' => $request->education_center,
             'field_of_study' => $request->field_of_study,
             'description' => $request->description,
+            'start_month' => $request->start_month,
+            'end_month' => $request->end_month,
             'start_year' => $request->start_year,
             'end_year' => $request->end_year,
             'created_at' => now(),
