@@ -84,7 +84,7 @@ class PortfolioController extends Controller
         // Add skill endorsers with endorsement statuses
         foreach ($skills as $skill) {
             // From skill_endorsement_statuses
-            $skill->endorsement_statuses = DB::table('skill_endorsement_statuses')
+            $skill->endorsers = DB::table('skill_endorsement_statuses')
                 ->join('users', 'skill_endorsement_statuses.endorser_id', '=', 'users.google_id')
                 ->join('endorsement_statuses', 'skill_endorsement_statuses.endorsement_status_id', '=', 'endorsement_statuses.id')
                 ->select(
@@ -96,8 +96,6 @@ class PortfolioController extends Controller
                 )
                 ->where('skill_endorsement_statuses.skill_id', $skill->id)
                 ->get();
-
-            
         }
 
         return response()->json([
