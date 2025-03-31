@@ -23,6 +23,17 @@ class SkillController extends Controller
                 'endorsers.*' => 'email', // Validate each email in the array
             ]);
 
+            // Get the portfolio owner's details
+            $portfolio = DB::table('portfolios')
+                ->join('users', 'portfolios.user_id', '=', 'users.google_id')
+                ->select('users.email as owner_email')
+                ->where('portfolios.id', $request->input('portfolio_id'))
+                ->first();
+
+            if (!$portfolio) {
+                return response()->json(['error' => 'Portfolio not found.'], 404);
+            }
+
             // Insert new skill into the database
             $skillId = DB::table('skills')->insertGetId([
                 'portfolio_id' => $request->input('portfolio_id'),
@@ -36,8 +47,16 @@ class SkillController extends Controller
             $endorsers = $request->input('endorsers', []);
             $endorserLinkData = [];
             $endorsementStatusData = [];
+            $skippedEndorsers = [];
 
             foreach ($endorsers as $email) {
+                // Skip if the endorser is the portfolio owner (self-endorsement)
+                if ($email === $portfolio->owner_email) {
+                    $skippedEndorsers[] = $email;
+                    Log::warning("Skipped self-endorsement: {$email}");
+                    continue;
+                }
+
                 $user = DB::table('users')->where('email', $email)->first();
 
                 if ($user && $user->google_id) {
@@ -61,6 +80,7 @@ class SkillController extends Controller
                         'updated_at' => now(),
                     ];
                 } else {
+                    $skippedEndorsers[] = $email;
                     Log::warning("User with email {$email} not found or missing google_id.");
                 }
             }
@@ -82,6 +102,7 @@ class SkillController extends Controller
             return response()->json([
                 'message' => 'Skill created successfully.',
                 'skill_id' => $skillId,
+                'skipped_endorsers' => $skippedEndorsers
             ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -111,6 +132,17 @@ class SkillController extends Controller
                 return response()->json(['error' => 'Skill not found.'], 404);
             }
 
+            // Get the portfolio owner's details
+            $portfolio = DB::table('portfolios')
+                ->join('users', 'portfolios.user_id', '=', 'users.google_id')
+                ->select('users.email as owner_email')
+                ->where('portfolios.id', $skill->portfolio_id)
+                ->first();
+
+            if (!$portfolio) {
+                return response()->json(['error' => 'Portfolio not found.'], 404);
+            }
+
             // Log the incoming request data
             Log::info('EditSkill Request:', $request->all());
 
@@ -129,8 +161,16 @@ class SkillController extends Controller
             $endorsers = $request->input('endorsers', []);
             $endorserLinkData = [];
             $endorsementStatusData = [];
+            $skippedEndorsers = [];
 
             foreach ($endorsers as $email) {
+                // Skip if the endorser is the portfolio owner (self-endorsement)
+                if ($email === $portfolio->owner_email) {
+                    $skippedEndorsers[] = $email;
+                    Log::warning("Skipped self-endorsement: {$email}");
+                    continue;
+                }
+
                 $user = DB::table('users')->where('email', $email)->first();
 
                 if ($user && $user->google_id) {
@@ -154,6 +194,7 @@ class SkillController extends Controller
                         'updated_at' => now(),
                     ];
                 } else {
+                    $skippedEndorsers[] = $email;
                     Log::warning("Skipped endorser: {$email} — user not found or missing google_id.");
                 }
             }
@@ -173,7 +214,11 @@ class SkillController extends Controller
             // Commit the transaction
             DB::commit();
 
-            return response()->json(['message' => 'Skill updated successfully.', 'skill_id' => $id], 200);
+            return response()->json([
+                'message' => 'Skill updated successfully.',
+                'skill_id' => $id,
+                'skipped_endorsers' => $skippedEndorsers
+            ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error updating skill: ' . $e->getMessage());

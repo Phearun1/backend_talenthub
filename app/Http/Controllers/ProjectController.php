@@ -56,7 +56,7 @@ class ProjectController extends Controller
         return response()->json([
             'message' => 'Project created successfully.',
             'project' => $project,
-        ], 201);
+        ], 200);
     }
 
     public function viewProjectDetail($projectId)
@@ -76,8 +76,6 @@ class ProjectController extends Controller
                 'projects.project_visibility_status',
                 'projects.created_at',
                 'projects.updated_at',
-
-
             )
             ->where('projects.id', $projectId)
             ->first();
