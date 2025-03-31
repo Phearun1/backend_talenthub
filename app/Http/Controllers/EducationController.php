@@ -39,8 +39,8 @@ class EducationController extends Controller
             'end_year' => 'nullable|string|max:255',
         ]);
 
-        // Insert new education record
-        $education = DB::table('education')->insert([
+        // Insert new education record and get the ID
+        $educationId = DB::table('education')->insertGetId([
             'portfolio_id' => $request->portfolio_id,
             'education_center' => $request->education_center,
             'field_of_study' => $request->field_of_study,
@@ -53,7 +53,10 @@ class EducationController extends Controller
             'updated_at' => now(),
         ]);
 
-        return response()->json(['message' => 'Education created successfully!']);
+        return response()->json([
+            'message' => 'Education created successfully!',
+            'education_id' => $educationId
+        ], 200);
     }
 
     /**
@@ -81,8 +84,10 @@ class EducationController extends Controller
         ]);
 
         if ($education) {
-            return response()->json(['message' => 'Education updated successfully!', 
-        'education_id' => $id]);
+            return response()->json([
+                'message' => 'Education updated successfully!',
+                'education_id' => $id
+            ], 200);
         }
 
         return response()->json(['error' => 'Education not found.'], 404);
