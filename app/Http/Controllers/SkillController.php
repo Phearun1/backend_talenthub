@@ -80,8 +80,8 @@ class SkillController extends Controller
             DB::commit();
 
             return response()->json([
-                'message' => 'Skill created successfully.',200
-            ]);
+                'message' => 'Skill created successfully.'
+            ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error creating skill: ' . $e->getMessage());
@@ -172,7 +172,7 @@ class SkillController extends Controller
             // Commit the transaction
             DB::commit();
 
-            return response()->json(['message' => 'Skill updated successfully.', 'skill_id'=> $id], 200);
+            return response()->json(['message' => 'Skill updated successfully.', 'skill_id' => $id], 200);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error updating skill: ' . $e->getMessage());
