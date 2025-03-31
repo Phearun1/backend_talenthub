@@ -18,11 +18,11 @@ class SkillController extends Controller
                 'portfolio_id' => 'required|integer',
                 'title' => 'required|string|max:255',
                 'description' => 'required|string|max:255',
-                'endorsers' => 'nullable|array', // Optional array of endorser emails
-                'endorsers.*' => 'email', // Validate each email in the array
+                'endorsers' => 'nullable|array',
+                'endorsers.*' => 'email',
             ]);
 
-            // Insert new skill into the database
+            // Insert the skill
             $skillId = DB::table('skills')->insertGetId([
                 'portfolio_id' => $request->input('portfolio_id'),
                 'title' => $request->input('title'),
@@ -31,42 +31,52 @@ class SkillController extends Controller
                 'updated_at' => now(),
             ]);
 
-            // Handle endorsers if provided
-            $endorsers = $request->input('endorsers', []); // Default to an empty array if not provided
+            $endorsers = $request->input('endorsers', []);
             $endorsementData = [];
+            $endorserLinkData = [];
 
             foreach ($endorsers as $email) {
                 $user = DB::table('users')->where('email', $email)->first();
 
                 if ($user) {
+                    // For skill_endorsers
+                    $endorserLinkData[] = [
+                        'skill_id' => $skillId,
+                        'user_id' => $user->google_id,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+
+                    // For skill_endorsement_statuses
                     $endorsementData[] = [
                         'skill_id' => $skillId,
-                        'endorser_id' => $user->google_id, // Use the user's google_ID
-                        'endorsement_status_id' => 1, // Default to Pending
+                        'endorser_id' => $user->google_id,
+                        'endorsement_status_id' => 1, // Pending
                         'created_at' => now(),
                         'updated_at' => now(),
                     ];
                 } else {
-                    // Log or handle the case where the email does not match any user
                     Log::warning("User with email {$email} not found.");
                 }
             }
 
-            // Insert endorsers into the skill_endorsement_statuses table
+            // Insert into skill_endorsers
+            if (!empty($endorserLinkData)) {
+                DB::table('skill_endorsers')->insert($endorserLinkData);
+            }
+
+            // Insert into skill_endorsement_statuses
             if (!empty($endorsementData)) {
                 DB::table('skill_endorsement_statuses')->insert($endorsementData);
             }
-            
-            return response()->json([
-                'message' => 'Skill created successfully.',
-            ]);
 
+            return response()->json(['message' => 'Skill created successfully.']);
         } catch (\Exception $e) {
-            // Log the error and return a generic error message
             Log::error('Error creating skill: ' . $e->getMessage());
             return response()->json(['message' => 'Something went wrong.'], 500);
         }
     }
+
 
 
     // Edit a skill
