@@ -113,9 +113,6 @@ class PortfolioController extends Controller
         ]);
     }
 
-
-
-
     public function updatePortfolio(Request $request, $id)
     {
         // Validate input fields
@@ -162,6 +159,7 @@ class PortfolioController extends Controller
         return response()->json([
             'message' => 'Portfolio and user photo updated successfully.',
             $updatedPortfolio,
+            $updatedUser,
         ], 200);
     }
 
