@@ -88,11 +88,11 @@ class PortfolioController extends Controller
                 ->join('users', 'skill_endorsement_statuses.endorser_id', '=', 'users.google_id')
                 ->join('endorsement_statuses', 'skill_endorsement_statuses.endorsement_status_id', '=', 'endorsement_statuses.id')
                 ->select(
-                    'users.google_id as endorser_id',
-                    'users.name as endorser_name',
-                    'users.email as endorser_email',
-                    'endorsement_statuses.id as endorsement_status_id',
-                    'endorsement_statuses.status as endorsement_status'
+                    'users.google_id as id',
+                    'users.name as name',
+                    'users.email as email',
+                    'endorsement_statuses.id as status_id',
+                    'endorsement_statuses.status as status'
                 )
                 ->where('skill_endorsement_statuses.skill_id', $skill->id)
                 ->get();

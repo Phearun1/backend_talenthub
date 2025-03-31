@@ -183,14 +183,30 @@ class SkillController extends Controller
 
 
     // Delete a skill
+
     public function deleteSkill($id)
     {
-        $deleted = DB::table('skills')->where('id', $id)->delete();
+        DB::beginTransaction();
 
-        if ($deleted) {
-            return response()->json(['message' => 'Skill deleted successfully.'], 200);
-        } else {
-            return response()->json(['error' => 'Skill not found.'], 404);
+        try {
+            // First, delete all the endorsers and endorsement statuses associated with the skill
+            DB::table('skill_endorsers')->where('skill_id', $id)->delete();
+            DB::table('skill_endorsement_statuses')->where('skill_id', $id)->delete();
+
+            // Then, delete the skill itself
+            $deleted = DB::table('skills')->where('id', $id)->delete();
+
+            if ($deleted) {
+                DB::commit();
+                return response()->json(['message' => 'Skill and its endorsers deleted successfully.'], 200);
+            } else {
+                DB::rollBack();
+                return response()->json(['error' => 'Skill not found.'], 404);
+            }
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error deleting skill: ' . $e->getMessage());
+            return response()->json(['message' => 'Something went wrong.'], 500);
         }
     }
 }
