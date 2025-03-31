@@ -19,10 +19,11 @@ class SkillController extends Controller
                 'portfolio_id' => 'required|integer',
                 'title' => 'required|string|max:255',
                 'description' => 'required|string|max:255',
+                'endorsers' => 'nullable|array', 
+                'endorsers.*' => 'email', 
             ]);
 
-            // Insert new skill into the database
-            $skill = DB::table('skills')->insertGetId([
+            $skillId = DB::table('skills')->insertGetId([
                 'portfolio_id' => $request->input('portfolio_id'),
                 'title' => $request->input('title'),
                 'description' => $request->input('description'),
@@ -30,9 +31,37 @@ class SkillController extends Controller
                 'updated_at' => now(),
             ]);
 
+            $endorsers = $request->input('endorsers', []); 
+            $endorserIds = [];
+
+            foreach ($endorsers as $email) {
+                $user = DB::table('users')->where('email', $email)->first();
+
+                if ($user) {
+                    $endorserIds[] = [
+                        'skill_id' => $skillId,
+                        'user_id' => $user->google_id,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                } else {
+                    // Log or handle the case where the email does not match any user
+                    Log::warning("User with email {$email} not found.");
+                }
+            }
+
+            // Insert endorsers into the skill_endorsers table
+            if (!empty($endorserIds)) {
+                DB::table('skill_endorsers')->insert($endorserIds);
+            }
+
             return response()->json([
                 'message' => 'Skill created successfully.',
-                'skill_id' => $skill
+                'skill_id' => $skillId,
+                'endorser_name'=> $user->name,
+                'endorser_email'=> $user->email,
+                'endorser_id'=> $user->google_id,
+                'endorsers_added' => count($endorserIds),
             ], 201);
         } catch (\Exception $e) {
             // Log the error and return a generic error message
