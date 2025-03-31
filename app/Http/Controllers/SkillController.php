@@ -7,7 +7,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 
-
 class SkillController extends Controller
 {
     public function createSkill(Request $request)
@@ -76,6 +75,7 @@ class SkillController extends Controller
             return response()->json(['message' => 'Something went wrong.'], 500);
         }
     }
+
 
 
 
