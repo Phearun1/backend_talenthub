@@ -44,7 +44,7 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
 
     Route::middleware('role:1')->post('/create_company', [ExperienceController::class, 'createCompany']);
 
-
+    Route::middleware('auth:sanctum')->put('/update_portfolio', [PortfolioController::class, 'updatePortfolio']); // Edit portfolio
 
 
     //skill

@@ -72,6 +72,8 @@ class PortfolioController extends Controller
         $skills = DB::table('skills')->where('portfolio_id', $portfolioId)->get();
         $experiences = DB::table('experiences')->where('portfolio_id', $portfolioId)->get();
 
+        
+        
         // Add achievement endorsers
         foreach ($achievements as $achievement) {
             // Retrieve endorsers for the achievement
@@ -118,12 +120,10 @@ class PortfolioController extends Controller
     {
         // Validate input fields
         $request->validate([
-            'user_id' => 'required|string',
             'major_id' => 'nullable|integer',
             'phone_number' => 'nullable|string|max:255',
             'about' => 'nullable|string|max:255',
             'working_status' => 'nullable|integer',
-            'status' => 'required|integer',
             'photo' => 'nullable|string|max:255',
         ]);
 
@@ -136,12 +136,11 @@ class PortfolioController extends Controller
 
         // Update the portfolio
         DB::table('portfolios')->where('id', $id)->update([
-            'user_id' => $request->input('user_id'),
             'major_id' => $request->input('major_id'),
             'phone_number' => $request->input('phone_number'),
             'about' => $request->input('about'),
             'working_status' => $request->input('working_status'),
-            'status' => $request->input('status'),
+            'status' => '1',
             'updated_at' => now(),
         ]);
 
@@ -162,8 +161,7 @@ class PortfolioController extends Controller
         // Return the updated portfolio and user
         return response()->json([
             'message' => 'Portfolio and user photo updated successfully.',
-            'portfolio' => $updatedPortfolio,
-            'user' => $updatedUser,
+            $updatedPortfolio,
         ], 200);
     }
 
