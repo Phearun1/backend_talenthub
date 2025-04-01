@@ -101,9 +101,39 @@ class ExperienceController extends Controller
             DB::table('experience_endorsement_statuses')->insert($endorsementStatusData);
         }
 
-        // Return success message
-        return response()->json(['message' => 'Experience and endorsers added successfully!'],200);
+        // Fetch the experience details
+        $experience = DB::table('experiences')->where('id', $experienceId)->first();
+
+        // Fetch the endorsers and their details
+        $endorsersDetails = [];
+        foreach ($endorserData as $endorser) {
+            $user = DB::table('users')->where('id', $endorser['user_id'])->first();
+            $status = DB::table('experience_endorsement_statuses')
+                ->where('experience_id', $experienceId)
+                ->where('endorser_id', $endorser['user_id'])
+                ->first();
+
+            $statusName = DB::table('endorsement_statuses')
+                ->where('id', $status->experience_status_id)
+                ->value('status');
+
+            $endorsersDetails[] = [
+                'id' => $endorser['user_id'],
+                'name' => $user->name ?? 'Unknown',
+                'email' => $user->email ?? 'Unknown',
+                'status' => $statusName ?? 'Pending',  // Default to 'Pending' if status not found
+                'status_id' => $status->experience_status_id ?? 1, // Default to 'Pending' status ID
+            ];
+        }
+
+        // Return the full experience details along with endorsers
+        return response()->json([
+            'message' => 'Experience and endorsers added successfully!',
+            'experience' => $experience, // Return full experience details
+            'endorsers' => $endorsersDetails  // Return detailed endorser data
+        ], 200);
     }
+
 
     public function updateExperience(Request $request, $id)
     {
