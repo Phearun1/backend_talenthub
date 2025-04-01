@@ -10,110 +10,137 @@ use Illuminate\Support\Facades\Log;
 class SkillController extends Controller
 {
     public function createSkill(Request $request)
-{
-    DB::beginTransaction();
+    {
+        DB::beginTransaction();
 
-    try {
-        // Validate the incoming request
-        $request->validate([
-            'portfolio_id' => 'required|integer',
-            'title' => 'required|string|max:255',
-            'description' => 'required|string|max:255',
-            'endorsers' => 'nullable|array', // Optional array of endorser emails
-            'endorsers.*' => 'email', // Validate each email in the array
-        ]);
+        try {
+            // Validate the incoming request
+            $request->validate([
+                'portfolio_id' => 'required|integer',
+                'title' => 'required|string|max:255',
+                'description' => 'required|string|max:255',
+                'endorsers' => 'nullable|array', // Optional array of endorser emails
+                'endorsers.*' => 'email', // Validate each email in the array
+            ]);
 
-        // Get the portfolio owner's details
-        $portfolio = DB::table('portfolios')
-            ->join('users', 'portfolios.user_id', '=', 'users.google_id')
-            ->select('users.email as owner_email')
-            ->where('portfolios.id', $request->input('portfolio_id'))
-            ->first();
+            // Get the portfolio owner's details
+            $portfolio = DB::table('portfolios')
+                ->join('users', 'portfolios.user_id', '=', 'users.google_id')
+                ->select('users.email as owner_email')
+                ->where('portfolios.id', $request->input('portfolio_id'))
+                ->first();
 
-        if (!$portfolio) {
-            return response()->json(['error' => 'Portfolio not found.'], 404);
-        }
-
-        // Insert new skill into the database
-        $skillId = DB::table('skills')->insertGetId([
-            'portfolio_id' => $request->input('portfolio_id'),
-            'title' => $request->input('title'),
-            'description' => $request->input('description'),
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        // Prepare endorsers
-        $endorsers = $request->input('endorsers', []);
-        $endorserLinkData = [];
-        $endorsementStatusData = [];
-        $skippedEndorsers = [];
-
-        foreach ($endorsers as $email) {
-            // Skip if the endorser is the portfolio owner (self-endorsement)
-            if ($email === $portfolio->owner_email) {
-                $skippedEndorsers[] = $email;
-                Log::warning("Skipped self-endorsement: {$email}");
-                continue;
+            if (!$portfolio) {
+                return response()->json(['error' => 'Portfolio not found.'], 404);
             }
 
-            $user = DB::table('users')->where('email', $email)->first();
+            // Insert new skill into the database
+            $skillId = DB::table('skills')->insertGetId([
+                'portfolio_id' => $request->input('portfolio_id'),
+                'title' => $request->input('title'),
+                'description' => $request->input('description'),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
 
-            if ($user && $user->google_id) {
-                // Log user info
-                Log::info("Processing endorser: {$email}, Google ID: {$user->google_id}");
+            // Prepare endorsers
+            $endorsers = $request->input('endorsers', []);
+            $endorserLinkData = [];
+            $endorsementStatusData = [];
+            $skippedEndorsers = [];
 
-                // Prepare data for skill_endorsers table
-                $endorserLinkData[] = [
-                    'skill_id' => $skillId,
-                    'user_id' => $user->google_id,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ];
+            foreach ($endorsers as $email) {
+                // Skip if the endorser is the portfolio owner (self-endorsement)
+                if ($email === $portfolio->owner_email) {
+                    $skippedEndorsers[] = $email;
+                    Log::warning("Skipped self-endorsement: {$email}");
+                    continue;
+                }
 
-                // Prepare data for skill_endorsement_statuses table
-                $endorsementStatusData[] = [
-                    'skill_id' => $skillId,
-                    'endorser_id' => $user->google_id,
-                    'endorsement_status_id' => 1, // Pending
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ];
-            } else {
-                $skippedEndorsers[] = $email;
-                Log::warning("User with email {$email} not found or missing google_id.");
+                $user = DB::table('users')->where('email', $email)->first();
+
+                if ($user && $user->google_id) {
+                    // Log user info
+                    Log::info("Processing endorser: {$email}, Google ID: {$user->google_id}");
+
+                    // Prepare data for skill_endorsers table
+                    $endorserLinkData[] = [
+                        'skill_id' => $skillId,
+                        'user_id' => $user->google_id,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+
+                    // Prepare data for skill_endorsement_statuses table
+                    $endorsementStatusData[] = [
+                        'skill_id' => $skillId,
+                        'endorser_id' => $user->google_id,
+                        'endorsement_status_id' => 1, // Pending
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                } else {
+                    $skippedEndorsers[] = $email;
+                    Log::warning("User with email {$email} not found or missing google_id.");
+                }
             }
+
+            // Insert into skill_endorsers
+            if (!empty($endorserLinkData)) {
+                DB::table('skill_endorsers')->insert($endorserLinkData);
+                Log::info('Inserted into skill_endorsers:', $endorserLinkData);
+            }
+
+            // Insert into skill_endorsement_statuses
+            if (!empty($endorsementStatusData)) {
+                DB::table('skill_endorsement_statuses')->insert($endorsementStatusData);
+                Log::info('Inserted into skill_endorsement_statuses:', $endorsementStatusData);
+            }
+
+            DB::commit();
+
+            // Fetch detailed information for endorsers
+            $endorsersDetails = [];
+            foreach ($endorserLinkData as $endorser) {
+                // Fetch user details
+                $user = DB::table('users')->where('google_id', $endorser['user_id'])->first();
+
+                // Fetch endorsement status
+                $status = DB::table('skill_endorsement_statuses')
+                    ->where('skill_id', $skillId)
+                    ->where('endorser_id', $endorser['user_id'])
+                    ->first();
+
+                // Fetch endorsement status name from the 'endorsement_statuses' table
+                $statusName = DB::table('endorsement_statuses')
+                    ->where('id', $status->endorsement_status_id)
+                    ->value('status');
+
+                $endorsersDetails[] = [
+                    'id' => $endorser['user_id'],
+                    'name' => $user->name ?? 'Unknown',
+                    'email' => $user->email ?? 'Unknown',
+                    'status' => $statusName ?? 'Pending', // Default to 'Pending' if status not found
+                    'status_id' => $status->endorsement_status_id ?? 1, // Default to 'Pending' status ID
+                ];
+            }
+
+            return response()->json([
+                'message' => 'Skill created successfully.',
+                'skill_id' => $skillId,
+                'portfolio_id' => $request->input('portfolio_id'),
+                'title' => $request->input('title'),
+                'description' => $request->input('description'),
+                'endorsers' => $endorsersDetails, // Detailed endorser data
+                'skipped_endorsers' => $skippedEndorsers
+            ], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error creating skill: ' . $e->getMessage());
+            return response()->json(['message' => 'Something went wrong.', 'error' => $e->getMessage()], 500);
         }
-
-        // Insert into skill_endorsers
-        if (!empty($endorserLinkData)) {
-            DB::table('skill_endorsers')->insert($endorserLinkData);
-            Log::info('Inserted into skill_endorsers:', $endorserLinkData);
-        }
-
-        // Insert into skill_endorsement_statuses
-        if (!empty($endorsementStatusData)) {
-            DB::table('skill_endorsement_statuses')->insert($endorsementStatusData);
-            Log::info('Inserted into skill_endorsement_statuses:', $endorsementStatusData);
-        }
-
-        DB::commit();
-
-        return response()->json([
-            'message' => 'Skill created successfully.',
-            'skill_id' => $skillId,
-            'portfolio_id' => $request->input('portfolio_id'),
-            'title' => $request->input('title'),
-            'description' => $request->input('description'),
-            'endorsers' => $endorsers,  // Return the list of endorsers
-            'skipped_endorsers' => $skippedEndorsers
-        ], 200);
-    } catch (\Exception $e) {
-        DB::rollBack();
-        Log::error('Error creating skill: ' . $e->getMessage());
-        return response()->json(['message' => 'Something went wrong.', 'error' => $e->getMessage()], 500);
     }
-}
+
 
 
 
