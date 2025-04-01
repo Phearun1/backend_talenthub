@@ -102,9 +102,8 @@ class ExperienceController extends Controller
         }
 
         // Return success message
-        return response()->json(['message' => 'Experience and endorsers added successfully!']);
+        return response()->json(['message' => 'Experience and endorsers added successfully!'],200);
     }
-
 
     public function updateExperience(Request $request, $id)
     {
