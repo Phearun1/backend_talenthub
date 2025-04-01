@@ -38,8 +38,8 @@ class ProjectController extends Controller
             return response()->json(['error' => 'You are not authorized to create a project for this portfolio.'], 403);
         }
 
-        // Insert the project into the database
-        $project = DB::table('projects')->insert([
+        // Insert the project into the database and get the ID
+        $projectId = DB::table('projects')->insertGetId([
             'portfolio_id' => $request->input('portfolio_id'),
             'title' => $request->input('title'),
             'description' => $request->input('description'),
@@ -55,9 +55,10 @@ class ProjectController extends Controller
         // Return a success response
         return response()->json([
             'message' => 'Project created successfully.',
-            'project' => $project,
+            'project' => $projectId,
         ], 200);
     }
+
 
     public function viewProjectDetail($projectId)
     {
@@ -92,6 +93,7 @@ class ProjectController extends Controller
         return response()->json($project);
     }
 
+    
     public function updateProject(Request $request, $id)
     {
         // Validate the incoming request data (remove portfolio_id from validation)

@@ -44,33 +44,33 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
 
     Route::middleware('role:1')->post('/create_company', [ExperienceController::class, 'createCompany']);
 
-    Route::middleware('auth:sanctum')->put('/update_portfolio/{id}', [PortfolioController::class, 'updatePortfolio']); // Edit portfolio
+    Route::put('/update_portfolio/{id}', [PortfolioController::class, 'updatePortfolio']); // Edit portfolio
 
 
     //skill
 
-    Route::middleware('auth:sanctum')->post('/create_skill', [SkillController::class, 'createSkill']);  // Create skill
-    Route::middleware('auth:sanctum')->put('/update_skill/{id}', [SkillController::class, 'updateSkill']);  // Edit skill
-    Route::middleware('auth:sanctum')->delete('/delete_skill/{id}', [SkillController::class, 'deleteSkill']);  // Delete skill
+    Route::post('/create_skill', [SkillController::class, 'createSkill']);  // Create skill
+    Route::put('/update_skill/{id}', [SkillController::class, 'updateSkill']);  // Edit skill
+    Route::delete('/delete_skill/{id}', [SkillController::class, 'deleteSkill']);  // Delete skill
 
 
 
     // project
-    Route::middleware('auth:sanctum')->post('/create_project', [ProjectController::class, 'createProject']);
-    Route::middleware('auth:sanctum')->put('/update_project/{id}', [ProjectController::class, 'updateProject']);
-    Route::middleware('auth:sanctum')->delete('/delete_project/{id}', [ProjectController::class, 'deleteProject']);
+    Route::post('/create_project', [ProjectController::class, 'createProject']);
+    Route::put('/update_project/{id}', [ProjectController::class, 'updateProject']);
+    Route::delete('/delete_project/{id}', [ProjectController::class, 'deleteProject']);
 
 
     // Achievements 
-    Route::middleware('auth:sanctum')->post('/create_achievement', [AchievementController::class, 'createAchievement']);
-    Route::middleware('auth:sanctum')->put('/update_achievement/{id}', [AchievementController::class, 'updateAchievement']);
-    Route::middleware('auth:sanctum')->delete('/delete_achievement/{id}', [AchievementController::class, 'deleteAchievement']);
+    Route::post('/create_achievement', [AchievementController::class, 'createAchievement']);
+    Route::put('/update_achievement/{id}', [AchievementController::class, 'updateAchievement']);
+    Route::delete('/delete_achievement/{id}', [AchievementController::class, 'deleteAchievement']);
 
 
     //education
-    Route::middleware('auth:sanctum')->post('/create_education', [EducationController::class, 'createEducation']);
-    Route::middleware('auth:sanctum')->put('/update_education/{id}', [EducationController::class, 'updateEducation']);
-    Route::middleware('auth:sanctum')->delete('/delete_education/{id}', [EducationController::class, 'deleteEducation']);
+    Route::post('/create_education', [EducationController::class, 'createEducation']);
+    Route::put('/update_education/{id}', [EducationController::class, 'updateEducation']);
+    Route::delete('/delete_education/{id}', [EducationController::class, 'deleteEducation']);
 
 
 

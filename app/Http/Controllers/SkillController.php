@@ -102,6 +102,10 @@ class SkillController extends Controller
             return response()->json([
                 'message' => 'Skill created successfully.',
                 'skill_id' => $skillId,
+                'portfolio_id' => $request->input('portfolio_id'),
+                'title' => $request->input('title'),
+                'description' => $request->input('description'),
+                'endorsers' => $request->input('endorsers', []),
                 'skipped_endorsers' => $skippedEndorsers
             ], 200);
         } catch (\Exception $e) {
@@ -215,9 +219,14 @@ class SkillController extends Controller
             DB::commit();
 
             return response()->json([
-                'message' => 'Skill updated successfully.',
+                
                 'skill_id' => $id,
+                'portfolio_id' => $request->input('portfolio_id'),
+                'title' => $request->input('title'),
+                'description' => $request->input('description'),
+                'endorsers' => $request->input('endorsers', []),
                 'skipped_endorsers' => $skippedEndorsers
+                
             ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
