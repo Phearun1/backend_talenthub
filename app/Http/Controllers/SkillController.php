@@ -247,30 +247,48 @@ class SkillController extends Controller
             // Commit the transaction
             DB::commit();
 
+            // Fetch detailed information for endorsers
+            $endorsersDetails = [];
+            foreach ($endorserLinkData as $endorser) {
+                // Fetch user details
+                $user = DB::table('users')->where('google_id', $endorser['user_id'])->first();
+
+                // Fetch endorsement status
+                $status = DB::table('skill_endorsement_statuses')
+                    ->where('skill_id', $id)
+                    ->where('endorser_id', $endorser['user_id'])
+                    ->first();
+
+                // Fetch endorsement status name from the 'endorsement_statuses' table
+                $statusName = DB::table('endorsement_statuses')
+                    ->where('id', $status->endorsement_status_id)
+                    ->value('status');
+
+                $endorsersDetails[] = [
+                    'id' => $endorser['user_id'],
+                    'name' => $user->name ?? 'Unknown',
+                    'email' => $user->email ?? 'Unknown',
+                    'status' => $statusName ?? 'Pending', // Default to 'Pending' if status not found
+                    'status_id' => $status->endorsement_status_id ?? 1, // Default to 'Pending' status ID
+                ];
+            }
+
             return response()->json([
                 'message' => 'Skill updated successfully.',
                 'skill_id' => $id,
                 'portfolio_id' => $request->input('portfolio_id'),
                 'title' => $request->input('title'),
                 'description' => $request->input('description'),
-                'endorsers' => array_map(function ($endorser) use ($endorsementStatusData) {
-                    $status = collect($endorsementStatusData)->firstWhere('endorser_id', $endorser['user_id']);
-                    return [
-                        'id' => $endorser['user_id'],
-                        'name' => $endorser['name'] ?? 'Unknown', // Assuming name is not available in the current logic
-                        'email' => $endorser['email'],
-                        'status' => 'Pending', // Assuming status is always Pending for now
-                        'status_id' => $status['endorsement_status_id'] ?? 1,
-                    ];
-                }, $endorserLinkData),
+                'endorsers' => $endorsersDetails, // Detailed endorser data
                 'skipped_endorsers' => $skippedEndorsers
             ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error updating skill: ' . $e->getMessage());
-            return response()->json(['message' => 'Something went wrong.'], 500);
+            return response()->json(['message' => 'Something went wrong.', 'error' => $e->getMessage()], 500);
         }
     }
+
 
 
 
