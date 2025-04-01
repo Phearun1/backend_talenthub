@@ -17,6 +17,7 @@ return new class extends Migration
             $table->integer('company_id');
             $table->integer('work_title');
             $table->string('description');
+            $table->string('employment_type')->nullable();
             $table->string('start_month');
             $table->string('end_month');
             $table->string('start_year')->nullable();
