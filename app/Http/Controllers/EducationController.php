@@ -110,7 +110,7 @@ class EducationController extends Controller
         $education = DB::table('education')->where('id', $id)->delete();
 
         if ($education) {
-            return response()->json(['message' => 'Education deleted successfully!']);
+            return response()->json(['message' => 'Education deleted successfully!'], 200);
         }
 
         return response()->json(['error' => 'Education not found.'], 404);
