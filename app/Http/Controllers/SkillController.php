@@ -115,6 +115,7 @@ class SkillController extends Controller
         }
     }
 
+
     // Edit a skill
     public function updateSkill(Request $request, $id)
     {
@@ -226,7 +227,6 @@ class SkillController extends Controller
                 'description' => $request->input('description'),
                 'endorsers' => $request->input('endorsers', []),
                 'skipped_endorsers' => $skippedEndorsers
-                
             ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -234,6 +234,7 @@ class SkillController extends Controller
             return response()->json(['message' => 'Something went wrong.'], 500);
         }
     }
+
 
 
 
