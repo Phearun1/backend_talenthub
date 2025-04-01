@@ -242,13 +242,22 @@ class ExperienceController extends Controller
 
     public function deleteExperience($id)
     {
-        // Delete the experience record by ID
-        $deleted = DB::table('experiences')->where('id', $id)->delete();
+        // Check if the experience exists
+        $experience = DB::table('experiences')->where('id', $id)->first();
 
-        if ($deleted) {
-            return response()->json(['message' => 'Experience deleted successfully!']);
+        if (!$experience) {
+            return response()->json(['error' => 'Experience not found.'], 404);
         }
 
-        return response()->json(['error' => 'Experience not found.'], 404);
+        // Delete related endorsers from experience_endorsers table
+        DB::table('experience_endorsers')->where('experience_id', $id)->delete();
+
+        // Delete related endorsement statuses from experience_endorsement_statuses table
+        DB::table('experience_endorsement_statuses')->where('experience_id', $id)->delete();
+
+        // Delete the experience itself
+        DB::table('experiences')->where('id', $id)->delete();
+
+        return response()->json(['message' => 'Experience and related data deleted successfully.'], 200);
     }
 }
