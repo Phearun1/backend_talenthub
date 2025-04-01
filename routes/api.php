@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Route;
 Route::post('/login_google', [AuthController::class, 'loginWithGoogle']);
 Route::post('/admin_login', [AuthController::class, 'adminLogin']);
 
-
+Route::get('/view_all_companies', [ExperienceController::class, 'viewAllCompanies']);
 
 Route::get('/users', [UserController::class, 'view_all_user']);
 
@@ -84,7 +84,7 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
     // Delete an experience
     Route::delete('/delete_experience/{id}', [ExperienceController::class, 'deleteExperience']);
 
-    Route::get('/view_all_companies', [ExperienceController::class, 'viewAllCompanies']);
+   
 
 
     // Endorser route

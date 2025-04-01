@@ -31,10 +31,10 @@ class ExperienceController extends Controller
 
     public function viewAllCompanies()
     {
-        // Fetch all companies from the database
-        $companies = DB::table('companies')->get();
+        // Fetch only the company_name from the companies table
+        $companies = DB::table('companies')->pluck('company_name');
 
-        // Return the list of companies as a JSON response
+        // Return the list of company names as a JSON response
         return response()->json($companies, 200);
     }
 
