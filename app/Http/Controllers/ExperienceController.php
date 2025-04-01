@@ -135,7 +135,7 @@ class ExperienceController extends Controller
             'message' => 'Experience and endorsers added successfully!',
             'experience' => $experience, // Return full experience details
             'endorsers' => $endorsersDetails,  // Return detailed endorser data
-            'skipped_endorsers' => $skippedEndorsers // Skipped endorsers (not role 2)
+           
         ], 200);
     }
 
@@ -246,7 +246,6 @@ class ExperienceController extends Controller
             'message' => 'Experience updated successfully!',
             'experience' => $experience, // Full updated experience details
             'endorsers' => $endorsersDetails, // Updated endorsers details
-            'skipped_endorsers' => $skippedEndorsers, // List of skipped endorsers
         ], 200);
     }
 
