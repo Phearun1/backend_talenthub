@@ -53,11 +53,15 @@ class EducationController extends Controller
             'updated_at' => now(),
         ]);
 
+        // Retrieve the full education details
+        $education = DB::table('education')->where('id', $educationId)->first();
+
         return response()->json([
             'message' => 'Education created successfully!',
-            'education_id' => $educationId
+            'education' => $education, // Returning the full education record
         ], 200);
     }
+
 
     /**
      * Update Education entry
@@ -74,7 +78,7 @@ class EducationController extends Controller
         ]);
 
         // Update the existing education record
-        $education = DB::table('education')->where('id', $id)->update([
+        $educationUpdated = DB::table('education')->where('id', $id)->update([
             'education_center' => $request->education_center,
             'field_of_study' => $request->field_of_study,
             'description' => $request->description,
@@ -83,15 +87,19 @@ class EducationController extends Controller
             'updated_at' => now(),
         ]);
 
-        if ($education) {
+        if ($educationUpdated) {
+            // Retrieve the updated education details
+            $education = DB::table('education')->where('id', $id)->first();
+
             return response()->json([
                 'message' => 'Education updated successfully!',
-                'education_id' => $id
+                'education' => $education, // Returning the full updated education record
             ], 200);
         }
 
         return response()->json(['error' => 'Education not found.'], 404);
     }
+
 
     /**
      * Delete Education entry
