@@ -270,7 +270,18 @@ class ExperienceController extends Controller
         // Return the full experience details along with endorsers
         return response()->json([
             'message' => 'Experience and endorsers added successfully!',
-            'experience' => $experience, // Return full experience details including company_name
+            'experience' => [
+                'id' => $experience->id,
+                'portfolio_id' => $experience->portfolio_id,
+                'company_name' => $experience->company_name,
+                'work_title' => $experience->work_title,
+                'description' => $experience->description,
+                'employment_type' => $experience->employment_type,
+                'start_month' => $experience->start_month,
+                'start_year' => $experience->start_year,
+                'end_month' => $experience->end_month,
+                'end_year' => $experience->end_year,
+            ],
             'endorsers' => $endorsersDetails,  // Return detailed endorser data
         ], 200);
     }
