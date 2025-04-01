@@ -72,7 +72,9 @@ class PortfolioController extends Controller
         $skills = DB::table('skills')->where('portfolio_id', $portfolioId)->get();
         $experiences = DB::table('experiences')->where('portfolio_id', $portfolioId)->get();
 
-
+        foreach($projects as $project){
+            
+        }
 
         // Add achievement endorsers
         foreach ($achievements as $achievement) {
