@@ -43,10 +43,6 @@ class AchievementController extends Controller
         return response()->json($achievement);
     }
 
-
-
-
-    // Create New Achievement
     public function createAchievement(Request $request)
     {
         DB::beginTransaction();
@@ -90,6 +86,12 @@ class AchievementController extends Controller
                 $user = DB::table('users')->where('email', $email)->first();
 
                 if ($user && $user->google_id) {
+                    // Check if the user has role_id = 2
+                    if ($user->role_id != 2) {
+                        Log::warning("Skipped user: {$email} — they do not have role_id = 2.");
+                        continue;
+                    }
+
                     // Log user info
                     Log::info("Processing endorser: {$email}, Google ID: {$user->google_id}");
 
@@ -138,7 +140,7 @@ class AchievementController extends Controller
     }
 
 
-    // Update Achievement by ID
+
     public function updateAchievement(Request $request, $id)
     {
         DB::beginTransaction();
@@ -191,6 +193,12 @@ class AchievementController extends Controller
                 $user = DB::table('users')->where('email', $email)->first();
 
                 if ($user && $user->google_id) {
+                    // Check if the user has role_id = 2
+                    if ($user->role_id != 2) {
+                        Log::warning("Skipped user: {$email} — they do not have role_id = 2.");
+                        continue;
+                    }
+
                     // Log user info
                     Log::info("Processing updated endorser: {$email}, Google ID: {$user->google_id}");
 
@@ -230,14 +238,13 @@ class AchievementController extends Controller
             // Commit the transaction
             DB::commit();
 
-            return response()->json(['message' => 'Achievement updated successfully','achievement_id'=>$id], 200);
+            return response()->json(['message' => 'Achievement updated successfully', 'achievement_id' => $id], 200);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error updating achievement: ' . $e->getMessage());
             return response()->json(['message' => 'Something went wrong.'], 500);
         }
     }
-
 
 
     // Delete Achievement by ID
