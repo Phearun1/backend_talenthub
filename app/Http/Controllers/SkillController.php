@@ -60,8 +60,12 @@ class SkillController extends Controller
                 $user = DB::table('users')->where('email', $email)->first();
 
                 if ($user && $user->google_id) {
-                    // Log user info
-                    Log::info("Processing endorser: {$email}, Google ID: {$user->google_id}");
+                    // Check if user has role_id = 2 (endorser role)
+                    if ($user->role_id != 2) {
+                        $skippedEndorsers[] = $email;
+                        Log::warning("Skipped user with email {$email} as they don't have role_id = 2.");
+                        continue;
+                    }
 
                     // Prepare data for skill_endorsers table
                     $endorserLinkData[] = [
@@ -142,8 +146,6 @@ class SkillController extends Controller
     }
 
 
-
-
     // Edit a skill
     public function updateSkill(Request $request, $id)
     {
@@ -207,6 +209,13 @@ class SkillController extends Controller
                 $user = DB::table('users')->where('email', $email)->first();
 
                 if ($user && $user->google_id) {
+                    // Check if the user has role_id = 2
+                    if ($user->role_id != 2) {
+                        $skippedEndorsers[] = $email;
+                        Log::warning("Skipped user with email {$email} — not role_id = 2.");
+                        continue;
+                    }
+
                     // Log user info
                     Log::info("Processing updated endorser: {$email}, Google ID: {$user->google_id}");
 
@@ -288,6 +297,7 @@ class SkillController extends Controller
             return response()->json(['message' => 'Something went wrong.', 'error' => $e->getMessage()], 500);
         }
     }
+
 
 
 
