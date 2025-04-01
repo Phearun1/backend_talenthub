@@ -105,7 +105,16 @@ class SkillController extends Controller
                 'portfolio_id' => $request->input('portfolio_id'),
                 'title' => $request->input('title'),
                 'description' => $request->input('description'),
-                'endorsers' => $request->input('endorsers', []),
+                'endorsers' => array_map(function ($endorser) use ($endorsementStatusData) {
+                    $status = collect($endorsementStatusData)->firstWhere('endorser_id', $endorser['user_id']);
+                    return [
+                        'id' => $endorser['user_id'],
+                        'name' => $endorser['name'] ?? 'Unknown', // Assuming name is not available in the current logic
+                        'email' => $endorser['email'],
+                        'status' => 'Pending', // Assuming status is always Pending for now
+                        'status_id' => $status['endorsement_status_id'] ?? 1,
+                    ];
+                }, $endorserLinkData),
                 'skipped_endorsers' => $skippedEndorsers
             ], 200);
         } catch (\Exception $e) {
@@ -225,7 +234,16 @@ class SkillController extends Controller
                 'portfolio_id' => $request->input('portfolio_id'),
                 'title' => $request->input('title'),
                 'description' => $request->input('description'),
-                'endorsers' => $request->input('endorsers', []),
+                'endorsers' => array_map(function ($endorser) use ($endorsementStatusData) {
+                    $status = collect($endorsementStatusData)->firstWhere('endorser_id', $endorser['user_id']);
+                    return [
+                        'id' => $endorser['user_id'],
+                        'name' => $endorser['name'] ?? 'Unknown', // Assuming name is not available in the current logic
+                        'email' => $endorser['email'],
+                        'status' => 'Pending', // Assuming status is always Pending for now
+                        'status_id' => $status['endorsement_status_id'] ?? 1,
+                    ];
+                }, $endorserLinkData),
                 'skipped_endorsers' => $skippedEndorsers
             ], 200);
         } catch (\Exception $e) {
