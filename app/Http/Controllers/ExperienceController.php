@@ -40,29 +40,71 @@ class ExperienceController extends Controller
             'description' => 'required|string|max:255',
             'start_month' => 'required|string|max:255',
             'start_year' => 'required|string|max:255',
-            'end_date' => 'nullable|string|max:255',
+            'end_month' => 'nullable|string|max:255',
             'end_year' => 'nullable|string|max:255',
+            'endorsers' => 'nullable|array', // Optional array of endorser emails
+            'endorsers.*' => 'email', // Validate each endorser's email
         ]);
-        if(!$request) {
-            return response()->json(['error' => 'Invalid request data'], 400);
-        }
 
         // Insert new experience record
-        DB::table('experiences')->insert([
+        $experienceId = DB::table('experiences')->insertGetId([
             'portfolio_id' => $request->portfolio_id,
             'company_id' => $request->company_id,
             'work_title' => $request->work_title,
             'description' => $request->description,
             'start_month' => $request->start_month,
             'start_year' => $request->start_year,
-            'end_date' => $request->end_date,
+            'end_month' => $request->end_month,
             'end_year' => $request->end_year,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
-        return response()->json(['message' => 'Experience created successfully!']);
+        // Handle endorsers if provided
+        $endorsers = $request->input('endorsers', []);
+        $endorserData = [];
+        $endorsementStatusData = [];
+
+        // Loop through each endorser's email and get their user_id
+        foreach ($endorsers as $email) {
+            $user = DB::table('users')->where('email', $email)->first();
+
+            if ($user) {
+                // Insert into experience_endorsers table
+                $endorserData[] = [
+                    'experience_id' => $experienceId,
+                    'user_id' => $user->id,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+
+                // Insert into experience_endorsement_statuses table (set status as 'Pending' by default)
+                $endorsementStatusData[] = [
+                    'experience_id' => $experienceId,
+                    'experience_status_id' => 1, // Assuming 1 is 'Pending'
+                    'endorser_id' => $user->id,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            } else {
+                return response()->json(['error' => "User with email {$email} not found."], 404);
+            }
+        }
+
+        // Insert endorsers into experience_endorsers
+        if (!empty($endorserData)) {
+            DB::table('experience_endorsers')->insert($endorserData);
+        }
+
+        // Insert endorsement statuses into experience_endorsement_statuses
+        if (!empty($endorsementStatusData)) {
+            DB::table('experience_endorsement_statuses')->insert($endorsementStatusData);
+        }
+
+        // Return success message
+        return response()->json(['message' => 'Experience and endorsers added successfully!']);
     }
+
 
     public function updateExperience(Request $request, $id)
     {
@@ -75,7 +117,7 @@ class ExperienceController extends Controller
             'end_date' => 'nullable|string|max:255',
             'end_year' => 'nullable|string|max:255',
         ]);
-        if(!$request) {
+        if (!$request) {
             return response()->json(['error' => 'Invalid request data'], 400);
         }
 
