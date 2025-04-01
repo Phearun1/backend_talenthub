@@ -29,6 +29,15 @@ class ExperienceController extends Controller
         return response()->json(['message' => 'Company created successfully'], 201);
     }
 
+    public function viewAllCompanies()
+    {
+        // Fetch all companies from the database
+        $companies = DB::table('companies')->get();
+
+        // Return the list of companies as a JSON response
+        return response()->json($companies, 200);
+    }
+
 
 
     public function createExperience(Request $request)

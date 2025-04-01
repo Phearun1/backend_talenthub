@@ -84,6 +84,7 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
     // Delete an experience
     Route::delete('/delete_experience/{id}', [ExperienceController::class, 'deleteExperience']);
 
+    Route::get('/view_all_companies', [ExperienceController::class, 'viewAllCompanies']);
 
 
     // Endorser route
