@@ -219,7 +219,7 @@ class SkillController extends Controller
             DB::commit();
 
             return response()->json([
-                
+                'message' => 'Skill updated successfully.',
                 'skill_id' => $id,
                 'portfolio_id' => $request->input('portfolio_id'),
                 'title' => $request->input('title'),
