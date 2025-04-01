@@ -72,8 +72,26 @@ class PortfolioController extends Controller
         $skills = DB::table('skills')->where('portfolio_id', $portfolioId)->get();
         $experiences = DB::table('experiences')->where('portfolio_id', $portfolioId)->get();
 
-        foreach($projects as $project){
-            
+        // Add experience data and endorsers
+        foreach ($experiences as $experience) {
+            // Get company name (if exists)
+            $company = DB::table('companies')->where('id', $experience->company_id)->first();
+            $experience->company_name = $company ? $company->company_name : 'Unknown';
+
+            // Add endorsers for each experience
+            $experience->endorsers = DB::table('experience_endorsers')
+                ->join('users', 'experience_endorsers.user_id', '=', 'users.google_id')
+                ->join('experience_endorsement_statuses', 'experience_endorsers.experience_id', '=', 'experience_endorsement_statuses.experience_id')
+                ->join('endorsement_statuses', 'experience_endorsement_statuses.experience_status_id', '=', 'endorsement_statuses.id')
+                ->select(
+                    'users.google_id as id',
+                    'users.name',
+                    'users.email',
+                    'endorsement_statuses.status as status',
+                    'endorsement_statuses.id as status_id'
+                )
+                ->where('experience_endorsers.experience_id', $experience->id)
+                ->get();
         }
 
         // Add achievement endorsers
@@ -105,15 +123,17 @@ class PortfolioController extends Controller
                 ->get();
         }
 
+        // Return the portfolio details, including experiences, skills, achievements, and education without endorsers for education
         return response()->json([
             'portfolio' => $portfolio,
             'projects' => $projects,
-            'education' => $education,
+            'education' => $education, // Return education data without endorsers
             'achievements' => $achievements,
             'skills' => $skills,
             'experiences' => $experiences,
         ]);
     }
+
 
     public function updatePortfolio(Request $request, $id)
     {
