@@ -48,6 +48,7 @@ class ExperienceController extends Controller
             'company_id' => 'required|integer',
             'work_title' => 'required|string|max:255',
             'description' => 'required|string|max:255',
+            'employment_type' => 'required|string|in:Internship,Part-time,Full-time,Freelance',
             'start_month' => 'required|string|max:255',
             'start_year' => 'required|string|max:255',
             'end_month' => 'nullable|string|max:255',
@@ -62,6 +63,7 @@ class ExperienceController extends Controller
             'company_id' => $request->company_id,
             'work_title' => $request->work_title,
             'description' => $request->description,
+            'employment_type' => $request->employment_type,
             'start_month' => $request->start_month,
             'start_year' => $request->start_year,
             'end_month' => $request->end_month,
@@ -154,6 +156,7 @@ class ExperienceController extends Controller
         $request->validate([
             'work_title' => 'required|string|max:255',
             'description' => 'required|string|max:255',
+            'employment_type' => 'required|string|in:Internship,Part-time,Full-time,Freelance',
             'start_month' => 'required|string|max:255',
             'start_year' => 'required|string|max:255',
             'end_month' => 'nullable|string|max:255',
@@ -166,6 +169,7 @@ class ExperienceController extends Controller
         $updated = DB::table('experiences')->where('id', $id)->update([
             'work_title' => $request->work_title,
             'description' => $request->description,
+            'employment_type' => $request->employment_type,
             'start_month' => $request->start_month,
             'start_year' => $request->start_year,
             'end_month' => $request->end_month,
