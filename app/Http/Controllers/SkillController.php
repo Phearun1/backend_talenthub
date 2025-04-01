@@ -298,11 +298,7 @@ class SkillController extends Controller
         }
     }
 
-
-
-
-
-
+    
     // Delete a skill
 
     public function deleteSkill($id)
