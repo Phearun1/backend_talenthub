@@ -173,9 +173,6 @@ class PortfolioController extends Controller
         ], 200);
     }
 
-
-
-
     public function deletePortfolio($id)
     {
         $portfolio = DB::table('portfolios')->where('id', $id)->delete();
