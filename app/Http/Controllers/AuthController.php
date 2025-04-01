@@ -39,10 +39,10 @@ class AuthController extends Controller
             'photo' => $request->query('photo'),
         ];
 
-        // ✅ First, try finding user by Google ID
+        // First, try finding user by Google ID
         $user = User::where('google_id', $profile['sub'])->first();
 
-        // ✅ If not found, try matching by email
+        // If not found, try matching by email
         if (!$user) {
             $user = User::where('email', $profile['email'])->first();
 
@@ -53,7 +53,7 @@ class AuthController extends Controller
             }
         }
 
-        // ✅ If user doesn't exist at all, create new
+        // If user doesn't exist at all, create new
         if (!$user) {
             // Assign role_id = 1 (student) for all users
             $roleId = 1;
@@ -67,7 +67,7 @@ class AuthController extends Controller
             ]);
         }
 
-        // 🔥 Auto-create portfolio only if not already created
+        // Auto-create portfolio only if not already created
         $existingPortfolio = Portfolio::where('user_id', $user->google_id)->first();
         if (!$existingPortfolio) {
             Portfolio::create([
@@ -80,10 +80,10 @@ class AuthController extends Controller
             ]);
         }
 
-        // ✅ Token & role check
+        // Token & role check
         $roleId = $user->role_id;
         if ($roleId === 1 || $roleId === 2) {
-            $expiresAt = Carbon::now()->addWeeks(2);
+            $expiresAt = Carbon::now()->addMonth();
             $token = $user->createToken('API Token')->plainTextToken;
 
             $user->tokens->last()->update([
