@@ -273,6 +273,8 @@ class SkillController extends Controller
                     ->where('id', $status->endorsement_status_id)
                     ->value('status');
 
+                return $status;
+
                 $endorsersDetails[] = [
                     'id' => $endorser['user_id'],
                     'name' => $user->name ?? 'Unknown',
