@@ -175,8 +175,6 @@ class SkillController extends Controller
                 ->where('portfolios.id', $skill->portfolio_id)
                 ->first();
 
-            return $portfolio;
-
             if (!$portfolio) {
                 return response()->json(['error' => 'Portfolio not found.'], 404);
             }
@@ -192,8 +190,8 @@ class SkillController extends Controller
             ]);
 
             // Clear existing endorsers and endorsements for the skill
-            DB::table('skill_endorsers')->where('skill_id', $id)->delete();
-            DB::table('skill_endorsement_statuses')->where('skill_id', $id)->delete();
+            // DB::table('skill_endorsers')->where('skill_id', $id)->delete();
+            // DB::table('skill_endorsement_statuses')->where('skill_id', $id)->delete();
 
             // Handle new endorsers
             $endorsers = $request->input('endorsers', []);
