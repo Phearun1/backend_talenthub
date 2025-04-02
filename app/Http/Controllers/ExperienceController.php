@@ -354,7 +354,7 @@ class ExperienceController extends Controller
                     // Insert or update into experience_endorsers table
                     $endorserData[] = [
                         'experience_id' => $id,
-                        'user_id' => $user->id,
+                        'user_id' => $user->google_id,
                         'created_at' => now(),
                         'updated_at' => now(),
                     ];
@@ -363,7 +363,7 @@ class ExperienceController extends Controller
                     $endorsementStatusData[] = [
                         'experience_id' => $id,
                         'experience_status_id' => 1, // Assuming 1 is 'Pending'
-                        'endorser_id' => $user->id,
+                        'endorser_id' => $user->google_id,
                         'created_at' => now(),
                         'updated_at' => now(),
                     ];
