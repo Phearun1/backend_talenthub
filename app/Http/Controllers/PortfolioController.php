@@ -81,7 +81,7 @@ class PortfolioController extends Controller
 
             // Add endorsers for each experience
             $experience->endorsers = DB::table('experience_endorsers')
-                ->join('users', 'experience_endorsers.user_id', '=', 'users.id')
+                ->join('users', 'experience_endorsers.user_id', '=', 'users.google_id')
                 ->join('experience_endorsement_statuses', 'experience_endorsers.experience_id', '=', 'experience_endorsement_statuses.experience_id')
                 ->join('endorsement_statuses', 'experience_endorsement_statuses.experience_status_id', '=', 'endorsement_statuses.id')
                 ->select(
