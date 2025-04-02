@@ -328,32 +328,32 @@ class SkillController extends Controller
                     ->where('id', $status->endorsement_status_id)
                     ->value('status');
                 // Check if the endorser_id already exists in the skill_endorsement_statuses table
-                // $existingEndorser = DB::table('skill_endorsement_statuses')
-                //     ->where('skill_id', $id)
-                //     ->where('endorser_id', $endorser['user_id'])
-                //     ->exists();
+                $existingEndorser = DB::table('skill_endorsement_statuses')
+                    ->where('skill_id', $id)
+                    ->where('endorser_id', $endorser['user_id'])
+                    ->exists();
 
-                // if ($existingEndorser) {
-                //     Log::info("Endorser with ID {$endorser['user_id']} already exists in skill_endorsement_statuses. Skipping.");
-                //     continue;
-                // }
-
-                // $endorsersDetails[] = [
-                //     'id' => $endorser['user_id'],
-                //     'name' => $user->name ?? 'Unknown',
-                //     'email' => $user->email ?? 'Unknown',
-                //     'status' => $statusName ?? 'Pending', // Default to 'Pending' if status not found
-                //     'status_id' => $status->endorsement_status_id ?? 1, // Default to 'Pending' status ID
-                // ];
-                if(!$email ){
-                    $endorsersDetails[] = [
-                        'id' => $endorser['user_id'],
-                        'name' => $user->name ?? 'Unknown',
-                        'email' => $user->email ?? 'Unknown',
-                        'status' => $statusName ?? 'Pending', // Default to 'Pending' if status not found
-                        'status_id' => $status->endorsement_status_id ?? 1, // Default to 'Pending' status ID
-                    ];
+                if ($existingEndorser) {
+                    Log::info("Endorser with ID {$endorser['user_id']} already exists in skill_endorsement_statuses. Skipping.");
+                    continue;
                 }
+
+                $endorsersDetails[] = [
+                    'id' => $endorser['user_id'],
+                    'name' => $user->name ?? 'Unknown',
+                    'email' => $user->email ?? 'Unknown',
+                    'status' => $statusName ?? 'Pending', // Default to 'Pending' if status not found
+                    'status_id' => $status->endorsement_status_id ?? 1, // Default to 'Pending' status ID
+                ];
+                // if(!$email ){
+                //     $endorsersDetails[] = [
+                //         'id' => $endorser['user_id'],
+                //         'name' => $user->name ?? 'Unknown',
+                //         'email' => $user->email ?? 'Unknown',
+                //         'status' => $statusName ?? 'Pending', // Default to 'Pending' if status not found
+                //         'status_id' => $status->endorsement_status_id ?? 1, // Default to 'Pending' status ID
+                //     ];
+                // }
                 
             }
 
