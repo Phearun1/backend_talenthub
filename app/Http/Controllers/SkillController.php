@@ -200,7 +200,7 @@ class SkillController extends Controller
             $skippedEndorsers = [];
 
             $getGoogleID = DB::table('users')->where('email', $endorsers)->value('google_id');
-            return $endorsers;
+            return ('ENDORSERS: ' . $getGoogleID);
             foreach ($endorsers as $email) {
                
                 
