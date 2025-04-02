@@ -92,7 +92,7 @@ class PortfolioController extends Controller
                 'endorsement_statuses.id as status_id'
             )
             ->where('experience_endorsers.experience_id', $experience->id)
-            ->groupBy('users.google_id') // Avoid duplicate endorsers
+            ->distinct() // Ensure distinct records
             ->get();
     }
 
@@ -105,7 +105,7 @@ class PortfolioController extends Controller
             ->join('endorsement_statuses', 'achievement_endorsement_statuses.endorsement_status_id', '=', 'endorsement_statuses.id')
             ->select('users.google_id as id', 'users.name', 'users.email', 'endorsement_statuses.status as status', 'endorsement_statuses.id as status_id')
             ->where('achievement_endorsers.achievement_id', $achievement->id)
-            ->groupBy('users.google_id') // Avoid duplicate endorsers
+            ->distinct() // Ensure distinct records
             ->get();
     }
 
@@ -123,7 +123,7 @@ class PortfolioController extends Controller
                 'endorsement_statuses.status as status'
             )
             ->where('skill_endorsement_statuses.skill_id', $skill->id)
-            ->groupBy('users.google_id') // Avoid duplicate endorsers
+            ->distinct() // Ensure distinct records
             ->get();
     }
 
@@ -137,6 +137,7 @@ class PortfolioController extends Controller
         'experiences' => $experiences,
     ]);
 }
+
 
 
 
