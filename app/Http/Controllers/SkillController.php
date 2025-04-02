@@ -199,9 +199,12 @@ class SkillController extends Controller
             $endorsementStatusData = [];
             $skippedEndorsers = [];
 
+            $getGoogleID = DB::table('users')->where('email', $endorsers)->value('google_id');
+
             foreach ($endorsers as $email) {
-                $getGoogleID = DB::table('users')->where('email', $email)->value('google_id');
-                return $getGoogleID;
+               
+                
+                
                 // Skip if the endorser is the portfolio owner (self-endorsement)
                 if ($email === $portfolio->owner_email) {
                     $skippedEndorsers[] = $email;
