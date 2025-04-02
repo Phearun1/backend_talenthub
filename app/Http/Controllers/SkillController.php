@@ -199,12 +199,61 @@ class SkillController extends Controller
             $endorsementStatusData = [];
             $skippedEndorsers = [];
 
-            $getGoogleID = DB::table('users')->where('email', $endorsers)->value('google_id');
-            return ('ENDORSERS: ' . $getGoogleID);
-            foreach ($endorsers as $email) {
-               
-                
-                
+            // $getGoogleID = DB::table('users')->where('email', $endorsers)->value('google_id');
+            // foreach ($endorsers as $email) {
+            //     // Skip if the endorser is the portfolio owner (self-endorsement)
+            //     if ($email === $portfolio->owner_email) {
+            //         $skippedEndorsers[] = $email;
+            //         Log::warning("Skipped self-endorsement: {$email}");
+            //         continue;
+            //     }
+
+            //     $user = DB::table('users')->where('email', $email)->first();
+
+            //     if ($user && $user->google_id) {
+            //         // Check if the user has role_id = 2
+            //         if ($user->role_id != 2) {
+            //             $skippedEndorsers[] = $email;
+            //             Log::warning("Skipped user with email {$email} — not role_id = 2.");
+            //             continue;
+            //         }
+
+            //         // Check if the endorser already exists in skill_endorsement_statuses
+            //         $existingEndorsement = DB::table('skill_endorsement_statuses')
+            //             ->where('skill_id', $id)
+            //             ->where('endorser_id', $user->google_id)
+            //             ->first();
+
+            //         if ($existingEndorsement) {
+            //             Log::info("Endorser with email {$email} already exists in skill_endorsement_statuses.");
+            //             continue;
+            //         }
+
+            //         // Log user info
+            //         Log::info("Processing updated endorser: {$email}, Google ID: {$user->google_id}");
+
+            //         // For skill_endorsers
+            //         $endorserLinkData[] = [
+            //             'skill_id' => $id,
+            //             'user_id' => $user->google_id,
+            //             'created_at' => now(),
+            //             'updated_at' => now(),
+            //         ];
+
+            //         // For skill_endorsement_statuses
+            //         $endorsementStatusData[] = [
+            //             'skill_id' => $id,
+            //             'endorser_id' => $user->google_id,
+            //             'endorsement_status_id' => 1, // Pending
+            //             'created_at' => now(),
+            //             'updated_at' => now(),
+            //         ];
+            //     } else {
+            //         $skippedEndorsers[] = $email;
+            //         Log::warning("Skipped endorser: {$email} — user not found or missing google_id.");
+            //     }
+            // }
+            foreach ($endorsers as $email) {     
                 // Skip if the endorser is the portfolio owner (self-endorsement)
                 if ($email === $portfolio->owner_email) {
                     $skippedEndorsers[] = $email;
@@ -278,8 +327,25 @@ class SkillController extends Controller
                 $statusName = DB::table('endorsement_statuses')
                     ->where('id', $status->endorsement_status_id)
                     ->value('status');
+                // Check if the endorser_id already exists in the skill_endorsement_statuses table
+                // $existingEndorser = DB::table('skill_endorsement_statuses')
+                //     ->where('skill_id', $id)
+                //     ->where('endorser_id', $endorser['user_id'])
+                //     ->exists();
 
-                
+                // if ($existingEndorser) {
+                //     Log::info("Endorser with ID {$endorser['user_id']} already exists in skill_endorsement_statuses. Skipping.");
+                //     continue;
+                // }
+
+                // $endorsersDetails[] = [
+                //     'id' => $endorser['user_id'],
+                //     'name' => $user->name ?? 'Unknown',
+                //     'email' => $user->email ?? 'Unknown',
+                //     'status' => $statusName ?? 'Pending', // Default to 'Pending' if status not found
+                //     'status_id' => $status->endorsement_status_id ?? 1, // Default to 'Pending' status ID
+                // ];
+                if(!$email )
                 $endorsersDetails[] = [
                     'id' => $endorser['user_id'],
                     'name' => $user->name ?? 'Unknown',
@@ -290,15 +356,15 @@ class SkillController extends Controller
             }
 
 
-            // return response()->json([
-            //     'message' => 'Skill updated successfully.',
-            //     'skill_id' => $id,
-            //     'portfolio_id' => $request->input('portfolio_id'),
-            //     'title' => $request->input('title'),
-            //     'description' => $request->input('description'),
-            //     'endorsers' => $endorsersDetails, // Detailed endorser data
-            //     'skipped_endorsers' => $skippedEndorsers
-            // ], 200);
+            return response()->json([
+                'message' => 'Skill updated successfully.',
+                'skill_id' => $id,
+                'portfolio_id' => $request->input('portfolio_id'),
+                'title' => $request->input('title'),
+                'description' => $request->input('description'),
+                'endorsers' => $endorsersDetails, // Detailed endorser data
+                'skipped_endorsers' => $skippedEndorsers
+            ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error updating skill: ' . $e->getMessage());
