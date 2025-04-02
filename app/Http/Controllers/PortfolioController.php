@@ -72,10 +72,6 @@ class PortfolioController extends Controller
         $skills = DB::table('skills')->where('portfolio_id', $portfolioId)->get();
         $experiences = DB::table('experiences')->where('portfolio_id', $portfolioId)->get();
 
-        // foreach ($education as $education){
-        //     $education->endorser = DB::table('education')->where()
-        // }
-        
         // Add experience data and endorsers
         foreach ($experiences as $experience) {
             // Get company name (if exists)
@@ -85,18 +81,18 @@ class PortfolioController extends Controller
 
             // Add endorsers for each experience
             $experience->endorsers = DB::table('experience_endorsers')
-            ->join('users', 'experience_endorsers.user_id', '=', 'users.google_id')
-            ->join('experience_endorsement_statuses', 'experience_endorsers.experience_id', '=', 'experience_endorsement_statuses.experience_id')
-            ->join('endorsement_statuses', 'experience_endorsement_statuses.experience_status_id', '=', 'endorsement_statuses.id')
-            ->select(
-                'users.google_id as id',
-                'users.name',
-                'users.email',
-                'endorsement_statuses.status as status',
-                'endorsement_statuses.id as status_id'
-            )
-            ->where('experience_endorsers.experience_id', $experience->id)
-            ->get();
+                ->join('users', 'experience_endorsers.user_id', '=', 'users.google_id')
+                ->join('experience_endorsement_statuses', 'experience_endorsers.experience_id', '=', 'experience_endorsement_statuses.experience_id')
+                ->join('endorsement_statuses', 'experience_endorsement_statuses.experience_status_id', '=', 'endorsement_statuses.id')
+                ->select(
+                    'users.google_id as id',
+                    'users.name',
+                    'users.email',
+                    'endorsement_statuses.status as status',
+                    'endorsement_statuses.id as status_id'
+                )
+                ->where('experience_endorsers.experience_id', $experience->id)
+                ->get();
         }
 
         // Add achievement endorsers
@@ -138,6 +134,7 @@ class PortfolioController extends Controller
             'experiences' => $experiences,
         ]);
     }
+
 
 
     public function updatePortfolio(Request $request, $id)
