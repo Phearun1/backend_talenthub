@@ -189,10 +189,6 @@ class SkillController extends Controller
             'updated_at' => now(),
         ]);
 
-        // Clear existing endorsers and endorsements for the skill
-        DB::table('skill_endorsers')->where('skill_id', $id)->delete();
-        DB::table('skill_endorsement_statuses')->where('skill_id', $id)->delete();
-
         // Handle new endorsers
         $endorsers = $request->input('endorsers', []);
         $endorserLinkData = [];
@@ -215,9 +211,19 @@ class SkillController extends Controller
             if (isset($getGoogleIDs[$email])) {
                 $getGoogleID = $getGoogleIDs[$email];  // Fetch google_id for the current email
                 
-                // Skip if the endorser already exists in the list of existing endorsers
-                if (!in_array($getGoogleID, $existingEndorsers)) {
-                    // Add new endorser to the list
+                // If the endorser already exists in the list of existing endorsers, just update
+                if (in_array($getGoogleID, $existingEndorsers)) {
+                    // Update the endorsement status if already exists
+                    DB::table('skill_endorsement_statuses')
+                        ->where('skill_id', $id)
+                        ->where('endorser_id', $getGoogleID)
+                        ->update([
+                            'endorsement_status_id' => 1, // Set status to Pending or any other update logic
+                            'updated_at' => now(),
+                        ]);
+                    Log::info("Updated endorser status for: {$email}, Google ID: {$getGoogleID}");
+                } else {
+                    // If the endorser does not exist, proceed to add new endorser
                     $endorserLinkData[] = [
                         'skill_id' => $id,
                         'user_id' => $getGoogleID,
@@ -235,9 +241,6 @@ class SkillController extends Controller
 
                     // Log the addition of the new endorser
                     Log::info("Added new endorser: {$email}, Google ID: {$getGoogleID}");
-                } else {
-                    // If the endorser already exists, log it and skip
-                    Log::info("Endorser with email {$email} already exists. Skipping.");
                 }
             } else {
                 Log::warning("Endorser with email {$email} not found in the database.");
@@ -308,8 +311,6 @@ class SkillController extends Controller
         return response()->json(['message' => 'Something went wrong.', 'error' => $e->getMessage()], 500);
     }
 }
-
-
 
     // Delete a skill
 
