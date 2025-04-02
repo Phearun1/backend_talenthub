@@ -345,14 +345,16 @@ class SkillController extends Controller
                 //     'status' => $statusName ?? 'Pending', // Default to 'Pending' if status not found
                 //     'status_id' => $status->endorsement_status_id ?? 1, // Default to 'Pending' status ID
                 // ];
-                if(!$email )
-                $endorsersDetails[] = [
-                    'id' => $endorser['user_id'],
-                    'name' => $user->name ?? 'Unknown',
-                    'email' => $user->email ?? 'Unknown',
-                    'status' => $statusName ?? 'Pending', // Default to 'Pending' if status not found
-                    'status_id' => $status->endorsement_status_id ?? 1, // Default to 'Pending' status ID
-                ];
+                if(!$email ){
+                    $endorsersDetails[] = [
+                        'id' => $endorser['user_id'],
+                        'name' => $user->name ?? 'Unknown',
+                        'email' => $user->email ?? 'Unknown',
+                        'status' => $statusName ?? 'Pending', // Default to 'Pending' if status not found
+                        'status_id' => $status->endorsement_status_id ?? 1, // Default to 'Pending' status ID
+                    ];
+                }
+                
             }
 
 
