@@ -248,7 +248,7 @@ class ExperienceController extends Controller
         // Fetch the endorsers and their details
         $endorsersDetails = [];
         foreach ($endorserData as $endorser) {
-            $user = DB::table('users')->where('id', $endorser['user_id'])->first();
+            $user = DB::table('users')->where('google_id', $endorser['user_id'])->first();
             $status = DB::table('experience_endorsement_statuses')
                 ->where('experience_id', $experienceId)
                 ->where('endorser_id', $endorser['user_id'])
@@ -396,7 +396,7 @@ class ExperienceController extends Controller
         // Fetch the updated endorsers and their details
         $endorsersDetails = [];
         foreach ($endorserData as $endorser) {
-            $user = DB::table('users')->where('id', $endorser['user_id'])->first();
+            $user = DB::table('users')->where('google_id', $endorser['user_id'])->first();
             $status = DB::table('experience_endorsement_statuses')
                 ->where('experience_id', $id)
                 ->where('endorser_id', $endorser['user_id'])
