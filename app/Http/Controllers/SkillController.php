@@ -351,6 +351,7 @@ class SkillController extends Controller
                     ->toArray();
 
                 if (!in_array($getGoogleID, $existingEndorsers)) {
+                    return ([$getGoogleID, $existingEndorsers]);
                     $endorsersDetails[] = [
                         'id' => $endorser['user_id'],
                         'name' => $user->name ?? 'Unknown',
@@ -360,11 +361,8 @@ class SkillController extends Controller
                     ];
                 } else {
                     Log::info("Endorser with email {$user->email} already exists. Skipping.");
-                }
-                
+                }          
             }
-
-
             return response()->json([
                 'message' => 'Skill updated successfully.',
                 'skill_id' => $id,
