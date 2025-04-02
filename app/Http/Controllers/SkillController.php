@@ -223,6 +223,16 @@ class SkillController extends Controller
                         ]);
                     Log::info("Updated endorser status for: {$email}, Google ID: {$getGoogleID}");
                 } else {
+                    // Check if the user has role_id = 2 (endorser)
+                    $user = DB::table('users')->where('google_id', $getGoogleID)->first();
+
+                    // Skip adding endorser if the user does not have role_id = 2
+                    if ($user && $user->role_id != 2) {
+                        $skippedEndorsers[] = $email;
+                        Log::warning("Skipped user with email {$email} — not role_id = 2.");
+                        continue;
+                    }
+
                     // If the endorser does not exist, proceed to add new endorser
                     $endorserLinkData[] = [
                         'skill_id' => $id,
@@ -275,13 +285,6 @@ class SkillController extends Controller
             $user = DB::table('users')->where('email', $email)->first();
 
             if ($user && $user->google_id) {
-                // Check if the user has role_id = 2 (endorser)
-                if ($user->role_id != 2) {
-                    $skippedEndorsers[] = $email;
-                    Log::warning("Skipped user with email {$email} — not role_id = 2.");
-                    continue;
-                }
-
                 // Add endorser details
                 $endorsersDetails[] = [
                     'id' => $user->google_id,
@@ -311,6 +314,7 @@ class SkillController extends Controller
         return response()->json(['message' => 'Something went wrong.', 'error' => $e->getMessage()], 500);
     }
 }
+
 
     // Delete a skill
 
