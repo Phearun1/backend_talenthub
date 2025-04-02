@@ -188,12 +188,13 @@ class SkillController extends Controller
                 'updated_at' => now(),
             ]);
 
-            // Get the existing endorsers for this skill
-            $existingEndorsers = DB::table('skill_endorsers')->where('skill_id', $id)->pluck('user_id')->toArray();
+            // Clear existing endorsers and endorsements for the skill
+            DB::table('skill_endorsers')->where('skill_id', $id)->delete();
+            DB::table('skill_endorsement_statuses')->where('skill_id', $id)->delete();
 
             // Handle new endorsers
             $endorsers = $request->input('endorsers', []);
-            $endorserData = [];
+            $endorserLinkData = [];
             $endorsementStatusData = [];
             $skippedEndorsers = [];
 
@@ -208,7 +209,7 @@ class SkillController extends Controller
                 $user = DB::table('users')->where('email', $email)->first();
 
                 if ($user && $user->google_id) {
-                    // Check if the user has role_id = 2 (endorser)
+                    // Check if the user has role_id = 2
                     if ($user->role_id != 2) {
                         $skippedEndorsers[] = $email;
                         Log::warning("Skipped user with email {$email} — not role_id = 2.");
@@ -218,48 +219,35 @@ class SkillController extends Controller
                     // Log user info
                     Log::info("Processing updated endorser: {$email}, Google ID: {$user->google_id}");
 
-                    // If the user is already an endorser, update the status, else add new entry
-                    if (in_array($user->google_id, $existingEndorsers)) {
-                        // Update existing endorsement status
-                        DB::table('skill_endorsement_statuses')
-                            ->where('skill_id', $id)
-                            ->where('endorser_id', $user->google_id)
-                            ->update([
-                                'experience_status_id' => 1, // Update to Pending
-                                'updated_at' => now(),
-                            ]);
-                        Log::info("Updated endorsement status for user: {$email}");
-                    } else {
-                        // For skill_endorsers (new endorser)
-                        $endorserData[] = [
-                            'skill_id' => $id,
-                            'user_id' => $user->google_id,
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ];
+                    // For skill_endorsers
+                    $endorserLinkData[] = [
+                        'skill_id' => $id,
+                        'user_id' => $user->google_id,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
 
-                        // For skill_endorsement_statuses (new status)
-                        $endorsementStatusData[] = [
-                            'skill_id' => $id,
-                            'endorser_id' => $user->google_id,
-                            'endorsement_status_id' => 1, // Pending status
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ];
-                    }
+                    // For skill_endorsement_statuses
+                    $endorsementStatusData[] = [
+                        'skill_id' => $id,
+                        'endorser_id' => $user->google_id,
+                        'endorsement_status_id' => 1, // Pending
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
                 } else {
                     $skippedEndorsers[] = $email;
                     Log::warning("Skipped endorser: {$email} — user not found or missing google_id.");
                 }
             }
 
-            // Insert new endorsers into skill_endorsers (only new ones)
-            if (!empty($endorserData)) {
-                DB::table('skill_endorsers')->insert($endorserData);
-                Log::info('Updated skill_endorsers:', $endorserData);
+            // Insert new endorsers into skill_endorsers
+            if (!empty($endorserLinkData)) {
+                DB::table('skill_endorsers')->insert($endorserLinkData);
+                Log::info('Updated skill_endorsers:', $endorserLinkData);
             }
 
-            // Insert new endorsement statuses into skill_endorsement_statuses (only new ones)
+            // Insert new endorsement statuses into skill_endorsement_statuses
             if (!empty($endorsementStatusData)) {
                 DB::table('skill_endorsement_statuses')->insert($endorsementStatusData);
                 Log::info('Updated skill_endorsement_statuses:', $endorsementStatusData);
@@ -270,7 +258,7 @@ class SkillController extends Controller
 
             // Fetch detailed information for endorsers
             $endorsersDetails = [];
-            foreach ($endorserData as $endorser) {
+            foreach ($endorserLinkData as $endorser) {
                 // Fetch user details
                 $user = DB::table('users')->where('google_id', $endorser['user_id'])->first();
 
@@ -309,7 +297,6 @@ class SkillController extends Controller
             return response()->json(['message' => 'Something went wrong.', 'error' => $e->getMessage()], 500);
         }
     }
-
 
 
     // Delete a skill
