@@ -351,7 +351,7 @@ class SkillController extends Controller
                     ->toArray();
 
                 if (!in_array($getGoogleID, $existingEndorsers)) {
-                    return ([$getGoogleID, $existingEndorsers]);
+                    return ('kdmv1');
                     $endorsersDetails[] = [
                         'id' => $endorser['user_id'],
                         'name' => $user->name ?? 'Unknown',
@@ -360,6 +360,7 @@ class SkillController extends Controller
                         'status_id' => $status->endorsement_status_id ?? 1, // Default to 'Pending' status ID
                     ];
                 } else {
+                    return ('kdmv2');
                     Log::info("Endorser with email {$user->email} already exists. Skipping.");
                 }
                 
