@@ -418,8 +418,6 @@ class ExperienceController extends Controller
     //     ], 200);
     // }
 
-
-
     public function updateExperience(Request $request, $id)
     {
         // Validate the input data
@@ -466,15 +464,21 @@ class ExperienceController extends Controller
             'updated_at' => now(),
         ]);
 
-        // Handle endorsers if provided
+        // Handle updating endorsers
         $endorsers = $request->input('endorsers', []);
         $endorserData = [];
         $endorsementStatusData = [];
         $skippedEndorsers = [];
 
+        // Remove existing endorsers for this experience
+        DB::table('experience_endorsers')->where('experience_id', $id)->delete();
+        DB::table('experience_endorsement_statuses')->where('experience_id', $id)->delete();
+
         foreach ($endorsers as $email) {
             $user = DB::table('users')->where('email', $email)->first();
+
             if ($user && $user->role_id == 2) {
+                // Insert new data into experience_endorsers and experience_endorsement_statuses tables
                 $endorserData[] = [
                     'experience_id' => $id,
                     'user_id' => $user->google_id,
@@ -538,6 +542,7 @@ class ExperienceController extends Controller
             'skipped_endorsers' => $skippedEndorsers
         ], 200);
     }
+
 
 
     public function deleteExperience($id)
