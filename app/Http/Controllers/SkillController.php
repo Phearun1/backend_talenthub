@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Portfolio;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -174,6 +175,8 @@ class SkillController extends Controller
                 ->where('portfolios.id', $skill->portfolio_id)
                 ->first();
 
+            return $portfolio;
+
             if (!$portfolio) {
                 return response()->json(['error' => 'Portfolio not found.'], 404);
             }
@@ -258,31 +261,31 @@ class SkillController extends Controller
 
             // Fetch detailed information for endorsers
             $endorsersDetails = [];
-            return $endorserLinkData;
-            // foreach ($endorserLinkData as $endorser) {
-            //     // Fetch user details
-            //     $user = DB::table('users')->where('google_id', $endorser['user_id'])->first();
+            foreach ($endorserLinkData as $endorser) {
+                // Fetch user details
+                $user = DB::table('users')->where('google_id', $endorser['user_id'])->first();
 
-            //     // Fetch endorsement status
-            //     $status = DB::table('skill_endorsement_statuses')
-            //         ->where('skill_id', $id)
-            //         ->where('endorser_id', $endorser['user_id'])
-            //         ->first();
+                // Fetch endorsement status
+                $status = DB::table('skill_endorsement_statuses')
+                    ->where('skill_id', $id)
+                    ->where('endorser_id', $endorser['user_id'])
+                    ->first();
 
-            //     // Fetch endorsement status name from the 'endorsement_statuses' table
-            //     $statusName = DB::table('endorsement_statuses')
-            //         ->where('id', $status->endorsement_status_id)
-            //         ->value('status');
+                // Fetch endorsement status name from the 'endorsement_statuses' table
+                $statusName = DB::table('endorsement_statuses')
+                    ->where('id', $status->endorsement_status_id)
+                    ->value('status');
 
+                
+                $endorsersDetails[] = [
+                    'id' => $endorser['user_id'],
+                    'name' => $user->name ?? 'Unknown',
+                    'email' => $user->email ?? 'Unknown',
+                    'status' => $statusName ?? 'Pending', // Default to 'Pending' if status not found
+                    'status_id' => $status->endorsement_status_id ?? 1, // Default to 'Pending' status ID
+                ];
+            }
 
-            //     $endorsersDetails[] = [
-            //         'id' => $endorser['user_id'],
-            //         'name' => $user->name ?? 'Unknown',
-            //         'email' => $user->email ?? 'Unknown',
-            //         'status' => $statusName ?? 'Pending', // Default to 'Pending' if status not found
-            //         'status_id' => $status->endorsement_status_id ?? 1, // Default to 'Pending' status ID
-            //     ];
-            // }
 
             // return response()->json([
             //     'message' => 'Skill updated successfully.',
