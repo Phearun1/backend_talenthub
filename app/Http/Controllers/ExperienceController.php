@@ -146,7 +146,7 @@ class ExperienceController extends Controller
     //         'message' => 'Experience and endorsers added successfully!',
     //         'experience' => $experience, // Return full experience details
     //         'endorsers' => $endorsersDetails,  // Return detailed endorser data
-           
+
     //     ], 200);
     // }
 
@@ -286,6 +286,7 @@ class ExperienceController extends Controller
         ], 200);
     }
 
+
     public function updateExperience(Request $request, $id)
     {
         // Validate the input data
@@ -301,8 +302,28 @@ class ExperienceController extends Controller
             'endorsers.*' => 'email', // Validate each endorser's email
         ]);
 
+        // Check if the experience exists
+        $experience = DB::table('experiences')->where('id', $id)->first();
+
+        if (!$experience) {
+            return response()->json(['error' => 'Experience not found.'], 404);
+        }
+
+        // Check if the company exists, otherwise create it
+        $company = DB::table('companies')->where('company_name', $request->company_name)->first();
+        if (!$company) {
+            $companyId = DB::table('companies')->insertGetId([
+                'company_name' => $request->company_name,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } else {
+            $companyId = $company->id;
+        }
+
         // Update the existing experience record
         $updated = DB::table('experiences')->where('id', $id)->update([
+            'company_id' => $companyId,
             'work_title' => $request->work_title,
             'description' => $request->description,
             'employment_type' => $request->employment_type,
@@ -314,11 +335,8 @@ class ExperienceController extends Controller
         ]);
 
         if (!$updated) {
-            return response()->json(['error' => 'Experience not found.'], 404);
+            return response()->json(['error' => 'Failed to update experience.'], 400);
         }
-
-        // Fetch the updated experience details
-        $experience = DB::table('experiences')->where('id', $id)->first();
 
         // Handle updating endorsers if provided
         $endorsers = $request->input('endorsers', []);
@@ -368,6 +386,13 @@ class ExperienceController extends Controller
             DB::table('experience_endorsement_statuses')->insert($endorsementStatusData);
         }
 
+        // Fetch the updated experience details
+        $experience = DB::table('experiences')
+            ->join('companies', 'experiences.company_id', '=', 'companies.id')
+            ->where('experiences.id', $id)
+            ->select('experiences.*', 'companies.company_name')
+            ->first();
+
         // Fetch the updated endorsers and their details
         $endorsersDetails = [];
         foreach ($endorserData as $endorser) {
@@ -393,8 +418,20 @@ class ExperienceController extends Controller
         // Return the updated experience details along with endorsers
         return response()->json([
             'message' => 'Experience updated successfully!',
-            'experience' => $experience, // Full updated experience details
+            'experience' => [
+                'id' => $experience->id,
+                'portfolio_id' => $experience->portfolio_id,
+                'company_name' => $experience->company_name,
+                'work_title' => $experience->work_title,
+                'description' => $experience->description,
+                'employment_type' => $experience->employment_type,
+                'start_month' => $experience->start_month,
+                'start_year' => $experience->start_year,
+                'end_month' => $experience->end_month,
+                'end_year' => $experience->end_year,
+            ],
             'endorsers' => $endorsersDetails, // Updated endorsers details
+            'skipped_endorsers' => $skippedEndorsers // List of skipped endorsers
         ], 200);
     }
 

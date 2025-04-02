@@ -77,21 +77,22 @@ class PortfolioController extends Controller
             // Get company name (if exists)
             $company = DB::table('companies')->where('id', $experience->company_id)->first();
             $experience->company_name = $company ? $company->company_name : 'Unknown';
+            unset($experience->company_id); // Remove company_id from the response
 
             // Add endorsers for each experience
             $experience->endorsers = DB::table('experience_endorsers')
-                ->join('users', 'experience_endorsers.user_id', '=', 'users.google_id')
-                ->join('experience_endorsement_statuses', 'experience_endorsers.experience_id', '=', 'experience_endorsement_statuses.experience_id')
-                ->join('endorsement_statuses', 'experience_endorsement_statuses.experience_status_id', '=', 'endorsement_statuses.id')
-                ->select(
-                    'users.google_id as id',
-                    'users.name',
-                    'users.email',
-                    'endorsement_statuses.status as status',
-                    'endorsement_statuses.id as status_id'
-                )
-                ->where('experience_endorsers.experience_id', $experience->id)
-                ->get();
+            ->join('users', 'experience_endorsers.user_id', '=', 'users.google_id')
+            ->join('experience_endorsement_statuses', 'experience_endorsers.experience_id', '=', 'experience_endorsement_statuses.experience_id')
+            ->join('endorsement_statuses', 'experience_endorsement_statuses.experience_status_id', '=', 'endorsement_statuses.id')
+            ->select(
+                'users.google_id as id',
+                'users.name',
+                'users.email',
+                'endorsement_statuses.status as status',
+                'endorsement_statuses.id as status_id'
+            )
+            ->where('experience_endorsers.experience_id', $experience->id)
+            ->get();
         }
 
         // Add achievement endorsers
