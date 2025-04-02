@@ -351,6 +351,7 @@ class SkillController extends Controller
                     ->toArray();
 
                 if (!in_array($email, $existingEndorsers)) {
+                    return ([$email, $existingEndorsers]);
                     $endorsersDetails[] = [
                         'id' => $endorser['user_id'],
                         'name' => $user->name ?? 'Unknown',
