@@ -543,126 +543,277 @@ class ExperienceController extends Controller
     //     ], 200);
     // }
 
-    public function updateExperience(Request $request, $id)
+//     public function updateExperience(Request $request, $id)
+// {
+//     DB::beginTransaction();
+
+//     try {
+//         $request->validate([
+//             'work_title' => 'required|string|max:255',
+//             'description' => 'required|string|max:255',
+//             'employment_type' => 'required|string|in:Internship,Part-time,Full-time,Freelance',
+//             'start_month' => 'required|string|max:255',
+//             'start_year' => 'required|string|max:255',
+//             'end_month' => 'nullable|string|max:255',
+//             'end_year' => 'nullable|string|max:255',
+//             'endorsers' => 'nullable|array',
+//             'endorsers.*' => 'email',
+//         ]);
+
+//         $experience = DB::table('experiences')->where('id', $id)->first();
+//         if (!$experience) {
+//             return response()->json(['error' => 'Experience not found.'], 404);
+//         }
+
+//         $company = DB::table('companies')->where('company_name', $request->company_name)->first();
+//         if (!$company) {
+//             $companyId = DB::table('companies')->insertGetId([
+//                 'company_name' => $request->company_name,
+//                 'created_at' => now(),
+//                 'updated_at' => now(),
+//             ]);
+//         } else {
+//             $companyId = $company->id;
+//         }
+
+//         DB::table('experiences')->where('id', $id)->update([
+//             'company_id' => $companyId,
+//             'work_title' => $request->work_title,
+//             'description' => $request->description,
+//             'employment_type' => $request->employment_type,
+//             'start_month' => $request->start_month,
+//             'start_year' => $request->start_year,
+//             'end_month' => $request->end_month,
+//             'end_year' => $request->end_year,
+//             'updated_at' => now(),
+//         ]);
+
+//         $endorsers = $request->input('endorsers', []);
+//         $validEndorsers = DB::table('users')
+//             ->whereIn('email', $endorsers)
+//             ->where('role_id', 2)
+//             ->whereNotNull('google_id')
+//             ->get();
+
+//         $validGoogleIDs = $validEndorsers->pluck('google_id')->toArray();
+
+//         $existingGoogleIDs = DB::table('experience_endorsement_statuses')
+//             ->where('experience_id', $id)
+//             ->pluck('endorser_id')
+//             ->toArray();
+
+//         $toRemove = array_diff($existingGoogleIDs, $validGoogleIDs);
+//         DB::table('experience_endorsers')->where('experience_id', $id)->whereIn('user_id', $toRemove)->delete();
+//         DB::table('experience_endorsement_statuses')->where('experience_id', $id)->whereIn('endorser_id', $toRemove)->delete();
+
+//         foreach ($validEndorsers as $user) {
+//             $googleId = $user->google_id;
+
+//             if (in_array($googleId, $existingGoogleIDs)) {
+//                 DB::table('experience_endorsement_statuses')
+//                     ->where('experience_id', $id)
+//                     ->where('endorser_id', $googleId)
+//                     ->update([
+//                         'experience_status_id' => 1,
+//                         'updated_at' => now(),
+//                     ]);
+//             } else {
+//                 DB::table('experience_endorsers')->insertOrIgnore([
+//                     'experience_id' => $id,
+//                     'user_id' => $googleId,
+//                     'created_at' => now(),
+//                     'updated_at' => now(),
+//                 ]);
+
+//                 DB::table('experience_endorsement_statuses')->insertOrIgnore([
+//                     'experience_id' => $id,
+//                     'endorser_id' => $googleId,
+//                     'experience_status_id' => 1,
+//                     'created_at' => now(),
+//                     'updated_at' => now(),
+//                 ]);
+//             }
+//         }
+
+//         DB::commit();
+
+//         $endorsersDetails = $validEndorsers->map(function ($user) {
+//             return [
+//                 'id' => $user->google_id,
+//                 'name' => $user->name ?? 'Unknown',
+//                 'email' => $user->email ?? 'Unknown',
+//                 'status' => 'Pending',
+//                 'status_id' => 1,
+//             ];
+//         });
+
+//         return response()->json([
+//             'message' => 'Experience updated successfully!',
+//             'experience' => DB::table('experiences')
+//                 ->join('companies', 'experiences.company_id', '=', 'companies.id')
+//                 ->where('experiences.id', $id)
+//                 ->select('experiences.*', 'companies.company_name')
+//                 ->first(),
+//             'endorsers' => $endorsersDetails,
+//             'skipped_endorsers' => array_diff($endorsers, $validEndorsers->pluck('email')->toArray())
+//         ], 200);
+//     } catch (\Exception $e) {
+//         DB::rollBack();
+//         Log::error('Error updating experience: ' . $e->getMessage());
+//         return response()->json(['message' => 'Something went wrong.', 'error' => $e->getMessage()], 500);
+//     }
+// }
+
+public function updateExperience(Request $request, $id)
 {
-    DB::beginTransaction();
+    // Validate the input data
+    $request->validate([
+        'work_title' => 'required|string|max:255',
+        'description' => 'required|string|max:255',
+        'employment_type' => 'required|string|in:Internship,Part-time,Full-time,Freelance',
+        'start_month' => 'required|string|max:255',
+        'start_year' => 'required|string|max:255',
+        'end_month' => 'nullable|string|max:255',
+        'end_year' => 'nullable|string|max:255',
+        'endorsers' => 'nullable|array',
+        'endorsers.*' => 'email',
+    ]);
 
-    try {
-        $request->validate([
-            'work_title' => 'required|string|max:255',
-            'description' => 'required|string|max:255',
-            'employment_type' => 'required|string|in:Internship,Part-time,Full-time,Freelance',
-            'start_month' => 'required|string|max:255',
-            'start_year' => 'required|string|max:255',
-            'end_month' => 'nullable|string|max:255',
-            'end_year' => 'nullable|string|max:255',
-            'endorsers' => 'nullable|array',
-            'endorsers.*' => 'email',
-        ]);
+    $experience = DB::table('experiences')->where('id', $id)->first();
+    if (!$experience) {
+        return response()->json(['error' => 'Experience not found.'], 404);
+    }
 
-        $experience = DB::table('experiences')->where('id', $id)->first();
-        if (!$experience) {
-            return response()->json(['error' => 'Experience not found.'], 404);
+    $company = DB::table('companies')->where('company_name', $request->company_name)->first();
+    $companyId = $company ? $company->id : DB::table('companies')->insertGetId([
+        'company_name' => $request->company_name,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    DB::table('experiences')->where('id', $id)->update([
+        'company_id' => $companyId,
+        'work_title' => $request->work_title,
+        'description' => $request->description,
+        'employment_type' => $request->employment_type,
+        'start_month' => $request->start_month,
+        'start_year' => $request->start_year,
+        'end_month' => $request->end_month,
+        'end_year' => $request->end_year,
+        'updated_at' => now(),
+    ]);
+
+    $endorsers = $request->input('endorsers', []);
+    $endorserGoogleIDs = DB::table('users')
+        ->whereIn('email', $endorsers)
+        ->pluck('google_id', 'email');
+
+    $validEndorsers = DB::table('users')
+        ->whereIn('email', $endorsers)
+        ->where('role_id', 2)
+        ->pluck('google_id')
+        ->toArray();
+
+    $existingEndorsers = DB::table('experience_endorsement_statuses')
+        ->where('experience_id', $id)
+        ->pluck('experience_status_id', 'endorser_id')
+        ->toArray();
+
+    $newEndorsers = [];
+    $newStatuses = [];
+    $skippedEndorsers = [];
+
+    foreach ($endorsers as $email) {
+        $googleId = $endorserGoogleIDs[$email] ?? null;
+        if (!$googleId || !in_array($googleId, $validEndorsers)) {
+            $skippedEndorsers[] = $email;
+            continue;
         }
 
-        $company = DB::table('companies')->where('company_name', $request->company_name)->first();
-        if (!$company) {
-            $companyId = DB::table('companies')->insertGetId([
-                'company_name' => $request->company_name,
+        if (!array_key_exists($googleId, $existingEndorsers)) {
+            $newEndorsers[] = [
+                'experience_id' => $id,
+                'user_id' => $googleId,
                 'created_at' => now(),
                 'updated_at' => now(),
-            ]);
-        } else {
-            $companyId = $company->id;
-        }
-
-        DB::table('experiences')->where('id', $id)->update([
-            'company_id' => $companyId,
-            'work_title' => $request->work_title,
-            'description' => $request->description,
-            'employment_type' => $request->employment_type,
-            'start_month' => $request->start_month,
-            'start_year' => $request->start_year,
-            'end_month' => $request->end_month,
-            'end_year' => $request->end_year,
-            'updated_at' => now(),
-        ]);
-
-        $endorsers = $request->input('endorsers', []);
-        $validEndorsers = DB::table('users')
-            ->whereIn('email', $endorsers)
-            ->where('role_id', 2)
-            ->whereNotNull('google_id')
-            ->get();
-
-        $validGoogleIDs = $validEndorsers->pluck('google_id')->toArray();
-
-        $existingGoogleIDs = DB::table('experience_endorsement_statuses')
-            ->where('experience_id', $id)
-            ->pluck('endorser_id')
-            ->toArray();
-
-        $toRemove = array_diff($existingGoogleIDs, $validGoogleIDs);
-        DB::table('experience_endorsers')->where('experience_id', $id)->whereIn('user_id', $toRemove)->delete();
-        DB::table('experience_endorsement_statuses')->where('experience_id', $id)->whereIn('endorser_id', $toRemove)->delete();
-
-        foreach ($validEndorsers as $user) {
-            $googleId = $user->google_id;
-
-            if (in_array($googleId, $existingGoogleIDs)) {
-                DB::table('experience_endorsement_statuses')
-                    ->where('experience_id', $id)
-                    ->where('endorser_id', $googleId)
-                    ->update([
-                        'experience_status_id' => 1,
-                        'updated_at' => now(),
-                    ]);
-            } else {
-                DB::table('experience_endorsers')->insertOrIgnore([
-                    'experience_id' => $id,
-                    'user_id' => $googleId,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-
-                DB::table('experience_endorsement_statuses')->insertOrIgnore([
-                    'experience_id' => $id,
-                    'endorser_id' => $googleId,
-                    'experience_status_id' => 1,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            }
-        }
-
-        DB::commit();
-
-        $endorsersDetails = $validEndorsers->map(function ($user) {
-            return [
-                'id' => $user->google_id,
-                'name' => $user->name ?? 'Unknown',
-                'email' => $user->email ?? 'Unknown',
-                'status' => 'Pending',
-                'status_id' => 1,
             ];
-        });
-
-        return response()->json([
-            'message' => 'Experience updated successfully!',
-            'experience' => DB::table('experiences')
-                ->join('companies', 'experiences.company_id', '=', 'companies.id')
-                ->where('experiences.id', $id)
-                ->select('experiences.*', 'companies.company_name')
-                ->first(),
-            'endorsers' => $endorsersDetails,
-            'skipped_endorsers' => array_diff($endorsers, $validEndorsers->pluck('email')->toArray())
-        ], 200);
-    } catch (\Exception $e) {
-        DB::rollBack();
-        Log::error('Error updating experience: ' . $e->getMessage());
-        return response()->json(['message' => 'Something went wrong.', 'error' => $e->getMessage()], 500);
+            $newStatuses[] = [
+                'experience_id' => $id,
+                'endorser_id' => $googleId,
+                'experience_status_id' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+        } elseif ($existingEndorsers[$googleId] !== 2) {
+            DB::table('experience_endorsement_statuses')
+                ->where('experience_id', $id)
+                ->where('endorser_id', $googleId)
+                ->update([
+                    'experience_status_id' => 1,
+                    'updated_at' => now(),
+                ]);
+        }
     }
+
+    // Remove endorsers not included in the current request
+    $emailsGoogleIds = array_values($endorserGoogleIDs->toArray());
+    $toRemove = array_diff(array_keys($existingEndorsers), $emailsGoogleIds);
+    if (!empty($toRemove)) {
+        DB::table('experience_endorsers')
+            ->where('experience_id', $id)
+            ->whereIn('user_id', $toRemove)
+            ->delete();
+
+        DB::table('experience_endorsement_statuses')
+            ->where('experience_id', $id)
+            ->whereIn('endorser_id', $toRemove)
+            ->delete();
+    }
+
+    if (!empty($newEndorsers)) {
+        DB::table('experience_endorsers')->insert($newEndorsers);
+    }
+
+    if (!empty($newStatuses)) {
+        DB::table('experience_endorsement_statuses')->insert($newStatuses);
+    }
+
+    $experience = DB::table('experiences')
+        ->join('companies', 'experiences.company_id', '=', 'companies.id')
+        ->where('experiences.id', $id)
+        ->select('experiences.*', 'companies.company_name')
+        ->first();
+
+    $endorsersDetails = [];
+    foreach ($endorserGoogleIDs as $email => $googleId) {
+        if (!in_array($googleId, $validEndorsers)) continue;
+        $user = DB::table('users')->where('google_id', $googleId)->first();
+        $status = DB::table('experience_endorsement_statuses')
+            ->where('experience_id', $id)
+            ->where('endorser_id', $googleId)
+            ->first();
+
+        $statusName = DB::table('endorsement_statuses')
+            ->where('id', $status->experience_status_id)
+            ->value('status');
+
+        $endorsersDetails[] = [
+            'id' => $googleId,
+            'name' => $user->name ?? 'Unknown',
+            'email' => $user->email ?? 'Unknown',
+            'status' => $statusName ?? 'Pending',
+            'status_id' => $status->experience_status_id ?? 1,
+        ];
+    }
+
+    return response()->json([
+        'message' => 'Experience updated successfully!',
+        'experience' => $experience,
+        'endorsers' => $endorsersDetails,
+        'skipped_endorsers' => $skippedEndorsers
+    ], 200);
 }
+
 
 
     public function deleteExperience($id)
