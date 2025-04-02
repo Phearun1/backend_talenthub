@@ -360,6 +360,7 @@ class SkillController extends Controller
                         'status_id' => $status->endorsement_status_id ?? 1, // Default to 'Pending' status ID
                     ];
                 } else {
+                    return ([$getGoogleID, $existingEndorsers]);
                     Log::info("Endorser with email {$user->email} already exists. Skipping.");
                 }   
                 return response()->json([
