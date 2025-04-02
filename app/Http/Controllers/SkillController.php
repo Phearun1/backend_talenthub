@@ -365,15 +365,15 @@ class SkillController extends Controller
             }
 
 
-            // return response()->json([
-            //     'message' => 'Skill updated successfully.',
-            //     'skill_id' => $id,
-            //     'portfolio_id' => $request->input('portfolio_id'),
-            //     'title' => $request->input('title'),
-            //     'description' => $request->input('description'),
-            //     'endorsers' => $endorsersDetails, // Detailed endorser data
-            //     'skipped_endorsers' => $skippedEndorsers
-            // ], 200);
+            return response()->json([
+                'message' => 'Skill updated successfully.',
+                'skill_id' => $id,
+                'portfolio_id' => $request->input('portfolio_id'),
+                'title' => $request->input('title'),
+                'description' => $request->input('description'),
+                'endorsers' => $endorsersDetails, // Detailed endorser data
+                'skipped_endorsers' => $skippedEndorsers
+            ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error updating skill: ' . $e->getMessage());
