@@ -350,31 +350,47 @@ class SkillController extends Controller
         ]);
 
         $endorsers = $request->input('endorsers', []);
+        $endorserGoogleIDs = DB::table('users')
+            ->whereIn('email', $endorsers)
+            ->pluck('google_id', 'email');
+
         $validEndorsers = DB::table('users')
             ->whereIn('email', $endorsers)
             ->where('role_id', 2)
-            ->whereNotNull('google_id')
-            ->get();
-
-        $validGoogleIDs = $validEndorsers->pluck('google_id')->toArray();
-
-        // Existing endorsers
-        $existingGoogleIDs = DB::table('skill_endorsement_statuses')
-            ->where('skill_id', $id)
-            ->pluck('endorser_id')
+            ->pluck('google_id')
             ->toArray();
 
-        // Remove endorsers that are no longer in the updated list
-        $toRemove = array_diff($existingGoogleIDs, $validGoogleIDs);
-        DB::table('skill_endorsers')->where('skill_id', $id)->whereIn('user_id', $toRemove)->delete();
-        DB::table('skill_endorsement_statuses')->where('skill_id', $id)->whereIn('endorser_id', $toRemove)->delete();
+        $existingEndorsers = DB::table('skill_endorsement_statuses')
+            ->where('skill_id', $id)
+            ->pluck('endorsement_status_id', 'endorser_id')
+            ->toArray();
 
-        // Add or update endorsers
-        foreach ($validEndorsers as $user) {
-            $googleId = $user->google_id;
+        $newEndorsers = [];
+        $newStatuses = [];
+        $skippedEndorsers = [];
 
-            if (in_array($googleId, $existingGoogleIDs)) {
-                // Just update status if exists
+        foreach ($endorsers as $email) {
+            $googleId = $endorserGoogleIDs[$email] ?? null;
+            if (!$googleId || !in_array($googleId, $validEndorsers)) {
+                $skippedEndorsers[] = $email;
+                continue;
+            }
+
+            if (!array_key_exists($googleId, $existingEndorsers)) {
+                $newEndorsers[] = [
+                    'skill_id' => $id,
+                    'user_id' => $googleId,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+                $newStatuses[] = [
+                    'skill_id' => $id,
+                    'endorser_id' => $googleId,
+                    'endorsement_status_id' => 1,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            } elseif ($existingEndorsers[$googleId] !== 2) {
                 DB::table('skill_endorsement_statuses')
                     ->where('skill_id', $id)
                     ->where('endorser_id', $googleId)
@@ -382,46 +398,63 @@ class SkillController extends Controller
                         'endorsement_status_id' => 1,
                         'updated_at' => now(),
                     ]);
-            } else {
-                // Insert only if not exists
-                DB::table('skill_endorsers')->insertOrIgnore([
-                    'skill_id' => $id,
-                    'user_id' => $googleId,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-
-                DB::table('skill_endorsement_statuses')->insertOrIgnore([
-                    'skill_id' => $id,
-                    'endorser_id' => $googleId,
-                    'endorsement_status_id' => 1,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
             }
+        }
+
+        $emailsGoogleIds = array_values($endorserGoogleIDs->toArray());
+        $toRemove = array_diff(array_keys($existingEndorsers), $emailsGoogleIds);
+        if (!empty($toRemove)) {
+            DB::table('skill_endorsers')
+                ->where('skill_id', $id)
+                ->whereIn('user_id', $toRemove)
+                ->delete();
+
+            DB::table('skill_endorsement_statuses')
+                ->where('skill_id', $id)
+                ->whereIn('endorser_id', $toRemove)
+                ->where('endorsement_status_id', '!=', 2) // preserve Approved endorsers
+                ->delete();
+        }
+
+        if (!empty($newEndorsers)) {
+            DB::table('skill_endorsers')->insert($newEndorsers);
+        }
+
+        if (!empty($newStatuses)) {
+            DB::table('skill_endorsement_statuses')->insert($newStatuses);
         }
 
         DB::commit();
 
-        // Return valid endorsers only
-        $endorsersDetails = $validEndorsers->map(function ($user) {
-            return [
-                'id' => $user->google_id,
+        $endorsersDetails = [];
+        foreach ($endorserGoogleIDs as $email => $googleId) {
+            if (!in_array($googleId, $validEndorsers)) continue;
+            $user = DB::table('users')->where('google_id', $googleId)->first();
+            $status = DB::table('skill_endorsement_statuses')
+                ->where('skill_id', $id)
+                ->where('endorser_id', $googleId)
+                ->first();
+
+            $statusName = DB::table('endorsement_statuses')
+                ->where('id', $status->endorsement_status_id)
+                ->value('status');
+
+            $endorsersDetails[] = [
+                'id' => $googleId,
                 'name' => $user->name ?? 'Unknown',
                 'email' => $user->email ?? 'Unknown',
-                'status' => 'Pending',
-                'status_id' => 1,
+                'status' => $statusName ?? 'Pending',
+                'status_id' => $status->endorsement_status_id ?? 1,
             ];
-        });
+        }
 
         return response()->json([
             'message' => 'Skill updated successfully.',
             'skill_id' => $id,
-            'portfolio_id' => $skill->portfolio_id,
             'title' => $request->input('title'),
             'description' => $request->input('description'),
             'endorsers' => $endorsersDetails,
-            'skipped_endorsers' => array_diff($endorsers, $validEndorsers->pluck('email')->toArray())
+            'skipped_endorsers' => $skippedEndorsers
         ], 200);
     } catch (\Exception $e) {
         DB::rollBack();
@@ -429,6 +462,7 @@ class SkillController extends Controller
         return response()->json(['message' => 'Something went wrong.', 'error' => $e->getMessage()], 500);
     }
 }
+
 
 
 
