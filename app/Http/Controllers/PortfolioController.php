@@ -79,9 +79,13 @@ class PortfolioController extends Controller
         // Add experience data and endorsers
         foreach ($experiences as $experience) {
             // Get company name (if exists)
-            $company = DB::table('companies')->where('id', $experience->company_id)->first();
-            $experience->company_name = $company ? $company->company_name : 'Unknown';
-            unset($experience->company_id); // Remove company_id from the response
+            if (isset($experience->company_id)) {
+                $company = DB::table('companies')->where('id', $experience->company_id)->first();
+                $experience->company_name = $company ? $company->company_name : 'Unknown';
+                unset($experience->company_id); // Remove company_id from the response
+            } else {
+                $experience->company_name = 'Unknown';
+            }
 
             // Add endorsers for each experience
             $experience->endorsers = DB::table('experience_endorsers')
