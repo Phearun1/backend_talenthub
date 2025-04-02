@@ -148,6 +148,174 @@ class SkillController extends Controller
 
 
     // Edit a skill
+    // public function updateSkill(Request $request, $id)
+    // {
+    //     DB::beginTransaction();
+
+    //     try {
+    //         // Validate the incoming request
+    //         $request->validate([
+    //             'title' => 'required|string|max:255',
+    //             'description' => 'required|string|max:255',
+    //             'endorsers' => 'nullable|array',
+    //             'endorsers.*' => 'email',
+    //         ]);
+
+    //         // Check if skill exists
+    //         $skill = DB::table('skills')->where('id', $id)->first();
+
+    //         if (!$skill) {
+    //             return response()->json(['error' => 'Skill not found.'], 404);
+    //         }
+
+    //         // Get the portfolio owner's details
+    //         $portfolio = DB::table('portfolios')
+    //             ->join('users', 'portfolios.user_id', '=', 'users.google_id')
+    //             ->select('users.email as owner_email')
+    //             ->where('portfolios.id', $skill->portfolio_id)
+    //             ->first();
+
+    //         if (!$portfolio) {
+    //             return response()->json(['error' => 'Portfolio not found.'], 404);
+    //         }
+
+    //         // Log the incoming request data
+    //         Log::info('EditSkill Request:', $request->all());
+
+    //         // Update the skill in the database
+    //         DB::table('skills')->where('id', $id)->update([
+    //             'title' => $request->input('title'),
+    //             'description' => $request->input('description'),
+    //             'updated_at' => now(),
+    //         ]);
+
+    //         // Handle new endorsers
+    //         $endorsers = $request->input('endorsers', []);
+    //         $endorserLinkData = [];
+    //         $endorsementStatusData = [];
+    //         $skippedEndorsers = [];
+
+    //         $emails = $endorsers;  // Array of emails from the request
+    //         $getGoogleIDs = DB::table('users')
+    //             ->whereIn('email', $emails) // This fetches the google_id for all emails
+    //             ->pluck('google_id', 'email') // Plucks google_id using email as the key
+    //             ->toArray();
+
+    //         // Get the existing endorsers for the skill
+    //         $existingEndorsers = DB::table('skill_endorsement_statuses')
+    //             ->where('skill_id', $id)
+    //             ->pluck('endorser_id')
+    //             ->toArray();
+
+    //         foreach ($emails as $email) {
+    //             if (isset($getGoogleIDs[$email])) {
+    //                 $getGoogleID = $getGoogleIDs[$email];  // Fetch google_id for the current email
+
+    //                 // Fetch user details for the current email
+    //                 $user = DB::table('users')->where('google_id', $getGoogleID)->first();
+
+    //                 // Check if the user exists and has role_id = 2
+    //                 if ($user && $user->role_id == 2) {
+    //                     // If the endorser already exists in the list of existing endorsers, just update
+    //                     if (in_array($getGoogleID, $existingEndorsers)) {
+    //                         // Update the endorsement status if already exists
+    //                         DB::table('skill_endorsement_statuses')
+    //                             ->where('skill_id', $id)
+    //                             ->where('endorser_id', $getGoogleID)
+    //                             ->update([
+    //                                 'endorsement_status_id' => 1, // Set status to Pending or any other update logic
+    //                                 'updated_at' => now(),
+    //                             ]);
+    //                         Log::info("Updated endorser status for: {$email}, Google ID: {$getGoogleID}");
+    //                     } else {
+    //                         // If the endorser does not exist, proceed to add new endorser
+    //                         $endorserLinkData[] = [
+    //                             'skill_id' => $id,
+    //                             'user_id' => $getGoogleID,
+    //                             'created_at' => now(),
+    //                             'updated_at' => now(),
+    //                         ];
+
+    //                         $endorsementStatusData[] = [
+    //                             'skill_id' => $id,
+    //                             'endorser_id' => $getGoogleID,
+    //                             'endorsement_status_id' => 1, // Pending status
+    //                             'created_at' => now(),
+    //                             'updated_at' => now(),
+    //                         ];
+
+    //                         // Log the addition of the new endorser
+    //                         Log::info("Added new endorser: {$email}, Google ID: {$getGoogleID}");
+    //                     }
+    //                 } else {
+    //                     // If the user doesn't have role_id = 2, skip the insertion
+    //                     $skippedEndorsers[] = $email;
+    //                     Log::warning("Skipped user with email {$email} — not role_id = 2.");
+    //                 }
+    //             } else {
+    //                 Log::warning("Endorser with email {$email} not found in the database.");
+    //             }
+    //         }
+
+
+    //         // Insert new endorsers into skill_endorsers
+    //         if (!empty($endorserLinkData)) {
+    //             DB::table('skill_endorsers')->insert($endorserLinkData);
+    //             Log::info('Updated skill_endorsers:', $endorserLinkData);
+    //         }
+
+    //         // Insert new endorsement statuses into skill_endorsement_statuses
+    //         if (!empty($endorsementStatusData)) {
+    //             DB::table('skill_endorsement_statuses')->insert($endorsementStatusData);
+    //             Log::info('Updated skill_endorsement_statuses:', $endorsementStatusData);
+    //         }
+
+    //         // Commit the transaction
+    //         DB::commit();
+
+    //         // Fetch detailed information for endorsers
+    //         $endorsersDetails = [];
+    //         foreach ($endorsers as $email) {
+    //             // Skip if the endorser is the portfolio owner (self-endorsement)
+    //             if ($email === $portfolio->owner_email) {
+    //                 $skippedEndorsers[] = $email;
+    //                 Log::warning("Skipped self-endorsement: {$email}");
+    //                 continue;
+    //             }
+
+    //             $user = DB::table('users')->where('email', $email)->first();
+
+    //             if ($user && $user->google_id) {
+    //                 // Add endorser details
+    //                 $endorsersDetails[] = [
+    //                     'id' => $user->google_id,
+    //                     'name' => $user->name ?? 'Unknown',
+    //                     'email' => $user->email ?? 'Unknown',
+    //                     'status' => 'Pending',  // Default to 'Pending' (it can be fetched based on your requirement)
+    //                     'status_id' => 1, // Default status ID (Pending)
+    //                 ];
+    //             } else {
+    //                 $skippedEndorsers[] = $email;
+    //                 Log::warning("Skipped endorser: {$email} — user not found or missing google_id.");
+    //             }
+    //         }
+
+    //         return response()->json([
+    //             'message' => 'Skill updated successfully.',
+    //             'skill_id' => $id,
+    //             'portfolio_id' => $request->input('portfolio_id'),
+    //             'title' => $request->input('title'),
+    //             'description' => $request->input('description'),
+    //             'endorsers' => $endorsersDetails, // Detailed endorser data
+    //             'skipped_endorsers' => $skippedEndorsers
+    //         ], 200);
+    //     } catch (\Exception $e) {
+    //         DB::rollBack();
+    //         Log::error('Error updating skill: ' . $e->getMessage());
+    //         return response()->json(['message' => 'Something went wrong.', 'error' => $e->getMessage()], 500);
+    //     }
+    // }
+
     public function updateSkill(Request $request, $id)
     {
         DB::beginTransaction();
@@ -163,12 +331,11 @@ class SkillController extends Controller
 
             // Check if skill exists
             $skill = DB::table('skills')->where('id', $id)->first();
-
             if (!$skill) {
                 return response()->json(['error' => 'Skill not found.'], 404);
             }
 
-            // Get the portfolio owner's details
+            // Get the portfolio owner's email
             $portfolio = DB::table('portfolios')
                 ->join('users', 'portfolios.user_id', '=', 'users.google_id')
                 ->select('users.email as owner_email')
@@ -179,135 +346,104 @@ class SkillController extends Controller
                 return response()->json(['error' => 'Portfolio not found.'], 404);
             }
 
-            // Log the incoming request data
-            Log::info('EditSkill Request:', $request->all());
-
-            // Update the skill in the database
+            // Update the skill
             DB::table('skills')->where('id', $id)->update([
                 'title' => $request->input('title'),
                 'description' => $request->input('description'),
                 'updated_at' => now(),
             ]);
 
-            // Handle new endorsers
-            $endorsers = $request->input('endorsers', []);
-            $endorserLinkData = [];
-            $endorsementStatusData = [];
-            $skippedEndorsers = [];
+            // Gather endorsers from request
+            $emails = $request->input('endorsers', []);
+            $getUsers = DB::table('users')
+                ->whereIn('email', $emails)
+                ->get(['email', 'google_id', 'role_id', 'name']);
 
-            $emails = $endorsers;  // Array of emails from the request
-            $getGoogleIDs = DB::table('users')
-                ->whereIn('email', $emails) // This fetches the google_id for all emails
-                ->pluck('google_id', 'email') // Plucks google_id using email as the key
-                ->toArray();
+            // Filter only valid endorsers (not self, and role_id == 2)
+            $validEndorsers = $getUsers->filter(function ($user) use ($portfolio) {
+                return $user->role_id == 2 && $user->email !== $portfolio->owner_email;
+            });
 
-            // Get the existing endorsers for the skill
-            $existingEndorsers = DB::table('skill_endorsement_statuses')
+            $newGoogleIDs = $validEndorsers->pluck('google_id')->toArray();
+
+            // Get existing endorsers for the skill
+            $existingGoogleIDs = DB::table('skill_endorsement_statuses')
                 ->where('skill_id', $id)
                 ->pluck('endorser_id')
                 ->toArray();
 
-            foreach ($emails as $email) {
-                if (isset($getGoogleIDs[$email])) {
-                    $getGoogleID = $getGoogleIDs[$email];  // Fetch google_id for the current email
+            // Determine which endorsers to remove and add
+            $toDelete = array_diff($existingGoogleIDs, $newGoogleIDs);
+            $toAdd = array_diff($newGoogleIDs, $existingGoogleIDs);
 
-                    // Fetch user details for the current email
-                    $user = DB::table('users')->where('google_id', $getGoogleID)->first();
+            // Delete removed endorsers
+            if (!empty($toDelete)) {
+                DB::table('skill_endorsers')->where('skill_id', $id)->whereIn('user_id', $toDelete)->delete();
+                DB::table('skill_endorsement_statuses')->where('skill_id', $id)->whereIn('endorser_id', $toDelete)->delete();
+            }
 
-                    // Check if the user exists and has role_id = 2
-                    if ($user && $user->role_id == 2) {
-                        // If the endorser already exists in the list of existing endorsers, just update
-                        if (in_array($getGoogleID, $existingEndorsers)) {
-                            // Update the endorsement status if already exists
-                            DB::table('skill_endorsement_statuses')
-                                ->where('skill_id', $id)
-                                ->where('endorser_id', $getGoogleID)
-                                ->update([
-                                    'endorsement_status_id' => 1, // Set status to Pending or any other update logic
-                                    'updated_at' => now(),
-                                ]);
-                            Log::info("Updated endorser status for: {$email}, Google ID: {$getGoogleID}");
-                        } else {
-                            // If the endorser does not exist, proceed to add new endorser
-                            $endorserLinkData[] = [
-                                'skill_id' => $id,
-                                'user_id' => $getGoogleID,
-                                'created_at' => now(),
-                                'updated_at' => now(),
-                            ];
+            // Insert new endorsers
+            $insertEndorsers = [];
+            $insertStatuses = [];
 
-                            $endorsementStatusData[] = [
-                                'skill_id' => $id,
-                                'endorser_id' => $getGoogleID,
-                                'endorsement_status_id' => 1, // Pending status
-                                'created_at' => now(),
-                                'updated_at' => now(),
-                            ];
+            foreach ($validEndorsers as $user) {
+                if (in_array($user->google_id, $toAdd)) {
+                    $insertEndorsers[] = [
+                        'skill_id' => $id,
+                        'user_id' => $user->google_id,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
 
-                            // Log the addition of the new endorser
-                            Log::info("Added new endorser: {$email}, Google ID: {$getGoogleID}");
-                        }
-                    } else {
-                        // If the user doesn't have role_id = 2, skip the insertion
-                        $skippedEndorsers[] = $email;
-                        Log::warning("Skipped user with email {$email} — not role_id = 2.");
-                    }
-                } else {
-                    Log::warning("Endorser with email {$email} not found in the database.");
+                    $insertStatuses[] = [
+                        'skill_id' => $id,
+                        'endorser_id' => $user->google_id,
+                        'endorsement_status_id' => 1,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
                 }
             }
 
-
-            // Insert new endorsers into skill_endorsers
-            if (!empty($endorserLinkData)) {
-                DB::table('skill_endorsers')->insert($endorserLinkData);
-                Log::info('Updated skill_endorsers:', $endorserLinkData);
+            if (!empty($insertEndorsers)) {
+                DB::table('skill_endorsers')->insert($insertEndorsers);
             }
 
-            // Insert new endorsement statuses into skill_endorsement_statuses
-            if (!empty($endorsementStatusData)) {
-                DB::table('skill_endorsement_statuses')->insert($endorsementStatusData);
-                Log::info('Updated skill_endorsement_statuses:', $endorsementStatusData);
+            if (!empty($insertStatuses)) {
+                DB::table('skill_endorsement_statuses')->insert($insertStatuses);
             }
 
-            // Commit the transaction
+            // Commit transaction
             DB::commit();
 
-            // Fetch detailed information for endorsers
+            // Prepare return data
             $endorsersDetails = [];
-            foreach ($endorsers as $email) {
-                // Skip if the endorser is the portfolio owner (self-endorsement)
-                if ($email === $portfolio->owner_email) {
-                    $skippedEndorsers[] = $email;
-                    Log::warning("Skipped self-endorsement: {$email}");
-                    continue;
-                }
+            foreach ($validEndorsers as $user) {
+                $status = DB::table('skill_endorsement_statuses')
+                    ->where('skill_id', $id)
+                    ->where('endorser_id', $user->google_id)
+                    ->first();
 
-                $user = DB::table('users')->where('email', $email)->first();
+                $statusName = DB::table('endorsement_statuses')
+                    ->where('id', $status->endorsement_status_id ?? 1)
+                    ->value('status');
 
-                if ($user && $user->google_id) {
-                    // Add endorser details
-                    $endorsersDetails[] = [
-                        'id' => $user->google_id,
-                        'name' => $user->name ?? 'Unknown',
-                        'email' => $user->email ?? 'Unknown',
-                        'status' => 'Pending',  // Default to 'Pending' (it can be fetched based on your requirement)
-                        'status_id' => 1, // Default status ID (Pending)
-                    ];
-                } else {
-                    $skippedEndorsers[] = $email;
-                    Log::warning("Skipped endorser: {$email} — user not found or missing google_id.");
-                }
+                $endorsersDetails[] = [
+                    'id' => $user->google_id,
+                    'name' => $user->name ?? 'Unknown',
+                    'email' => $user->email ?? 'Unknown',
+                    'status' => $statusName ?? 'Pending',
+                    'status_id' => $status->endorsement_status_id ?? 1,
+                ];
             }
 
             return response()->json([
                 'message' => 'Skill updated successfully.',
                 'skill_id' => $id,
-                'portfolio_id' => $request->input('portfolio_id'),
+                'portfolio_id' => $skill->portfolio_id,
                 'title' => $request->input('title'),
                 'description' => $request->input('description'),
-                'endorsers' => $endorsersDetails, // Detailed endorser data
-                'skipped_endorsers' => $skippedEndorsers
+                'endorsers' => $endorsersDetails,
             ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -315,7 +451,6 @@ class SkillController extends Controller
             return response()->json(['message' => 'Something went wrong.', 'error' => $e->getMessage()], 500);
         }
     }
-
 
     // Delete a skill
 
