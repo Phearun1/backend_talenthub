@@ -106,7 +106,7 @@ class PortfolioController extends Controller
             $experience->company_name = $company ? $company->company_name : 'Unknown';
             unset($experience->company_id); // Remove company_id from the response
 
-            // Add endorsers for each experience
+            // Add endorsers for each experience - use this query from your second loop
             $experience->endorsers = DB::table('experience_endorsement_statuses')
                 ->join('users', 'experience_endorsement_statuses.endorser_id', '=', 'users.id')
                 ->join('endorsement_statuses', 'experience_endorsement_statuses.experience_status_id', '=', 'endorsement_statuses.id')
