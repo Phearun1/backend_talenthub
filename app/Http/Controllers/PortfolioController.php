@@ -79,7 +79,7 @@ class PortfolioController extends Controller
         $experience->company_name = $company ? $company->company_name : 'Unknown';
         unset($experience->company_id); // Remove company_id from the response
 
-        // Add endorsers for each experience, ensuring distinct endorsers
+        // Add endorsers for each experience
         $experience->endorsers = DB::table('experience_endorsers')
             ->join('users', 'experience_endorsers.user_id', '=', 'users.google_id')
             ->join('experience_endorsement_statuses', 'experience_endorsers.experience_id', '=', 'experience_endorsement_statuses.experience_id')
@@ -92,7 +92,7 @@ class PortfolioController extends Controller
                 'endorsement_statuses.id as status_id'
             )
             ->where('experience_endorsers.experience_id', $experience->id)
-            ->distinct() // Ensure distinct records
+            ->groupBy('users.google_id')  // Ensure distinct endorsers
             ->get();
     }
 
@@ -105,7 +105,7 @@ class PortfolioController extends Controller
             ->join('endorsement_statuses', 'achievement_endorsement_statuses.endorsement_status_id', '=', 'endorsement_statuses.id')
             ->select('users.google_id as id', 'users.name', 'users.email', 'endorsement_statuses.status as status', 'endorsement_statuses.id as status_id')
             ->where('achievement_endorsers.achievement_id', $achievement->id)
-            ->distinct() // Ensure distinct records
+            ->groupBy('users.google_id')  // Ensure distinct endorsers
             ->get();
     }
 
@@ -123,7 +123,7 @@ class PortfolioController extends Controller
                 'endorsement_statuses.status as status'
             )
             ->where('skill_endorsement_statuses.skill_id', $skill->id)
-            ->distinct() // Ensure distinct records
+            ->groupBy('users.google_id')  // Ensure distinct endorsers
             ->get();
     }
 
@@ -137,6 +137,7 @@ class PortfolioController extends Controller
         'experiences' => $experiences,
     ]);
 }
+
 
 
 
