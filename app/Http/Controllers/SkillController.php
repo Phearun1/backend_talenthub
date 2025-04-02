@@ -350,7 +350,7 @@ class SkillController extends Controller
                     ->pluck('endorser_id')
                     ->toArray();
 
-                if (!in_array($user->google_id, $existingEndorsers)) {
+                if (!in_array($email, $existingEndorsers)) {
                     $endorsersDetails[] = [
                         'id' => $endorser['user_id'],
                         'name' => $user->name ?? 'Unknown',
