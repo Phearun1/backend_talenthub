@@ -238,6 +238,7 @@ class ProjectController extends Controller
         ], 200);
     }
 
+
     public function viewProjectDetail($projectId)
     {
         // Retrieve the project details
