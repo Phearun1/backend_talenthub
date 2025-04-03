@@ -153,7 +153,7 @@ class ProjectController extends Controller
             'instruction' => 'required|string|max:255',
             'link' => 'nullable|string|max:255',
             'file' => 'nullable|file|mimes:zip',  // Validate file
-            'image.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg',  // Validate multiple images
+            'image.*' => 'nullable|image|mimes:jpeg,png,jpg',  // Validate multiple images
             'programming_language_id' => 'required|integer',
             'project_visibility_status' => 'required|integer',
         ]);

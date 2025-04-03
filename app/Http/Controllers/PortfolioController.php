@@ -263,75 +263,79 @@ class PortfolioController extends Controller
 }
 
 
+public function updatePortfolio(Request $request, $id)
+{
+    // Validate input fields
+    $request->validate([
+        'major_id' => 'nullable|integer',
+        'phone_number' => 'nullable|string|max:255',
+        'about' => 'nullable|string|max:255',
+        'working_status' => 'nullable|integer',
+        'photo' => 'nullable|image|mimes:jpeg,png,jpg', // Validate photo as an image
+    ]);
 
+    // Find the portfolio by ID
+    $portfolio = DB::table('portfolios')->where('id', $id)->first();
 
+    if (!$portfolio) {
+        return response()->json(['error' => 'Portfolio not found.'], 404);
+    }
 
+    // Get the user_id from the portfolio
+    $userId = $portfolio->user_id;
 
+    // Update the portfolio details
+    DB::table('portfolios')->where('id', $id)->update([
+        'major_id' => $request->input('major_id'),
+        'phone_number' => $request->input('phone_number'),
+        'about' => $request->input('about'),
+        'working_status' => $request->input('working_status'),
+        'status' => 1, // Setting status to '1' (active) as per your schema
+        'updated_at' => now(),
+    ]);
 
+    // Handle photo update if provided
+    $photoUrl = null;
+    if ($request->hasFile('photo')) {
+        $photo = $request->file('photo');
 
+        // Store the photo in 'photos' folder under 'public' disk
+        $photoPath = $photo->store('photos', 'public');
 
+        // Base URL for accessing the photo
+        $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
 
+        // Construct the photo URL
+        $photoUrl = $baseUrl . 'photos/' . basename($photoPath);
 
-
-    public function updatePortfolio(Request $request, $id)
-    {
-        // Validate input fields
-        $request->validate([
-            'major_id' => 'nullable|integer',
-            'phone_number' => 'nullable|string|max:255',
-            'about' => 'nullable|string|max:255',
-            'working_status' => 'nullable|integer',
-            'photo' => 'nullable|string|max:255',
-        ]);
-
-        // Find the portfolio by ID
-        $portfolio = DB::table('portfolios')->where('id', $id)->first();
-
-        if (!$portfolio) {
-            return response()->json(['error' => 'Portfolio not found.'], 404);
-        }
-
-        // Get the user_id from the portfolio
-        $userId = $portfolio->user_id;
-
-        // Update the portfolio details
-        DB::table('portfolios')->where('id', $id)->update([
-            'major_id' => $request->input('major_id'),
-            'phone_number' => $request->input('phone_number'),
-            'about' => $request->input('about'),
-            'working_status' => $request->input('working_status'),
-            'status' => 1, // Setting status to '1' (active) as per your schema
+        // Update the user's photo in the users table
+        DB::table('users')->where('google_id', $userId)->update([
+            'photo' => $photoUrl,
             'updated_at' => now(),
         ]);
-
-        // Update the user's photo if provided
-        if ($request->has('photo')) {
-            DB::table('users')->where('google_id', $userId)->update([
-                'photo' => $request->input('photo'),
-                'updated_at' => now(),
-            ]);
-        }
-
-        // Fetch the updated portfolio
-        $updatedPortfolio = DB::table('portfolios')->where('id', $id)->first();
-
-        // Fetch the updated user details
-        $updatedUser = DB::table('users')->where('google_id', $userId)->first();
-
-        // Return only the desired fields (portfolio and user) without additional structure
-        return response()->json([
-            'id' => $updatedPortfolio->id,
-            'google_id' => $updatedPortfolio->user_id,
-            'name' => $updatedUser->name,
-            'email' => $updatedUser->email,
-            'major_id' => $updatedPortfolio->major_id,
-            'phone_number' => $updatedPortfolio->phone_number,
-            'about' => $updatedPortfolio->about,
-            'working_status' => $updatedPortfolio->working_status,
-            'status' => $updatedPortfolio->status,
-            'photo' => $updatedUser->photo
-        ], 200);
     }
+
+    // Fetch the updated portfolio
+    $updatedPortfolio = DB::table('portfolios')->where('id', $id)->first();
+
+    // Fetch the updated user details
+    $updatedUser = DB::table('users')->where('google_id', $userId)->first();
+
+    // Return only the desired fields (portfolio and user) without additional structure
+    return response()->json([
+        'id' => $updatedPortfolio->id,
+        'google_id' => $updatedPortfolio->user_id,
+        'name' => $updatedUser->name,
+        'email' => $updatedUser->email,
+        'major_id' => $updatedPortfolio->major_id,
+        'phone_number' => $updatedPortfolio->phone_number,
+        'about' => $updatedPortfolio->about,
+        'working_status' => $updatedPortfolio->working_status,
+        'status' => $updatedPortfolio->status,
+        'photo' => $photoUrl ? $photoUrl : $updatedUser->photo // Return updated photo URL
+    ], 200);
+}
+
 
     public function deletePortfolio($id)
     {
