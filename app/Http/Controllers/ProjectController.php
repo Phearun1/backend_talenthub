@@ -179,16 +179,20 @@ class ProjectController extends Controller
         if ($request->hasFile('file')) {
             $file = $request->file('file');
             $filePath = $file->store('projects', 'public'); // Store file in 'projects' folder, 'public' disk
+            Log::info('Project file uploaded: ' . $filePath);
         }
 
         // Handle multiple image uploads
         $imagePaths = [];
         if ($request->hasFile('image')) {
             $images = $request->file('image');
+            Log::info('Number of images uploaded: ' . count($images));
 
             foreach ($images as $image) {
                 // Store each image in 'project_images' folder, 'public' disk
-                $imagePaths[] = $image->store('project_images', 'public');
+                $imagePath = $image->store('project_images', 'public');
+                $imagePaths[] = $imagePath;
+                Log::info('Image uploaded: ' . $imagePath);
             }
         }
 
@@ -206,15 +210,23 @@ class ProjectController extends Controller
             'updated_at' => now(),
         ]);
 
+        // Log project ID after insertion
+        Log::info('Project created with ID: ' . $projectId);
+
         // Insert images into the project_images table
         if (!empty($imagePaths)) {
             foreach ($imagePaths as $imagePath) {
-                DB::table('project_images')->insert([
-                    'project_id' => $projectId,
-                    'image' => $imagePath,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
+                try {
+                    DB::table('project_images')->insert([
+                        'project_id' => $projectId,
+                        'image' => $imagePath,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                    Log::info('Inserted image into project_images: ' . $imagePath);
+                } catch (\Exception $e) {
+                    Log::error('Error inserting image into project_images: ' . $e->getMessage());
+                }
             }
         }
 
@@ -237,6 +249,7 @@ class ProjectController extends Controller
             'image_urls' => $imageUrls, // Multiple image URLs
         ], 200);
     }
+
 
 
     public function viewProjectDetail($projectId)
