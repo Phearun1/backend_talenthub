@@ -167,12 +167,26 @@ class PortfolioController extends Controller
 
         $portfolioId = $portfolio->id;
 
+        // Get the projects related to the portfolio
         $projects = DB::table('projects')->where('portfolio_id', $portfolioId)->get();
+
+        // Base URL for accessing the files
+        $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
+
+        // Update project data to include file_url and image_url
+        foreach ($projects as $project) {
+            // Add the full URLs for file and image
+            $project->file_url = $project->file ? $baseUrl . 'projects/' . basename($project->file) : null;
+            $project->image_url = $project->image ? $baseUrl . 'project_images/' . basename($project->image) : null;
+        }
+
+        // Get other related data like education, achievements, skills, etc.
         $education = DB::table('education')->where('portfolio_id', $portfolioId)->get();
         $achievements = DB::table('achievements')->where('portfolio_id', $portfolioId)->get();
         $skills = DB::table('skills')->where('portfolio_id', $portfolioId)->get();
         $experiences = DB::table('experiences')->where('portfolio_id', $portfolioId)->get();
 
+        // Modify experiences and achievements if needed, as done earlier
         foreach ($experiences as $experience) {
             $company = DB::table('companies')->where('id', $experience->company_id)->first();
             $experience->company_name = $company ? $company->company_name : 'Unknown';
@@ -230,15 +244,17 @@ class PortfolioController extends Controller
                 ->get();
         }
 
+        // Return the response with all the data
         return response()->json([
             'portfolio' => $portfolio,
-            'projects' => $projects,
+            'projects' => $projects,  // Projects now include file_url and image_url
             'education' => $education,
             'achievements' => $achievements,
             'skills' => $skills,
             'experiences' => $experiences,
         ]);
     }
+
 
 
 
