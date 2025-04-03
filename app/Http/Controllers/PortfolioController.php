@@ -275,7 +275,7 @@ class PortfolioController extends Controller
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048', // Validate photo as an image
         ]);
 
-        // Log the request data for debugging
+        // Log the incoming request for debugging purposes
         Log::info('Received update portfolio request for portfolio ID: ' . $id);
         Log::info('Request Data: ', $request->all());
 
@@ -293,15 +293,18 @@ class PortfolioController extends Controller
         // Log the user_id for tracking
         Log::info('User ID for the portfolio: ' . $userId);
 
-        // Update the portfolio details
-        DB::table('portfolios')->where('id', $id)->update([
+        // Prepare fields to update in the portfolios table
+        $updateFields = [
             'major_id' => $request->input('major_id'),
             'phone_number' => $request->input('phone_number'),
             'about' => $request->input('about'),
             'working_status' => $request->input('working_status'),
-            'status' => 1, // Setting status to '1' (active) as per your schema
+            'status' => 1, // Setting status to '1' (active)
             'updated_at' => now(),
-        ]);
+        ];
+
+        // Update the portfolio details
+        DB::table('portfolios')->where('id', $id)->update($updateFields);
 
         // Log after portfolio update
         Log::info('Portfolio updated successfully for ID: ' . $id);
@@ -311,7 +314,7 @@ class PortfolioController extends Controller
         if ($request->hasFile('photo')) {
             $photo = $request->file('photo');
 
-            // Log photo upload process
+            // Log the photo upload process
             Log::info('Photo uploaded: ' . $photo->getClientOriginalName());
 
             // Store the photo in 'photos' folder under 'public' disk
@@ -360,6 +363,7 @@ class PortfolioController extends Controller
             'photo' => $photoUrl ? $photoUrl : $updatedUser->photo // Return updated photo URL
         ], 200);
     }
+
 
 
 
