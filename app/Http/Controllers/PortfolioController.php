@@ -266,6 +266,9 @@ class PortfolioController extends Controller
 
     public function updatePortfolio(Request $request, $id)
 {
+    // Log the raw input data for debugging
+    Log::info('Raw Request Data: ', $request->all());
+
     // Validate input fields
     $request->validate([
         'major_id' => 'nullable|integer',
@@ -274,10 +277,6 @@ class PortfolioController extends Controller
         'working_status' => 'nullable|integer',
         'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048', // Validate photo as an image
     ]);
-
-    // Log the incoming request for debugging purposes
-    Log::info('Received update portfolio request for portfolio ID: ' . $id);
-    Log::info('Request Data: ', $request->all());
 
     // Find the portfolio by ID
     $portfolio = DB::table('portfolios')->where('id', $id)->first();
@@ -295,10 +294,10 @@ class PortfolioController extends Controller
 
     // Prepare fields to update in the portfolios table
     $updateFields = [
-        'major_id' => $request->input('major_id', $portfolio->major_id), // Use existing value if not provided
-        'phone_number' => $request->input('phone_number', $portfolio->phone_number), // Use existing value if not provided
-        'about' => $request->input('about', $portfolio->about), // Use existing value if not provided
-        'working_status' => $request->input('working_status', $portfolio->working_status), // Use existing value if not provided
+        'major_id' => $request->input('major_id', $portfolio->major_id),
+        'phone_number' => $request->input('phone_number', $portfolio->phone_number),
+        'about' => $request->input('about', $portfolio->about),
+        'working_status' => $request->input('working_status', $portfolio->working_status),
         'status' => 1, // Setting status to '1' (active)
         'updated_at' => now(),
     ];
@@ -366,6 +365,7 @@ class PortfolioController extends Controller
         'photo' => $photoUrl ? $photoUrl : $updatedUser->photo // Return updated photo URL
     ], 200);
 }
+
 
 
 
