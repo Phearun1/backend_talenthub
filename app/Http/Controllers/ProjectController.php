@@ -130,14 +130,18 @@ class ProjectController extends Controller
             ]);
         }
 
-        // Return a success response
+        // Base URL for accessing the files
+        $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
+
+        // Return the full URLs for both the file and image
         return response()->json([
             'message' => 'Project created successfully.',
             'project' => $projectId,
-            'file_path' => $filePath ? Storage::url($filePath) : null, // Return file URL if uploaded
-            'image_path' => $imagePath ? Storage::url($imagePath) : null, // Return image URL if uploaded
+            'file_url' => $filePath ? $baseUrl . 'projects/' . basename($filePath) : null,
+            'image_url' => $imagePath ? $baseUrl . 'project_images/' . basename($imagePath) : null,
         ], 200);
     }
+
 
     public function viewProjectDetail($projectId)
     {
