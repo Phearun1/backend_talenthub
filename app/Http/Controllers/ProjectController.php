@@ -61,88 +61,6 @@ class ProjectController extends Controller
     // }
 
 
-    // public function createProject(Request $request)
-    // {
-    //     // Validate the incoming request data
-    //     $request->validate([
-    //         'portfolio_id' => 'required|integer',
-    //         'title' => 'required|string|max:255',
-    //         'description' => 'required|string|max:255',
-    //         'instruction' => 'required|string|max:255',
-    //         'link' => 'nullable|string|max:255',
-    //         'file' => 'nullable|file|mimes:zip',  // Validate file
-    //         'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg',  // Validate image
-    //         'programming_language_id' => 'required|integer',
-    //         'project_visibility_status' => 'required|integer',
-    //     ]);
-
-    //     // Get the authenticated user's ID
-    //     $userId = $request->user()->google_id;
-
-    //     // Log the authenticated user's ID
-    //     Log::info('Authenticated User ID: ' . $userId);
-
-    //     // Check if the portfolio belongs to the authenticated user
-    //     $portfolio = DB::table('portfolios')->where('id', $request->input('portfolio_id'))->first();
-
-    //     // Log the portfolio details
-    //     Log::info('Portfolio Details: ', (array) $portfolio);
-
-    //     if (!$portfolio || $portfolio->user_id != $userId) {
-    //         return response()->json(['error' => 'You are not authorized to create a project for this portfolio.'], 403);
-    //     }
-
-    //     // Handle file upload
-    //     $filePath = null;
-    //     if ($request->hasFile('file')) {
-    //         $file = $request->file('file');
-    //         $filePath = $file->store('projects', 'public'); // Store file in 'projects' folder, 'public' disk
-    //     }
-
-    //     // Handle image upload
-    //     $imagePath = null;
-    //     if ($request->hasFile('image')) {
-    //         $image = $request->file('image');
-    //         $imagePath = $image->store('project_images', 'public'); // Store image in 'project_images' folder, 'public' disk
-    //     }
-
-    //     // Insert the project into the database and get the ID
-    //     $projectId = DB::table('projects')->insertGetId([
-    //         'portfolio_id' => $request->input('portfolio_id'),
-    //         'title' => $request->input('title'),
-    //         'description' => $request->input('description'),
-    //         'instruction' => $request->input('instruction'),
-    //         'link' => $request->input('link'),
-    //         'file' => $filePath, // Store the file path
-    //         'programming_language_id' => $request->input('programming_language_id'),
-    //         'project_visibility_status' => $request->input('project_visibility_status'),
-    //         'created_at' => now(),
-    //         'updated_at' => now(),
-    //     ]);
-
-    //     // If an image is uploaded, insert the image into the project_images table
-    //     if ($imagePath) {
-    //         DB::table('project_images')->insert([
-    //             'project_id' => $projectId,
-    //             'image' => $imagePath,
-    //             'created_at' => now(),
-    //             'updated_at' => now(),
-    //         ]);
-    //     }
-
-    //     // Base URL for accessing the files
-    //     $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
-
-    //     // Return the full URLs for both the file and image
-    //     return response()->json([
-    //         'message' => 'Project created successfully.',
-    //         'project' => $projectId,
-    //         'file_url' => $filePath ? $baseUrl . 'projects/' . basename($filePath) : null,
-    //         'image_url' => $imagePath ? $baseUrl . 'project_images/' . basename($imagePath) : null,
-    //     ], 200);
-    // }
-
-
     public function createProject(Request $request)
     {
         // Validate the incoming request data
@@ -153,7 +71,7 @@ class ProjectController extends Controller
             'instruction' => 'required|string|max:255',
             'link' => 'nullable|string|max:255',
             'file' => 'nullable|file|mimes:zip',  // Validate file
-            'image.*' => 'nullable|image|mimes:jpeg,png,jpg',  // Validate multiple images
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg',  // Validate image
             'programming_language_id' => 'required|integer',
             'project_visibility_status' => 'required|integer',
         ]);
@@ -174,33 +92,18 @@ class ProjectController extends Controller
             return response()->json(['error' => 'You are not authorized to create a project for this portfolio.'], 403);
         }
 
-        // Handle file upload (for project file)
+        // Handle file upload
         $filePath = null;
         if ($request->hasFile('file')) {
             $file = $request->file('file');
             $filePath = $file->store('projects', 'public'); // Store file in 'projects' folder, 'public' disk
-            Log::info('Project file uploaded: ' . $filePath);
         }
 
-        // Handle multiple image uploads
-        $imagePaths = [];
+        // Handle image upload
+        $imagePath = null;
         if ($request->hasFile('image')) {
-            // Check if 'image' is an array (multiple files) or a single file
-            $images = $request->file('image');
-
-            // If it's a single file, convert it to an array to handle uniformly
-            if (!is_array($images)) {
-                $images = [$images]; // Wrap the single image in an array
-            }
-
-            Log::info('Number of images uploaded: ' . count($images));
-
-            foreach ($images as $image) {
-                // Store each image in 'project_images' folder, 'public' disk
-                $imagePath = $image->store('project_images', 'public');
-                $imagePaths[] = $imagePath;
-                Log::info('Image uploaded: ' . $imagePath);
-            }
+            $image = $request->file('image');
+            $imagePath = $image->store('project_images', 'public'); // Store image in 'project_images' folder, 'public' disk
         }
 
         // Insert the project into the database and get the ID
@@ -217,45 +120,142 @@ class ProjectController extends Controller
             'updated_at' => now(),
         ]);
 
-        // Log project ID after insertion
-        Log::info('Project created with ID: ' . $projectId);
-
-        // Insert images into the project_images table
-        if (!empty($imagePaths)) {
-            foreach ($imagePaths as $imagePath) {
-                try {
-                    DB::table('project_images')->insert([
-                        'project_id' => $projectId,
-                        'image' => $imagePath,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
-                    Log::info('Inserted image into project_images: ' . $imagePath);
-                } catch (\Exception $e) {
-                    Log::error('Error inserting image into project_images: ' . $e->getMessage());
-                }
-            }
+        // If an image is uploaded, insert the image into the project_images table
+        if ($imagePath) {
+            DB::table('project_images')->insert([
+                'project_id' => $projectId,
+                'image' => $imagePath,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
         }
 
         // Base URL for accessing the files
         $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
 
-        // Construct file and image URLs
-        $fileUrl = $filePath ? $baseUrl . 'projects/' . basename($filePath) : null;
-        $imageUrls = [];
-
-        foreach ($imagePaths as $imagePath) {
-            $imageUrls[] = $baseUrl . 'project_images/' . basename($imagePath);
-        }
-
-        // Return the full URLs for both the file and images
+        // Return the full URLs for both the file and image
         return response()->json([
             'message' => 'Project created successfully.',
             'project' => $projectId,
-            'file_url' => $fileUrl,
-            'image_urls' => $imageUrls, // Multiple image URLs
+            'file_url' => $filePath ? $baseUrl . 'projects/' . basename($filePath) : null,
+            'image_url' => $imagePath ? $baseUrl . 'project_images/' . basename($imagePath) : null,
         ], 200);
     }
+
+
+    // public function createProject(Request $request)
+    // {
+    //     // Validate the incoming request data
+    //     $request->validate([
+    //         'portfolio_id' => 'required|integer',
+    //         'title' => 'required|string|max:255',
+    //         'description' => 'required|string|max:255',
+    //         'instruction' => 'required|string|max:255',
+    //         'link' => 'nullable|string|max:255',
+    //         'file' => 'nullable|file|mimes:zip',  // Validate file
+    //         'image.*' => 'nullable|image|mimes:jpeg,png,jpg',  // Validate multiple images
+    //         'programming_language_id' => 'required|integer',
+    //         'project_visibility_status' => 'required|integer',
+    //     ]);
+
+    //     // Get the authenticated user's ID
+    //     $userId = $request->user()->google_id;
+
+    //     // Log the authenticated user's ID
+    //     Log::info('Authenticated User ID: ' . $userId);
+
+    //     // Check if the portfolio belongs to the authenticated user
+    //     $portfolio = DB::table('portfolios')->where('id', $request->input('portfolio_id'))->first();
+
+    //     // Log the portfolio details
+    //     Log::info('Portfolio Details: ', (array) $portfolio);
+
+    //     if (!$portfolio || $portfolio->user_id != $userId) {
+    //         return response()->json(['error' => 'You are not authorized to create a project for this portfolio.'], 403);
+    //     }
+
+    //     // Handle file upload (for project file)
+    //     $filePath = null;
+    //     if ($request->hasFile('file')) {
+    //         $file = $request->file('file');
+    //         $filePath = $file->store('projects', 'public'); // Store file in 'projects' folder, 'public' disk
+    //         Log::info('Project file uploaded: ' . $filePath);
+    //     }
+
+    //     // Handle multiple image uploads
+    //     $imagePaths = [];
+    //     if ($request->hasFile('image')) {
+    //         // Check if 'image' is an array (multiple files) or a single file
+    //         $images = $request->file('image');
+
+    //         // If it's a single file, convert it to an array to handle uniformly
+    //         if (!is_array($images)) {
+    //             $images = [$images]; // Wrap the single image in an array
+    //         }
+
+    //         Log::info('Number of images uploaded: ' . count($images));
+
+    //         foreach ($images as $image) {
+    //             // Store each image in 'project_images' folder, 'public' disk
+    //             $imagePath = $image->store('project_images', 'public');
+    //             $imagePaths[] = $imagePath;
+    //             Log::info('Image uploaded: ' . $imagePath);
+    //         }
+    //     }
+
+    //     // Insert the project into the database and get the ID
+    //     $projectId = DB::table('projects')->insertGetId([
+    //         'portfolio_id' => $request->input('portfolio_id'),
+    //         'title' => $request->input('title'),
+    //         'description' => $request->input('description'),
+    //         'instruction' => $request->input('instruction'),
+    //         'link' => $request->input('link'),
+    //         'file' => $filePath, // Store the file path
+    //         'programming_language_id' => $request->input('programming_language_id'),
+    //         'project_visibility_status' => $request->input('project_visibility_status'),
+    //         'created_at' => now(),
+    //         'updated_at' => now(),
+    //     ]);
+
+    //     // Log project ID after insertion
+    //     Log::info('Project created with ID: ' . $projectId);
+
+    //     // Insert images into the project_images table
+    //     if (!empty($imagePaths)) {
+    //         foreach ($imagePaths as $imagePath) {
+    //             try {
+    //                 DB::table('project_images')->insert([
+    //                     'project_id' => $projectId,
+    //                     'image' => $imagePath,
+    //                     'created_at' => now(),
+    //                     'updated_at' => now(),
+    //                 ]);
+    //                 Log::info('Inserted image into project_images: ' . $imagePath);
+    //             } catch (\Exception $e) {
+    //                 Log::error('Error inserting image into project_images: ' . $e->getMessage());
+    //             }
+    //         }
+    //     }
+
+    //     // Base URL for accessing the files
+    //     $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
+
+    //     // Construct file and image URLs
+    //     $fileUrl = $filePath ? $baseUrl . 'projects/' . basename($filePath) : null;
+    //     $imageUrls = [];
+
+    //     foreach ($imagePaths as $imagePath) {
+    //         $imageUrls[] = $baseUrl . 'project_images/' . basename($imagePath);
+    //     }
+
+    //     // Return the full URLs for both the file and images
+    //     return response()->json([
+    //         'message' => 'Project created successfully.',
+    //         'project' => $projectId,
+    //         'file_url' => $fileUrl,
+    //         'image_urls' => $imageUrls, // Multiple image URLs
+    //     ], 200);
+    // }
 
 
 
