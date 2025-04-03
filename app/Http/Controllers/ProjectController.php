@@ -185,7 +185,14 @@ class ProjectController extends Controller
         // Handle multiple image uploads
         $imagePaths = [];
         if ($request->hasFile('image')) {
+            // Check if 'image' is an array (multiple files) or a single file
             $images = $request->file('image');
+
+            // If it's a single file, convert it to an array to handle uniformly
+            if (!is_array($images)) {
+                $images = [$images]; // Wrap the single image in an array
+            }
+
             Log::info('Number of images uploaded: ' . count($images));
 
             foreach ($images as $image) {
@@ -249,6 +256,7 @@ class ProjectController extends Controller
             'image_urls' => $imageUrls, // Multiple image URLs
         ], 200);
     }
+
 
 
 
