@@ -141,7 +141,7 @@ class ProjectController extends Controller
             'image_url' => $imagePath ? $baseUrl . 'project_images/' . basename($imagePath) : null,
         ], 200);
     }
-
+    
 
     // public function createProject(Request $request)
     // {
