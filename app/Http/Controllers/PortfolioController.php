@@ -379,7 +379,7 @@ class PortfolioController extends Controller
             'phone_number' => 'nullable|string|max:255',
             'about' => 'nullable|string|max:255',
             'working_status' => 'nullable|integer',
-            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048', // Validate photo as an image
+            'photo' => 'nullable', // Validate photo as an image
         ]);
 
         // Find the portfolio by ID
