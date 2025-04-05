@@ -9,8 +9,6 @@ use Illuminate\Support\Facades\Log;
 class PortfolioController extends Controller
 {
 
-
-
     public function viewAllPortfolio()
     {
         $portfolios = DB::table('portfolios')
@@ -34,110 +32,6 @@ class PortfolioController extends Controller
 
         return response()->json($portfolios);
     }
-
-
-    //     public function viewPortfolioDetails($userID)
-    // {
-    //     // Retrieve the specific portfolio with user info
-    //     $portfolio = DB::table('portfolios')
-    //         ->join('users', 'portfolios.user_id', '=', 'users.google_id')
-    //         ->select(
-    //             'portfolios.id',
-    //             'portfolios.user_id',
-    //             'portfolios.major_id as major',
-    //             'portfolios.phone_number',
-    //             'portfolios.about',
-    //             'portfolios.working_status',
-    //             'portfolios.status',
-    //             'portfolios.created_at',
-    //             'portfolios.updated_at',
-    //             'users.name as user_name',
-    //             'users.email',
-    //             'users.photo',
-    //             'users.role_id'
-    //         )
-    //         ->where('portfolios.user_id', $userID)
-    //         ->first();
-
-    //     if (!$portfolio) {
-    //         return response()->json(['error' => 'Portfolio not found.'], 404);
-    //     }
-
-    //     // Get the real portfolio ID
-    //     $portfolioId = $portfolio->id;
-
-    //     // Get related data
-    //     $projects = DB::table('projects')->where('portfolio_id', $portfolioId)->get();
-    //     $education = DB::table('education')->where('portfolio_id', $portfolioId)->get();
-    //     $achievements = DB::table('achievements')->where('portfolio_id', $portfolioId)->get();
-    //     $skills = DB::table('skills')->where('portfolio_id', $portfolioId)->get();
-    //     $experiences = DB::table('experiences')->where('portfolio_id', $portfolioId)->get();
-
-    //     // Add experience data and endorsers with DISTINCT
-    //     foreach ($experiences as $experience) {
-    //         // Get company name (if exists)
-    //         $company = DB::table('companies')->where('id', $experience->company_id)->first();
-    //         $experience->company_name = $company ? $company->company_name : 'Unknown';
-    //         unset($experience->company_id); // Remove company_id from the response
-
-    //         // Add endorsers for each experience with DISTINCT
-    //         $experience->endorsers = DB::table('experience_endorsers')
-    //             ->join('users', 'experience_endorsers.user_id', '=', 'users.google_id')
-    //             ->join('experience_endorsement_statuses', 'experience_endorsers.experience_id', '=', 'experience_endorsement_statuses.experience_id')
-    //             ->join('endorsement_statuses', 'experience_endorsement_statuses.experience_status_id', '=', 'endorsement_statuses.id')
-    //             ->select(
-    //                 'users.google_id as id',
-    //                 'users.name',
-    //                 'users.email',
-    //                 'endorsement_statuses.status as status',
-    //                 'endorsement_statuses.id as status_id'
-    //             )
-    //             ->where('experience_endorsers.experience_id', $experience->id)
-    //             ->distinct()  // Ensure distinct records (to avoid duplicates)
-    //             ->get();
-    //     }
-
-    //     // Add achievement endorsers with DISTINCT
-    //     foreach ($achievements as $achievement) {
-    //         // Retrieve endorsers for the achievement
-    //         $achievement->endorsers = DB::table('achievement_endorsers')
-    //             ->join('users', 'achievement_endorsers.user_id', '=', 'users.google_id')
-    //             ->join('achievement_endorsement_statuses', 'achievement_endorsers.achievement_id', '=', 'achievement_endorsement_statuses.achievement_id')
-    //             ->join('endorsement_statuses', 'achievement_endorsement_statuses.endorsement_status_id', '=', 'endorsement_statuses.id')
-    //             ->select('users.google_id as id', 'users.name', 'users.email', 'endorsement_statuses.status as status', 'endorsement_statuses.id as status_id')
-    //             ->where('achievement_endorsers.achievement_id', $achievement->id)
-    //             ->distinct()  // Ensure distinct records
-    //             ->get();
-    //     }
-
-    //     // Add skill endorsers with endorsement statuses
-    //     foreach ($skills as $skill) {
-    //         // From skill_endorsement_statuses
-    //         $skill->endorsers = DB::table('skill_endorsement_statuses')
-    //             ->join('users', 'skill_endorsement_statuses.endorser_id', '=', 'users.google_id')
-    //             ->join('endorsement_statuses', 'skill_endorsement_statuses.endorsement_status_id', '=', 'endorsement_statuses.id')
-    //             ->select(
-    //                 'users.google_id as id',
-    //                 'users.name as name',
-    //                 'users.email as email',
-    //                 'endorsement_statuses.id as status_id',
-    //                 'endorsement_statuses.status as status'
-    //             )
-    //             ->where('skill_endorsement_statuses.skill_id', $skill->id)
-    //             ->distinct()  // Ensure distinct records
-    //             ->get();
-    //     }
-
-    //     // Return the portfolio details, including experiences, skills, achievements, and education without endorsers for education
-    //     return response()->json([
-    //         'portfolio' => $portfolio,
-    //         'projects' => $projects,
-    //         'education' => $education, // Return education data without endorsers
-    //         'achievements' => $achievements,
-    //         'skills' => $skills,
-    //         'experiences' => $experiences,
-    //     ]);
-    // }
 
 
     public function viewPortfolioDetails($userID)
@@ -264,6 +158,8 @@ class PortfolioController extends Controller
     }
 
 
+
+
     // public function updatePortfolio(Request $request, $id)
     // {
     //     // Log the raw input data for debugging
@@ -275,7 +171,7 @@ class PortfolioController extends Controller
     //         'phone_number' => 'nullable|string|max:255',
     //         'about' => 'nullable|string|max:255',
     //         'working_status' => 'nullable|integer',
-    //         'photo' => 'nullable|image', // Validate photo as an image
+    //         'photo' => 'nullable', // Validate photo as an image
     //     ]);
 
     //     // Find the portfolio by ID
@@ -316,29 +212,34 @@ class PortfolioController extends Controller
     //     if ($request->hasFile('photo')) {
     //         $photo = $request->file('photo');
 
-    //         // Log the photo upload process
-    //         Log::info('Photo uploaded: ' . $photo->getClientOriginalName());
+    //         // Check if the file is uploaded
+    //         if ($photo->isValid()) {
+    //             // Log the photo upload process
+    //             Log::info('Photo uploaded: ' . $photo->getClientOriginalName());
 
-    //         // Store the photo in 'photos' folder under 'public' disk
-    //         $photoPath = $photo->store('photos', 'public');
+    //             // Store the photo in 'photos' folder under 'public' disk
+    //             $photoPath = $photo->store('photos', 'public');
 
-    //         // Base URL for accessing the photo
-    //         $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
+    //             // Base URL for accessing the photo
+    //             $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
 
-    //         // Construct the photo URL
-    //         $photoUrl = $baseUrl . 'photos/' . basename($photoPath);
+    //             // Construct the photo URL
+    //             $photoUrl = $baseUrl . 'photos/' . basename($photoPath);
 
-    //         // Log the photo URL
-    //         Log::info('Photo URL: ' . $photoUrl);
+    //             // Log the photo URL
+    //             Log::info('Photo URL: ' . $photoUrl);
 
-    //         // Update the user's photo in the users table
-    //         DB::table('users')->where('google_id', $userId)->update([
-    //             'photo' => $photoUrl,
-    //             'updated_at' => now(),
-    //         ]);
+    //             // Update the user's photo in the users table
+    //             DB::table('users')->where('google_id', $userId)->update([
+    //                 'photo' => $photoUrl,
+    //                 'updated_at' => now(),
+    //             ]);
 
-    //         // Log user photo update
-    //         Log::info('User photo updated for user ID: ' . $userId);
+    //             // Log user photo update
+    //             Log::info('User photo updated for user ID: ' . $userId);
+    //         } else {
+    //             Log::error('Uploaded photo is not valid.');
+    //         }
     //     }
 
     //     // Fetch the updated portfolio
@@ -367,7 +268,6 @@ class PortfolioController extends Controller
     // }
 
 
-
     public function updatePortfolio(Request $request, $id)
     {
         // Log the raw input data for debugging
@@ -379,8 +279,11 @@ class PortfolioController extends Controller
             'phone_number' => 'nullable|string|max:255',
             'about' => 'nullable|string|max:255',
             'working_status' => 'nullable|integer',
-            'photo' => 'nullable', // Validate photo as an image
+            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048', // Validate photo as an image
         ]);
+
+        // Get the authenticated user (via the token)
+        $user = $request->user();  // This will return the authenticated user based on the token
 
         // Find the portfolio by ID
         $portfolio = DB::table('portfolios')->where('id', $id)->first();
@@ -390,11 +293,14 @@ class PortfolioController extends Controller
             return response()->json(['error' => 'Portfolio not found.'], 404);
         }
 
-        // Get the user_id from the portfolio
-        $userId = $portfolio->user_id;
+        // Ensure the authenticated user is the owner of the portfolio
+        if ($portfolio->user_id !== $user->google_id) {
+            Log::error('Unauthorized access attempt for portfolio ID: ' . $id);
+            return response()->json(['error' => 'You are not authorized to update this portfolio.'], 403);
+        }
 
         // Log the user_id for tracking
-        Log::info('User ID for the portfolio: ' . $userId);
+        Log::info('User ID for the portfolio: ' . $user->google_id);
 
         // Prepare fields to update in the portfolios table
         $updateFields = [
@@ -438,13 +344,13 @@ class PortfolioController extends Controller
                 Log::info('Photo URL: ' . $photoUrl);
 
                 // Update the user's photo in the users table
-                DB::table('users')->where('google_id', $userId)->update([
+                DB::table('users')->where('google_id', $user->google_id)->update([
                     'photo' => $photoUrl,
                     'updated_at' => now(),
                 ]);
 
                 // Log user photo update
-                Log::info('User photo updated for user ID: ' . $userId);
+                Log::info('User photo updated for user ID: ' . $user->google_id);
             } else {
                 Log::error('Uploaded photo is not valid.');
             }
@@ -454,7 +360,7 @@ class PortfolioController extends Controller
         $updatedPortfolio = DB::table('portfolios')->where('id', $id)->first();
 
         // Fetch the updated user details
-        $updatedUser = DB::table('users')->where('google_id', $userId)->first();
+        $updatedUser = DB::table('users')->where('google_id', $user->google_id)->first();
 
         // Log the updated portfolio and user details
         Log::info('Updated Portfolio: ', (array) $updatedPortfolio);
@@ -474,8 +380,6 @@ class PortfolioController extends Controller
             'photo' => $photoUrl ? $photoUrl : $updatedUser->photo // Return updated photo URL
         ], 200);
     }
-
-
 
 
     public function deletePortfolio($id)
