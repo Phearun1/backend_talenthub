@@ -213,6 +213,7 @@ class AchievementController extends Controller
         $endorsers = $request->input('endorsers', []);  // Array of endorser emails
         $endorserData = [];
         $endorsementStatusData = [];
+        $endorserDetails = [];
 
         // Check if endorsers are provided and process them
         foreach ($endorsers as $email) {
@@ -242,6 +243,14 @@ class AchievementController extends Controller
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
+
+                // Collect endorser details for the response
+                $endorserDetails[] = [
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'status_id' => 1, // Pending
+                    'status' => 'Pending',
+                ];
             } else {
                 Log::warning("Skipped endorser: {$email} — user not found or missing google_id.");
             }
@@ -270,7 +279,8 @@ class AchievementController extends Controller
             'issue_month' => $request->issue_month,
             'issue_year' => $request->issue_year,
             'description' => $request->description,
-            'photo' => $imageUrl
+            'photo' => $imageUrl,
+            'endorsers' => $endorserDetails, // Include endorser details in the response
         ], 200);
     } catch (\Exception $e) {
         DB::rollBack();
