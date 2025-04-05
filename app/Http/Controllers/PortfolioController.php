@@ -326,7 +326,7 @@ class PortfolioController extends Controller
         if ($request->hasFile('photo')) {
             $photo = $request->file('photo');
 
-            // Check if the file is uploaded
+            // Check if the file is uploaded and valid
             if ($photo->isValid()) {
                 // Log the photo upload process
                 Log::info('Photo uploaded: ' . $photo->getClientOriginalName());
@@ -380,6 +380,7 @@ class PortfolioController extends Controller
             'photo' => $photoUrl ? $photoUrl : $updatedUser->photo // Return updated photo URL
         ], 200);
     }
+
 
 
     public function deletePortfolio($id)
