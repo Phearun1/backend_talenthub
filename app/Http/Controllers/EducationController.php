@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class EducationController extends Controller
 {
@@ -27,6 +28,9 @@ class EducationController extends Controller
      */
     public function createEducation(Request $request)
     {
+        // Get the authenticated user (via the token)
+        $user = $request->user();  // This will return the authenticated user based on the token
+
         // Validate the input data
         $request->validate([
             'portfolio_id' => 'required|integer',
@@ -38,6 +42,13 @@ class EducationController extends Controller
             'start_year' => 'required|string|max:255',
             'end_year' => 'nullable|string|max:255',
         ]);
+
+        // Check if the portfolio belongs to the authenticated user
+        $portfolio = DB::table('portfolios')->where('id', $request->portfolio_id)->first();
+
+        if (!$portfolio || $portfolio->user_id !== $user->google_id) {
+            return response()->json(['error' => 'You are not authorized to create education for this portfolio.'], 403);
+        }
 
         // Insert new education record and get the ID
         $educationId = DB::table('education')->insertGetId([
@@ -62,12 +73,14 @@ class EducationController extends Controller
         ], 200);
     }
 
-
     /**
      * Update Education entry
      */
     public function updateEducation(Request $request, $id)
     {
+        // Get the authenticated user (via the token)
+        $user = $request->user();  // This will return the authenticated user based on the token
+
         // Validate the input data
         $request->validate([
             'education_center' => 'required|string|max:255',
@@ -76,6 +89,19 @@ class EducationController extends Controller
             'start_year' => 'required|string|max:255',
             'end_year' => 'nullable|string|max:255',
         ]);
+
+        // Find the education entry by ID
+        $education = DB::table('education')->where('id', $id)->first();
+
+        if (!$education) {
+            return response()->json(['error' => 'Education not found.'], 404);
+        }
+
+        // Ensure the authenticated user is the owner of the portfolio
+        $portfolio = DB::table('portfolios')->where('id', $education->portfolio_id)->first();
+        if (!$portfolio || $portfolio->user_id !== $user->google_id) {
+            return response()->json(['error' => 'You are not authorized to update this education record.'], 403);
+        }
 
         // Update the existing education record
         $educationUpdated = DB::table('education')->where('id', $id)->update([
@@ -100,16 +126,31 @@ class EducationController extends Controller
         return response()->json(['error' => 'Education not found.'], 404);
     }
 
-
     /**
      * Delete Education entry
      */
-    public function deleteEducation($id)
+    public function deleteEducation(Request $request, $id)
     {
-        // Delete the education record by ID
-        $education = DB::table('education')->where('id', $id)->delete();
+        // Get the authenticated user (via the token)
+        $user = $request->user();  // This will return the authenticated user based on the token
 
-        if ($education) {
+        // Find the education entry by ID
+        $education = DB::table('education')->where('id', $id)->first();
+
+        if (!$education) {
+            return response()->json(['error' => 'Education not found.'], 404);
+        }
+
+        // Ensure the authenticated user is the owner of the portfolio
+        $portfolio = DB::table('portfolios')->where('id', $education->portfolio_id)->first();
+        if (!$portfolio || $portfolio->user_id !== $user->google_id) {
+            return response()->json(['error' => 'You are not authorized to delete this education record.'], 403);
+        }
+
+        // Delete the education record by ID
+        $educationDeleted = DB::table('education')->where('id', $id)->delete();
+
+        if ($educationDeleted) {
             return response()->json(['message' => 'Education deleted successfully!'], 200);
         }
 
