@@ -445,24 +445,21 @@ class PortfolioController extends Controller
             // Log the photo upload process
             Log::info('Photo uploaded: ' . $photo->getClientOriginalName());
 
-            // If there's an old photo, delete it from the storage
-            if ($portfolio->user_id !== $user->google_id) {
-                // Assuming old image path is stored in the database
-                if ($portfolio->photo) {
-                    $oldPhotoPath = str_replace(asset('storage/'), 'public/', $portfolio->photo);  // Convert URL to file path
-                    $oldFilePath = storage_path('app/' . $oldPhotoPath);
-                    
-                    // Delete the old image if it exists
-                    if (file_exists($oldFilePath)) {
-                        unlink($oldFilePath); // Delete the old file
-                        Log::info('Deleted old photo from storage: ' . $oldFilePath);
-                    } else {
-                        Log::warning('Old photo not found for deletion: ' . $oldFilePath);
-                    }
+            // Delete the old image if it exists
+            if ($user->photo) {  // Check if the user already has a photo
+                $oldPhotoPath = str_replace(asset('storage/'), 'public/', $user->photo);  // Convert URL to file path
+                $oldFilePath = storage_path('app/' . $oldPhotoPath);
+                
+                // Delete the old image if it exists
+                if (file_exists($oldFilePath)) {
+                    unlink($oldFilePath); // Delete the old file
+                    Log::info('Deleted old photo from storage: ' . $oldFilePath);
+                } else {
+                    Log::warning('Old photo not found for deletion: ' . $oldFilePath);
                 }
             }
 
-            // Store the photo in 'photos' folder under 'public' disk
+            // Store the new photo in 'photos' folder under 'public' disk
             $photoPath = $photo->store('photos', 'public');
 
             // Base URL for accessing the photo
@@ -511,6 +508,7 @@ class PortfolioController extends Controller
         'photo' => $photoUrl ? $photoUrl : $updatedUser->photo // Return updated photo URL
     ], 200);
 }
+
 
 
 
