@@ -296,9 +296,10 @@ class AchievementController extends Controller
             $validator = Validator::make($request->all(), [
                 'title' => 'required|string|max:255',
                 'issued_by' => 'nullable|string|max:255',
-                'issue_date' => 'nullable|date',
+                'issue_month' => 'nullable|string|max:255',
+                'issue_year' => 'nullable|string|max:255',
                 'description' => 'nullable|string|max:255',
-                'image' => 'nullable|string|max:255',
+                'image' => 'nullable|image',  // Image should be optional (nullable)
                 'endorsers' => 'nullable|array', // Array of endorser emails
                 'endorsers.*' => 'email', // Validate each email in the array
             ]);
@@ -320,15 +321,36 @@ class AchievementController extends Controller
                 return response()->json(['error' => 'You are not authorized to update this achievement record.'], 403);
             }
 
-            // Update the achievement data
-            DB::table('achievements')->where('id', $id)->update([
+            // Prepare the data for the achievement update
+            $updateData = [
                 'title' => $request->title,
                 'issued_by' => $request->issued_by,
-                'issue_date' => $request->issue_date,
+                'issue_month' => $request->issue_month,
+                'issue_year' => $request->issue_year,
                 'description' => $request->description,
-                'image' => $request->image,
                 'updated_at' => now(),
-            ]);
+            ];
+
+            // If a new image is uploaded, handle it and update the image URL
+            if ($request->hasFile('image')) {
+                // First, remove the old image if it exists
+                if ($achievement->image) {
+                    $oldImagePath = public_path('storage/achievements/' . basename($achievement->image));
+                    if (file_exists($oldImagePath)) {
+                        unlink($oldImagePath); // Delete the old image
+                        Log::info('Deleted old image: ' . $oldImagePath);
+                    }
+                }
+
+                // Handle the new image upload
+                $image = $request->file('image');
+                $imagePath = $image->store('achievements', 'public');
+                $baseUrl = asset('storage/'); // Get base URL for accessing files
+                $updateData['image'] = $baseUrl . '/' . $imagePath; // Set the new image URL in the update data
+            }
+
+            // Update the achievement record in the database
+            DB::table('achievements')->where('id', $id)->update($updateData);
 
             // Handle endorsers if provided
             $endorsers = $request->input('endorsers', []);
@@ -394,6 +416,8 @@ class AchievementController extends Controller
             return response()->json(['message' => 'Something went wrong.'], 500);
         }
     }
+
+
 
     /**
      * Delete Achievement by ID
