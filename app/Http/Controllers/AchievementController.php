@@ -163,10 +163,11 @@ class AchievementController extends Controller
             $validator = Validator::make($request->all(), [
                 'portfolio_id' => 'required|integer',
                 'title' => 'required|string|max:255',
-                'issued_by' => 'required|string|max:255',
-                'issue_date' => 'required|date',
-                'description' => 'nullable|string|max:255',
-                'image' => 'nullable|image',  // Validate image
+                'issued_by' => 'nullable|string|max:255', // This can be NULL
+                'issue_month' => 'nullable|string|max:255', // Month of issue
+                'issue_year' => 'nullable|string|max:255', // Year of issue
+                'description' => 'nullable|string|max:255', // Description is now optional
+                'image' => 'nullable|image', // Image should be a valid file with specific mime types and size limit
                 'endorsers' => 'nullable|array', // Array of endorser emails
                 'endorsers.*' => 'email', // Validate each email in the array
             ]);
@@ -182,7 +183,7 @@ class AchievementController extends Controller
                 return response()->json(['error' => 'You are not authorized to create achievement for this portfolio.'], 403);
             }
 
-            // Handle image upload
+            // Handle image upload if an image is provided
             $imageUrl = null;
             if ($request->hasFile('image')) {
                 $image = $request->file('image');
@@ -200,7 +201,8 @@ class AchievementController extends Controller
                 'portfolio_id' => $request->portfolio_id,
                 'title' => $request->title,
                 'issued_by' => $request->issued_by,
-                'issue_date' => $request->issue_date,
+                'issue_month' => $request->issue_month,
+                'issue_year' => $request->issue_year,
                 'description' => $request->description,
                 'image' => $imageUrl, // Store the image URL in the database
                 'created_at' => now(),
@@ -266,6 +268,7 @@ class AchievementController extends Controller
             return response()->json(['message' => 'Something went wrong.'], 500);
         }
     }
+
 
 
     /**

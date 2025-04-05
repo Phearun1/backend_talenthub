@@ -15,10 +15,11 @@ return new class extends Migration
             $table->id();
             $table->integer('portfolio_id');
             $table->string('title');
-            $table->string('issued_by');
-            $table->dateTime('issue_date');
+            $table->string('issued_by')->nullable();
+            $table->string('issue_month')->nullable();
+            $table->string('issue_year')->nullable();
             $table->string('description')->nullable();
-            $table->string('image');
+            $table->string('image')->nullable();
             $table->timestamps();
         });
     }
