@@ -9,8 +9,9 @@ use Illuminate\Support\Facades\Validator;
 
 class AchievementController extends Controller
 {
-
-    // View Single Achievement by ID
+    /**
+     * View Single Achievement by ID
+     */
     public function viewAchievementDetail($id)
     {
         // Retrieve the achievement details
@@ -43,11 +44,17 @@ class AchievementController extends Controller
         return response()->json($achievement);
     }
 
+    /**
+     * Create a new Achievement entry
+     */
     public function createAchievement(Request $request)
     {
         DB::beginTransaction();
 
         try {
+            // Get the authenticated user (via the token)
+            $user = $request->user();  // This will return the authenticated user based on the token
+
             // Validation
             $validator = Validator::make($request->all(), [
                 'portfolio_id' => 'required|integer',
@@ -62,6 +69,13 @@ class AchievementController extends Controller
 
             if ($validator->fails()) {
                 return response()->json(['error' => $validator->errors()], 400);
+            }
+
+            // Check if the portfolio belongs to the authenticated user
+            $portfolio = DB::table('portfolios')->where('id', $request->portfolio_id)->first();
+
+            if (!$portfolio || $portfolio->user_id !== $user->google_id) {
+                return response()->json(['error' => 'You are not authorized to create achievement for this portfolio.'], 403);
             }
 
             // Insert into the achievements table
@@ -91,9 +105,6 @@ class AchievementController extends Controller
                         Log::warning("Skipped user: {$email} — they do not have role_id = 2.");
                         continue;
                     }
-
-                    // Log user info
-                    Log::info("Processing endorser: {$email}, Google ID: {$user->google_id}");
 
                     // Prepare data for achievement_endorsers table
                     $endorserData[] = [
@@ -139,13 +150,17 @@ class AchievementController extends Controller
         }
     }
 
-
-
+    /**
+     * Update Achievement entry
+     */
     public function updateAchievement(Request $request, $id)
     {
         DB::beginTransaction();
 
         try {
+            // Get the authenticated user (via the token)
+            $user = $request->user();  // This will return the authenticated user based on the token
+
             // Validation
             $validator = Validator::make($request->all(), [
                 'title' => 'required|string|max:255',
@@ -166,6 +181,12 @@ class AchievementController extends Controller
 
             if (!$achievement) {
                 return response()->json(['error' => 'Achievement not found'], 404);
+            }
+
+            // Ensure the authenticated user is the owner of the portfolio
+            $portfolio = DB::table('portfolios')->where('id', $achievement->portfolio_id)->first();
+            if (!$portfolio || $portfolio->user_id !== $user->google_id) {
+                return response()->json(['error' => 'You are not authorized to update this achievement record.'], 403);
             }
 
             // Update the achievement data
@@ -198,9 +219,6 @@ class AchievementController extends Controller
                         Log::warning("Skipped user: {$email} — they do not have role_id = 2.");
                         continue;
                     }
-
-                    // Log user info
-                    Log::info("Processing updated endorser: {$email}, Google ID: {$user->google_id}");
 
                     // Prepare data for achievement_endorsers table
                     $endorserData[] = [
@@ -246,18 +264,28 @@ class AchievementController extends Controller
         }
     }
 
-
-    // Delete Achievement by ID
-    public function deleteAchievement($id)
+    /**
+     * Delete Achievement by ID
+     */
+    public function deleteAchievement(Request $request, $id)
     {
         DB::beginTransaction();
 
         try {
+            // Get the authenticated user (via the token)
+            $user = $request->user();  // This will return the authenticated user based on the token
+
             // Check if the achievement exists
             $achievement = DB::table('achievements')->where('id', $id)->first();
 
             if (!$achievement) {
                 return response()->json(['error' => 'Achievement not found'], 404);
+            }
+
+            // Ensure the authenticated user is the owner of the portfolio
+            $portfolio = DB::table('portfolios')->where('id', $achievement->portfolio_id)->first();
+            if (!$portfolio || $portfolio->user_id !== $user->google_id) {
+                return response()->json(['error' => 'You are not authorized to delete this achievement record.'], 403);
             }
 
             // Delete endorsers and endorsement statuses related to the achievement
