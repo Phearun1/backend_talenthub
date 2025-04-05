@@ -269,7 +269,6 @@ class AchievementController extends Controller
                 'issue_month' => $request->issue_month,
                 'issue_year' => $request->issue_year,
                 'description' => $request->description,
-                'portfolio_id' => $request->portfolio_id,
                 'photo' => $imageUrl
             ], 200);
         } catch (\Exception $e) {
@@ -417,7 +416,6 @@ class AchievementController extends Controller
                 'issue_month' => $request->issue_month,
                 'issue_year' => $request->issue_year,
                 'description' => $request->description,
-                'portfolio_id' => $request->portfolio_id,
                 'photo' => $updateData['image'] ?? $achievement->image // Return the new image URL or the old one if not updated
 
             
