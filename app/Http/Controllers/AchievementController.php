@@ -409,7 +409,19 @@ class AchievementController extends Controller
             // Commit the transaction
             DB::commit();
 
-            return response()->json(['message' => 'Achievement updated successfully', 'achievement_id' => $id], 200);
+            return response()->json([
+                'message' => 'Achievement updated successfully', 
+                'achievement_id' => $id,
+                'title' => $request->title,
+                'issued_by' => $request->issued_by,
+                'issue_month' => $request->issue_month,
+                'issue_year' => $request->issue_year,
+                'description' => $request->description,
+                'portfolio_id' => $request->portfolio_id,
+                'photo' => $updateData['image'] ?? $achievement->image // Return the new image URL or the old one if not updated
+
+            
+            ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error updating achievement: ' . $e->getMessage());
