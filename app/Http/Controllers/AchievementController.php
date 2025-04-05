@@ -261,7 +261,17 @@ class AchievementController extends Controller
             // Commit the transaction
             DB::commit();
 
-            return response()->json(['message' => 'Achievement created successfully', 'image_url' => $imageUrl], 200);
+            return response()->json([
+                'message' => 'Achievement created successfully',
+                'achievement_id' => $achievementId,
+                'title' => $request->title,
+                'issued_by' => $request->issued_by,
+                'issue_month' => $request->issue_month,
+                'issue_year' => $request->issue_year,
+                'description' => $request->description,
+                'portfolio_id' => $request->portfolio_id,
+                'photo' => $imageUrl
+            ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error creating achievement: ' . $e->getMessage());
