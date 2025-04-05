@@ -409,7 +409,7 @@ class AchievementController extends Controller
             DB::commit();
 
             return response()->json([
-                'message' => 'Achievement updated successfully', 
+                'message' => 'Achievement updated successfully',
                 'achievement_id' => $id,
                 'title' => $request->title,
                 'issued_by' => $request->issued_by,
@@ -418,7 +418,7 @@ class AchievementController extends Controller
                 'description' => $request->description,
                 'photo' => $updateData['image'] ?? $achievement->image // Return the new image URL or the old one if not updated
 
-            
+
             ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -456,6 +456,21 @@ class AchievementController extends Controller
             // Delete endorsers and endorsement statuses related to the achievement
             DB::table('achievement_endorsers')->where('achievement_id', $id)->delete();
             DB::table('achievement_endorsement_statuses')->where('achievement_id', $id)->delete();
+
+            // Delete the image from the file system if it exists
+            if ($achievement->image) {
+                // Assuming the image is stored under 'storage/app/public/achievements'
+                $imagePath = str_replace(asset('storage/'), 'public/', $achievement->image);
+
+                // Check if the file exists and unlink (delete) the file
+                $fullPath = storage_path('app/' . $imagePath); // Get the full path to the file
+                if (file_exists($fullPath)) {
+                    unlink($fullPath); // Delete the image
+                    Log::info('Deleted image from storage: ' . $fullPath);
+                } else {
+                    Log::warning('Image not found for deletion: ' . $fullPath);
+                }
+            }
 
             // Delete the achievement itself
             $deleted = DB::table('achievements')->where('id', $id)->delete();
