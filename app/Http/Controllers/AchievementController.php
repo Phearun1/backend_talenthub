@@ -44,113 +44,6 @@ class AchievementController extends Controller
         return response()->json($achievement);
     }
 
-    /**
-     * Create a new Achievement entry
-     */
-    // public function createAchievement(Request $request)
-    // {
-    //     DB::beginTransaction();
-
-    //     try {
-    //         // Get the authenticated user (via the token)
-    //         $user = $request->user();  // This will return the authenticated user based on the token
-
-    //         // Validation
-    //         $validator = Validator::make($request->all(), [
-    //             'portfolio_id' => 'required|integer',
-    //             'title' => 'required|string|max:255',
-    //             'issued_by' => 'required|string|max:255',
-    //             'issue_date' => 'required|date',
-    //             'description' => 'nullable|string|max:255',
-    //             'image' => 'required|string|max:255',
-    //             'endorsers' => 'nullable|array', // Array of endorser emails
-    //             'endorsers.*' => 'email', // Validate each email in the array
-    //         ]);
-
-    //         if ($validator->fails()) {
-    //             return response()->json(['error' => $validator->errors()], 400);
-    //         }
-
-    //         // Check if the portfolio belongs to the authenticated user
-    //         $portfolio = DB::table('portfolios')->where('id', $request->portfolio_id)->first();
-
-    //         if (!$portfolio || $portfolio->user_id !== $user->google_id) {
-    //             return response()->json(['error' => 'You are not authorized to create achievement for this portfolio.'], 403);
-    //         }
-
-    //         // Insert into the achievements table
-    //         $achievementId = DB::table('achievements')->insertGetId([
-    //             'portfolio_id' => $request->portfolio_id,
-    //             'title' => $request->title,
-    //             'issued_by' => $request->issued_by,
-    //             'issue_date' => $request->issue_date,
-    //             'description' => $request->description,
-    //             'image' => $request->image,
-    //             'created_at' => now(),
-    //             'updated_at' => now(),
-    //         ]);
-
-    //         // Handle endorsers if provided
-    //         $endorsers = $request->input('endorsers', []);
-    //         $endorserData = [];
-    //         $endorsementStatusData = [];
-
-    //         foreach ($endorsers as $email) {
-    //             // Find the user by email
-    //             $user = DB::table('users')->where('email', $email)->first();
-
-    //             if ($user && $user->google_id) {
-    //                 // Check if the user has role_id = 2
-    //                 if ($user->role_id != 2) {
-    //                     Log::warning("Skipped user: {$email} — they do not have role_id = 2.");
-    //                     continue;
-    //                 }
-
-    //                 // Prepare data for achievement_endorsers table
-    //                 $endorserData[] = [
-    //                     'achievement_id' => $achievementId,
-    //                     'user_id' => $user->google_id,
-    //                     'created_at' => now(),
-    //                     'updated_at' => now(),
-    //                 ];
-
-    //                 // Prepare data for achievement_endorsement_statuses table (default to Pending)
-    //                 $endorsementStatusData[] = [
-    //                     'achievement_id' => $achievementId,
-    //                     'endorsement_status_id' => 1, // Pending
-    //                     'endorser_id' => $user->google_id,
-    //                     'created_at' => now(),
-    //                     'updated_at' => now(),
-    //                 ];
-    //             } else {
-    //                 Log::warning("Skipped endorser: {$email} — user not found or missing google_id.");
-    //             }
-    //         }
-
-    //         // Insert endorsers into achievement_endorsers
-    //         if (!empty($endorserData)) {
-    //             DB::table('achievement_endorsers')->insert($endorserData);
-    //             Log::info('Inserted into achievement_endorsers:', $endorserData);
-    //         }
-
-    //         // Insert endorsement statuses into achievement_endorsement_statuses
-    //         if (!empty($endorsementStatusData)) {
-    //             DB::table('achievement_endorsement_statuses')->insert($endorsementStatusData);
-    //             Log::info('Inserted into achievement_endorsement_statuses:', $endorsementStatusData);
-    //         }
-
-    //         // Commit the transaction
-    //         DB::commit();
-
-    //         return response()->json(['message' => 'Achievement created successfully'], 200);
-    //     } catch (\Exception $e) {
-    //         DB::rollBack();
-    //         Log::error('Error creating achievement: ' . $e->getMessage());
-    //         return response()->json(['message' => 'Something went wrong.'], 500);
-    //     }
-    // }
-
-
     public function createAchievement(Request $request)
 {
     DB::beginTransaction();
@@ -259,13 +152,13 @@ class AchievementController extends Controller
         // Insert endorsers into achievement_endorsers
         if (!empty($endorserData)) {
             DB::table('achievement_endorsers')->insert($endorserData);
-            Log::info('Inserted into achievement_endorsers:', $endorserData);
+            // Log::info('Inserted into achievement_endorsers:', $endorserData);
         }
 
         // Insert endorsement statuses into achievement_endorsement_statuses
         if (!empty($endorsementStatusData)) {
             DB::table('achievement_endorsement_statuses')->insert($endorsementStatusData);
-            Log::info('Inserted into achievement_endorsement_statuses:', $endorsementStatusData);
+            // Log::info('Inserted into achievement_endorsement_statuses:', $endorsementStatusData);
         }
 
         // Commit the transaction
@@ -349,7 +242,7 @@ class AchievementController extends Controller
                     $oldImagePath = public_path('storage/achievements/' . basename($achievement->image));
                     if (file_exists($oldImagePath)) {
                         unlink($oldImagePath); // Delete the old image
-                        Log::info('Deleted old image: ' . $oldImagePath);
+                        // Log::info('Deleted old image: ' . $oldImagePath);
                     }
                 }
 
@@ -408,13 +301,13 @@ class AchievementController extends Controller
             // Insert endorsers into achievement_endorsers table
             if (!empty($endorserData)) {
                 DB::table('achievement_endorsers')->insert($endorserData);
-                Log::info('Updated achievement_endorsers:', $endorserData);
+                // Log::info('Updated achievement_endorsers:', $endorserData);
             }
 
             // Insert endorsement statuses into achievement_endorsement_statuses table
             if (!empty($endorsementStatusData)) {
                 DB::table('achievement_endorsement_statuses')->insert($endorsementStatusData);
-                Log::info('Updated achievement_endorsement_statuses:', $endorsementStatusData);
+                // Log::info('Updated achievement_endorsement_statuses:', $endorsementStatusData);
             }
 
             // Commit the transaction
@@ -478,7 +371,7 @@ class AchievementController extends Controller
                 $fullPath = storage_path('app/' . $imagePath); // Get the full path to the file
                 if (file_exists($fullPath)) {
                     unlink($fullPath); // Delete the image
-                    Log::info('Deleted image from storage: ' . $fullPath);
+                    // Log::info('Deleted image from storage: ' . $fullPath);
                 } else {
                     Log::warning('Image not found for deletion: ' . $fullPath);
                 }
