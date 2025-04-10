@@ -153,7 +153,7 @@ class ProjectController extends Controller
             'instruction' => 'required|string|max:255',
             'link' => 'nullable|string|max:255',
             'file' => 'nullable|file|mimes:zip',  // Validate file
-            'image.*' => 'nullable|image|mimes:jpeg,png,jpg',  // Validate multiple images
+            'image.*' => 'nullable|image', // Validate multiple images
             'programming_language_id' => 'required|integer',
             'project_visibility_status' => 'required|integer',
         ]);
@@ -256,7 +256,6 @@ class ProjectController extends Controller
             'image_urls' => $imageUrls, // Multiple image URLs
         ], 200);
     }
-
 
 
 

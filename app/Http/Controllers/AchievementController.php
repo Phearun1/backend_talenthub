@@ -260,6 +260,7 @@ class AchievementController extends Controller
             $endorsers = $request->input('endorsers', []);
             $endorserData = [];
             $endorsementStatusData = [];
+            $endorserDetails = []; // Array to store endorser details for the response
 
             // Remove existing endorsers and endorsement statuses before adding new ones
             DB::table('achievement_endorsers')->where('achievement_id', $id)->delete();
@@ -293,6 +294,14 @@ class AchievementController extends Controller
                         'created_at' => now(),
                         'updated_at' => now(),
                     ];
+                    
+                    // Collect endorser details for the response
+                    $endorserDetails[] = [
+                        'name' => $user->name,
+                        'email' => $user->email,
+                        'status_id' => 1, // Pending
+                        'status' => 'Pending',
+                    ];
                 } else {
                     Log::warning("Skipped endorser: {$email} — user not found or missing google_id.");
                 }
@@ -321,9 +330,8 @@ class AchievementController extends Controller
                 'issue_month' => $request->issue_month,
                 'issue_year' => $request->issue_year,
                 'description' => $request->description,
-                'photo' => $updateData['image'] ?? $achievement->image // Return the new image URL or the old one if not updated
-
-
+                'photo' => $updateData['image'] ?? $achievement->image, // Return the new image URL or the old one if not updated
+                'endorsers' => $endorserDetails // Include endorser details in the response
             ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
