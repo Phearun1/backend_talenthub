@@ -189,8 +189,8 @@ class ProjectController extends Controller
             'instruction' => 'required|string|max:255',
             'link' => 'nullable|string|max:255',
             'file' => 'nullable|file|mimes:zip',  // Validate file
-            'image' => 'nullable|array', // Ensure image is treated as array
-            'image.*' => 'nullable|image', // Validate multiple images
+            'image' => 'nullable|array',  // Ensure image is an array for multiple upload
+            'image.*' => 'image|mimes:jpeg,png,jpg,gif,svg', // Validate each image in array
             'programming_language_id' => 'required|integer',
             'project_visibility_status' => 'required|integer',
         ]);
@@ -218,26 +218,22 @@ class ProjectController extends Controller
             $filePath = $file->store('projects', 'public'); // Store file in 'projects' folder, 'public' disk
             Log::info('Project file uploaded: ' . $filePath);
         }
+
         // Handle multiple image uploads
         $imagePaths = [];
         if ($request->hasFile('image')) {
-            Log::info('Raw request files data: ', $request->allFiles());
-
             $images = $request->file('image');
-            Log::info('Image files received: ', is_array($images) ? ['count' => count($images)] : ['single file']);
-
-            // If it's a single file, convert it to an array to handle uniformly
-            if (!is_array($images)) {
-                $images = [$images]; // Wrap the single image in an array
-            }
-
-            Log::info('Number of images to process: ' . count($images));
-
+            Log::info('Multiple images detected: ' . count($images));
+            
             foreach ($images as $image) {
                 try {
-                    $imagePath = $image->store('project_images', 'public');
-                    $imagePaths[] = $imagePath;
-                    Log::info('Image uploaded: ' . $imagePath);
+                    if ($image->isValid()) {
+                        $imagePath = $image->store('project_images', 'public');
+                        $imagePaths[] = $imagePath;
+                        Log::info('Image uploaded: ' . $imagePath);
+                    } else {
+                        Log::error('Invalid image file: ' . $image->getClientOriginalName());
+                    }
                 } catch (\Exception $e) {
                     Log::error('Error uploading image: ' . $e->getMessage());
                 }
@@ -262,6 +258,7 @@ class ProjectController extends Controller
         Log::info('Project created with ID: ' . $projectId);
 
         // Insert images into the project_images table
+        $imageUrls = [];
         if (!empty($imagePaths)) {
             foreach ($imagePaths as $imagePath) {
                 try {
@@ -271,6 +268,11 @@ class ProjectController extends Controller
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);
+                    
+                    // Build image URL
+                    $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
+                    $imageUrls[] = $baseUrl . $imagePath;
+                    
                     Log::info('Inserted image into project_images: ' . $imagePath);
                 } catch (\Exception $e) {
                     Log::error('Error inserting image into project_images: ' . $e->getMessage());
@@ -280,24 +282,16 @@ class ProjectController extends Controller
 
         // Base URL for accessing the files
         $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
-
-        // Construct file and image URLs
-        $fileUrl = $filePath ? $baseUrl . 'projects/' . basename($filePath) : null;
-        $imageUrls = [];
-
-        foreach ($imagePaths as $imagePath) {
-            $imageUrls[] = $baseUrl . 'project_images/' . basename($imagePath);
-        }
+        $fileUrl = $filePath ? $baseUrl . $filePath : null;
 
         // Return the full URLs for both the file and images
         return response()->json([
             'message' => 'Project created successfully.',
-            'project' => $projectId,
+            'project_id' => $projectId,
             'file_url' => $fileUrl,
-            'image_urls' => $imageUrls, // Multiple image URLs
+            'image_urls' => $imageUrls, // Array of image URLs
         ], 200);
     }
-
 
 
     public function viewProjectDetail($projectId)
