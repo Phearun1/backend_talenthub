@@ -19,6 +19,8 @@ Route::get('/view_all_companies', [ExperienceController::class, 'viewAllCompanie
 
 Route::get('/users', [UserController::class, 'view_all_user']);
 
+Route::post('/send-welcome-email', [UserController::class, 'sendWelcomeEmail']);
+
 
 // view all projects
 
