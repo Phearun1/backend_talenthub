@@ -143,16 +143,38 @@ class ProjectController extends Controller
     // }
     
 
-    public function viewAllProjects(){
-        // Retrieve all projects with their associated portfolio details
+    public function viewAllProjects(Request $request)
+    {
+        // Validate the request
+        $request->validate([
+            'portfolio_id' => 'required|integer',
+        ]);
+        
+        $portfolioId = $request->input('portfolio_id');
+        // Get the authenticated user's ID
+        $userId = $request->user()->google_id;
+        
+        // Verify the portfolio belongs to the authenticated user
+        $portfolio = DB::table('portfolios')
+            ->where('id', $portfolioId)
+            ->where('user_id', $userId)
+            ->first();
+            
+        if (!$portfolio) {
+            return response()->json(['error' => 'You are not authorized to view projects for this portfolio.'], 403);
+        }
+        
+        // Retrieve all projects for the specified portfolio
         $projects = DB::table('projects')
             ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
             ->select(
                 'portfolios.id as portfolio_id',
                 'projects.id as project_id',
-                'projects.title',
+                'projects.title'
             )
+            ->where('projects.portfolio_id', $portfolioId)
             ->get();
+            
         // Return the projects data
         return response()->json($projects);
     }
