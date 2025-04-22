@@ -90,7 +90,7 @@ class PortfolioController extends Controller
                     'users.google_id as id',
                     'users.name',
                     'users.email',
-                    'users.photo',
+                    'users.photo', // Ensure photo is included
                     'endorsement_statuses.status as status',
                     'endorsement_statuses.id as status_id'
                 )
@@ -110,7 +110,14 @@ class PortfolioController extends Controller
                         ->where('achievement_endorsement_statuses.achievement_id', '=', $achievement->id);
                 })
                 ->join('endorsement_statuses', 'achievement_endorsement_statuses.endorsement_status_id', '=', 'endorsement_statuses.id')
-                ->select('users.google_id as id', 'users.name', 'users.email', 'endorsement_statuses.status as status', 'endorsement_statuses.id as status_id')
+                ->select(
+                    'users.google_id as id', 
+                    'users.name', 
+                    'users.email',
+                    'users.photo', // Added photo field
+                    'endorsement_statuses.status as status', 
+                    'endorsement_statuses.id as status_id'
+                )
                 ->distinct()
                 ->get();
         }
@@ -124,7 +131,7 @@ class PortfolioController extends Controller
                     'users.google_id as id',
                     'users.name as name',
                     'users.email as email',
-                    'users.photo as photo',
+                    'users.photo as photo', // Photo is already included here
                     'endorsement_statuses.id as status_id',
                     'endorsement_statuses.status as status'
                 )
@@ -136,7 +143,7 @@ class PortfolioController extends Controller
         // Return the response with all the data
         return response()->json([
             'portfolio' => $portfolio,
-            'projects' => $projects,  // Now only includes id, portfolio_id, and title
+            'projects' => $projects,  // Only includes id, portfolio_id, and title
             'education' => $education,
             'achievements' => $achievements,
             'skills' => $skills,
