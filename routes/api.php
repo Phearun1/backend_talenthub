@@ -34,7 +34,7 @@ Route::middleware([\Fruitcake\Cors\HandleCors::class])->group(function () {
     Route::get('view_achievement_detail/{id}', [AchievementController::class, 'viewAchievementDetail']);
 });
 
-Route::post('/view_all_projects', [ProjectController::class, 'viewAllProjects']);
+Route::get('/view_all_projects', [ProjectController::class, 'viewAllProjects']);
 
 
 Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
