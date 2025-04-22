@@ -84,7 +84,6 @@ class ProjectController extends Controller
         return response()->json($project);
     }
 
-        <?php
     public function createProject(Request $request)
     {
         // Validate the incoming request data
