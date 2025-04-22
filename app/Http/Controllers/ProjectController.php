@@ -151,14 +151,12 @@ class ProjectController extends Controller
         ]);
         
         $portfolioId = $request->input('portfolio_id');
-        // Get the authenticated user's ID
-        $userId = $request->user()->google_id;
+        
         
         // Verify the portfolio belongs to the authenticated user
         $portfolio = DB::table('portfolios')
-            ->where('id', $portfolioId)
-            ->where('user_id', $userId)
-            ->first();
+            ->where('projects.id', $portfolioId)
+            ->get();
             
         if (!$portfolio) {
             return response()->json(['error' => 'You are not authorized to view projects for this portfolio.'], 403);
