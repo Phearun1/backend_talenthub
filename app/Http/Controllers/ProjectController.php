@@ -285,9 +285,23 @@ class ProjectController extends Controller
         $fileUrl = $filePath ? $baseUrl . $filePath : null;
 
         // Return the full URLs for both the file and images
+        // Fetch the complete project details to return
+        $projectDetails = DB::table('projects')
+            ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
+            ->select(
+            'portfolios.id as portfolio_id',
+            'projects.id as project_id',
+            'projects.title',
+            'projects.description',
+            'projects.instruction',
+            'projects.link'
+            )
+            ->where('projects.id', $projectId)
+            ->first();
+            
         return response()->json([
             'message' => 'Project created successfully.',
-            'project_id' => $projectId,
+            'project' => $projectDetails,
             'file_url' => $fileUrl,
             'image_urls' => $imageUrls, // Array of image URLs
         ], 200);
