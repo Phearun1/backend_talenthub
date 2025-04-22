@@ -33,7 +33,6 @@ class PortfolioController extends Controller
         return response()->json($portfolios);
     }
 
-
     public function viewPortfolioDetails($userID)
     {
         $portfolio = DB::table('portfolios')
@@ -55,45 +54,31 @@ class PortfolioController extends Controller
             )
             ->where('portfolios.user_id', $userID)
             ->first();
-
+    
         if (!$portfolio) {
             return response()->json(['error' => 'Portfolio not found.'], 404);
         }
-
+    
         $portfolioId = $portfolio->id;
-
-        // Get the projects related to the portfolio
-        $projects = DB::table('projects')->where('portfolio_id', $portfolioId)->get();
-
-        // Base URL for accessing the files
-        $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
-
-        // Add file_url and image_url to each project
-        foreach ($projects as $project) {
-            // Add the full URLs for file and image
-            $project->file_url = $project->file ? $baseUrl . 'projects/' . basename($project->file) : null;
-
-            // Retrieve the image associated with the project from the project_images table
-            $image = DB::table('project_images')
-                ->where('project_id', $project->id)
-                ->first(); // Get the first image associated with the project
-
-            // Construct the image URL if an image is found
-            $project->image_url = $image ? $baseUrl . $image->image : null;
-        }
-
+    
+        // Get only the specific fields from projects related to the portfolio
+        $projects = DB::table('projects')
+            ->select('id', 'portfolio_id', 'title')
+            ->where('portfolio_id', $portfolioId)
+            ->get();
+    
         // Get other related data like education, achievements, skills, etc.
         $education = DB::table('education')->where('portfolio_id', $portfolioId)->get();
         $achievements = DB::table('achievements')->where('portfolio_id', $portfolioId)->get();
         $skills = DB::table('skills')->where('portfolio_id', $portfolioId)->get();
         $experiences = DB::table('experiences')->where('portfolio_id', $portfolioId)->get();
-
+    
         // Modify experiences and achievements if needed, as done earlier
         foreach ($experiences as $experience) {
             $company = DB::table('companies')->where('id', $experience->company_id)->first();
             $experience->company_name = $company ? $company->company_name : 'Unknown';
             unset($experience->company_id);
-
+    
             $rawEndorsers = DB::table('experience_endorsers')
                 ->join('users', 'experience_endorsers.user_id', '=', 'users.google_id')
                 ->join('experience_endorsement_statuses', function ($join) use ($experience) {
@@ -110,12 +95,12 @@ class PortfolioController extends Controller
                 )
                 ->where('experience_endorsers.experience_id', $experience->id)
                 ->get();
-
+    
             $experience->endorsers = collect($rawEndorsers)
                 ->unique('id')
                 ->values();
         }
-
+    
         foreach ($achievements as $achievement) {
             $achievement->endorsers = DB::table('achievement_endorsers')
                 ->join('users', 'achievement_endorsers.user_id', '=', 'users.google_id')
@@ -128,7 +113,7 @@ class PortfolioController extends Controller
                 ->distinct()
                 ->get();
         }
-
+    
         // Add skill endorsers with endorsement statuses
         foreach ($skills as $skill) {
             $skill->endorsers = DB::table('skill_endorsement_statuses')
@@ -145,11 +130,11 @@ class PortfolioController extends Controller
                 ->distinct()  // Ensure distinct records
                 ->get();
         }
-
+    
         // Return the response with all the data
         return response()->json([
             'portfolio' => $portfolio,
-            'projects' => $projects,  // Projects now include file_url and image_url
+            'projects' => $projects,  // Now only includes id, portfolio_id, and title
             'education' => $education,
             'achievements' => $achievements,
             'skills' => $skills,
