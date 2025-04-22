@@ -33,7 +33,7 @@
             <h1>Welcome to TalentHub!</h1>
         </div>
         
-        <p>Hello {{ $userData['name'] }},</p>
+        <p>Hello {{ $user['name'] }},</p>
         
         <p>Thank you for joining TalentHub. Your account has been successfully created.</p>
         
