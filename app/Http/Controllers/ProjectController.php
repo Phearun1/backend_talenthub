@@ -84,6 +84,7 @@ class ProjectController extends Controller
         return response()->json($project);
     }
 
+        <?php
     public function createProject(Request $request)
     {
         // Validate the incoming request data
@@ -175,6 +176,16 @@ class ProjectController extends Controller
     
         // Log project ID after insertion
         Log::info('Project created with ID: ' . $projectId);
+        
+        // Create the relationship in project_languages table
+        DB::table('project_languages')->insert([
+            'project_id' => $projectId,
+            'programming_language_id' => $programmingLanguageId,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        
+        Log::info('Created project-language relationship: Project ID ' . $projectId . ' -> Language ID ' . $programmingLanguageId);
     
         // Insert images into the project_images table
         $imageUrls = [];
