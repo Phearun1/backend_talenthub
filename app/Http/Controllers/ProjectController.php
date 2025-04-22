@@ -152,17 +152,16 @@ class ProjectController extends Controller
         
         $portfolioId = $request->input('portfolio_id');
         
-        
-        // Verify the portfolio belongs to the authenticated user
+        // Verify the portfolio exists
         $portfolio = DB::table('portfolios')
-            ->where('projects.id', $portfolioId)
-            ->get();
+            ->where('id', $portfolioId)
+            ->first();
             
         if (!$portfolio) {
-            return response()->json(['error' => 'You are not authorized to view projects for this portfolio.'], 403);
+            return response()->json(['error' => 'Portfolio not found.'], 404);
         }
         
-        // Retrieve all projects for the specified portfolio
+        // Retrieve all projects for the specified portfolio with only the required fields
         $projects = DB::table('projects')
             ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
             ->select(
@@ -174,7 +173,10 @@ class ProjectController extends Controller
             ->get();
             
         // Return the projects data
-        return response()->json($projects);
+        return response()->json([
+            'portfolio_id' => $portfolioId,
+            'projects' => $projects
+        ]);
     }
     
     public function createProject(Request $request)
