@@ -8,6 +8,7 @@ use App\Http\Controllers\SkillController;
 use App\Http\Controllers\ExperienceController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\EducationController;
+use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -19,7 +20,7 @@ Route::get('/view_all_companies', [ExperienceController::class, 'viewAllCompanie
 
 Route::get('/users', [UserController::class, 'view_all_user']);
 
-Route::post('/send-welcome-email', [UserController::class, 'sendWelcomeEmail']);
+Route::post('/send-welcome-email', [NotificationController::class, 'sendWelcomeEmail']);
 
 
 // view all projects
