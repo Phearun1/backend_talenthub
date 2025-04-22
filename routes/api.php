@@ -60,7 +60,7 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
 
     // project
     Route::post('/create_project', [ProjectController::class, 'createProject']);
-    Route::put('/update_project/{id}', [ProjectController::class, 'updateProject']);
+    Route::post('/update_project/{id}', [ProjectController::class, 'updateProject']);
     Route::delete('/delete_project/{id}', [ProjectController::class, 'deleteProject']);
 
 
