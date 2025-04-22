@@ -143,6 +143,20 @@ class ProjectController extends Controller
     // }
     
 
+    public function viewAllProjects(){
+        // Retrieve all projects with their associated portfolio details
+        $projects = DB::table('projects')
+            ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
+            ->select(
+                'portfolios.id as portfolio_id',
+                'projects.id as project_id',
+                'projects.title',
+            )
+            ->get();
+        // Return the projects data
+        return response()->json($projects);
+    }
+    
     public function createProject(Request $request)
     {
         // Validate the incoming request data
@@ -342,6 +356,7 @@ class ProjectController extends Controller
             'project' => $updatedProject,
         ], 200);
     }
+
 
     public function deleteProject($id)
     {

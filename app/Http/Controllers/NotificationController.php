@@ -37,6 +37,8 @@ class NotificationController extends Controller
         }
     }
 
+    
+
     // public function sendWelcomeEmail()
     // {
     //     $user = new \stdClass();
