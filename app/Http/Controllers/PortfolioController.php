@@ -63,10 +63,7 @@ class PortfolioController extends Controller
         $portfolioId = $portfolio->id;
 
         // Get the projects related to the portfolio
-        $projects = DB::table('projects')
-            ->select('id', 'portfolio_id', 'title')
-            ->where('portfolio_id', $portfolioId)
-            ->get();
+        $projects = DB::table('projects')->where('portfolio_id', $portfolioId)->get();
 
         // Base URL for accessing the files
         $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
@@ -386,131 +383,131 @@ class PortfolioController extends Controller
 
 
     public function updatePortfolio(Request $request, $id)
-    {
-        // Log the raw input data for debugging
-        // Log::info('Raw Request Data: ', $request->all());
+{
+    // Log the raw input data for debugging
+    // Log::info('Raw Request Data: ', $request->all());
 
-        // Validate input fields
-        $request->validate([
-            'major_id' => 'nullable|integer',
-            'phone_number' => 'nullable|string|max:255',
-            'about' => 'nullable|string|max:255',
-            'working_status' => 'nullable|integer',
-            'photo' => 'nullable|image', // Validate photo as an image
-        ]);
+    // Validate input fields
+    $request->validate([
+        'major_id' => 'nullable|integer',
+        'phone_number' => 'nullable|string|max:255',
+        'about' => 'nullable|string|max:255',
+        'working_status' => 'nullable|integer',
+        'photo' => 'nullable|image', // Validate photo as an image
+    ]);
 
-        // Get the authenticated user (via the token)
-        $user = $request->user();  // This will return the authenticated user based on the token
+    // Get the authenticated user (via the token)
+    $user = $request->user();  // This will return the authenticated user based on the token
 
-        // Find the portfolio by ID
-        $portfolio = DB::table('portfolios')->where('id', $id)->first();
+    // Find the portfolio by ID
+    $portfolio = DB::table('portfolios')->where('id', $id)->first();
 
-        if (!$portfolio) {
-            // Log::error('Portfolio not found for ID: ' . $id);
-            return response()->json(['error' => 'Portfolio not found.'], 404);
-        }
-
-        // Ensure the authenticated user is the owner of the portfolio
-        if ($portfolio->user_id !== $user->google_id) {
-            // Log::error('Unauthorized access attempt for portfolio ID: ' . $id);
-            return response()->json(['error' => 'You are not authorized to update this portfolio.'], 403);
-        }
-
-        // Log the user_id for tracking
-        // Log::info('User ID for the portfolio: ' . $user->google_id);
-
-        // Prepare fields to update in the portfolios table
-        $updateFields = [
-            'major_id' => $request->input('major_id', $portfolio->major_id),
-            'phone_number' => $request->input('phone_number', $portfolio->phone_number),
-            'about' => $request->input('about', $portfolio->about),
-            'working_status' => $request->input('working_status', $portfolio->working_status),
-            'status' => 1, // Setting status to '1' (active)
-            'updated_at' => now(),
-        ];
-
-        // Log the fields being updated
-        // Log::info('Updating portfolio with the following fields: ', $updateFields);
-
-        // Update the portfolio details
-        DB::table('portfolios')->where('id', $id)->update($updateFields);
-
-        // Log after portfolio update
-        // Log::info('Portfolio updated successfully for ID: ' . $id);
-
-        // Handle photo update if provided
-        $photoUrl = null;
-        if ($request->hasFile('photo')) {
-            $photo = $request->file('photo');
-
-            // Check if the file is uploaded and valid
-            if ($photo->isValid()) {
-                // Log the photo upload process
-                // Log::info('Photo uploaded: ' . $photo->getClientOriginalName());
-
-                // Delete the old image if it exists
-                if ($user->photo) {  // Check if the user already has a photo
-                    $oldPhotoPath = str_replace(asset('storage/'), 'public/', $user->photo);  // Convert URL to file path
-                    $oldFilePath = storage_path('app/' . $oldPhotoPath);
-
-                    // Delete the old image if it exists
-                    if (file_exists($oldFilePath)) {
-                        unlink($oldFilePath); // Delete the old file
-                        // Log::info('Deleted old photo from storage: ' . $oldFilePath);
-                    } else {
-                        Log::warning('Old photo not found for deletion: ' . $oldFilePath);
-                    }
-                }
-
-                // Store the new photo in 'photos' folder under 'public' disk
-                $photoPath = $photo->store('photos', 'public');
-
-                // Base URL for accessing the photo
-                $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
-
-                // Construct the photo URL
-                $photoUrl = $baseUrl . 'photos/' . basename($photoPath);
-
-                // Log the photo URL
-                // Log::info('New Photo URL: ' . $photoUrl);
-
-                // Update the user's photo in the users table
-                DB::table('users')->where('google_id', $user->google_id)->update([
-                    'photo' => $photoUrl,
-                    'updated_at' => now(),
-                ]);
-
-                // Log user photo update
-                // Log::info('User photo updated for user ID: ' . $user->google_id);
-            } else {
-                Log::error('Uploaded photo is not valid.');
-            }
-        }
-
-        // Fetch the updated portfolio
-        $updatedPortfolio = DB::table('portfolios')->where('id', $id)->first();
-
-        // Fetch the updated user details
-        $updatedUser = DB::table('users')->where('google_id', $user->google_id)->first();
-
-        // Log the updated portfolio and user details
-        // Log::info('Updated Portfolio: ', (array) $updatedPortfolio);
-        // Log::info('Updated User: ', (array) $updatedUser);
-
-        // Return only the desired fields (portfolio and user) without additional structure
-        return response()->json([
-            'id' => $updatedPortfolio->id,
-            'google_id' => $updatedPortfolio->user_id,
-            'name' => $updatedUser->name,
-            'email' => $updatedUser->email,
-            'major_id' => $updatedPortfolio->major_id,
-            'phone_number' => $updatedPortfolio->phone_number,
-            'about' => $updatedPortfolio->about,
-            'working_status' => $updatedPortfolio->working_status,
-            'status' => $updatedPortfolio->status,
-            'photo' => $photoUrl ? $photoUrl : $updatedUser->photo // Return updated photo URL
-        ], 200);
+    if (!$portfolio) {
+        // Log::error('Portfolio not found for ID: ' . $id);
+        return response()->json(['error' => 'Portfolio not found.'], 404);
     }
+
+    // Ensure the authenticated user is the owner of the portfolio
+    if ($portfolio->user_id !== $user->google_id) {
+        // Log::error('Unauthorized access attempt for portfolio ID: ' . $id);
+        return response()->json(['error' => 'You are not authorized to update this portfolio.'], 403);
+    }
+
+    // Log the user_id for tracking
+    // Log::info('User ID for the portfolio: ' . $user->google_id);
+
+    // Prepare fields to update in the portfolios table
+    $updateFields = [
+        'major_id' => $request->input('major_id', $portfolio->major_id),
+        'phone_number' => $request->input('phone_number', $portfolio->phone_number),
+        'about' => $request->input('about', $portfolio->about),
+        'working_status' => $request->input('working_status', $portfolio->working_status),
+        'status' => 1, // Setting status to '1' (active)
+        'updated_at' => now(),
+    ];
+
+    // Log the fields being updated
+    // Log::info('Updating portfolio with the following fields: ', $updateFields);
+
+    // Update the portfolio details
+    DB::table('portfolios')->where('id', $id)->update($updateFields);
+
+    // Log after portfolio update
+    // Log::info('Portfolio updated successfully for ID: ' . $id);
+
+    // Handle photo update if provided
+    $photoUrl = null;
+    if ($request->hasFile('photo')) {
+        $photo = $request->file('photo');
+
+        // Check if the file is uploaded and valid
+        if ($photo->isValid()) {
+            // Log the photo upload process
+            // Log::info('Photo uploaded: ' . $photo->getClientOriginalName());
+
+            // Delete the old image if it exists
+            if ($user->photo) {  // Check if the user already has a photo
+                $oldPhotoPath = str_replace(asset('storage/'), 'public/', $user->photo);  // Convert URL to file path
+                $oldFilePath = storage_path('app/' . $oldPhotoPath);
+                
+                // Delete the old image if it exists
+                if (file_exists($oldFilePath)) {
+                    unlink($oldFilePath); // Delete the old file
+                    // Log::info('Deleted old photo from storage: ' . $oldFilePath);
+                } else {
+                    Log::warning('Old photo not found for deletion: ' . $oldFilePath);
+                }
+            }
+
+            // Store the new photo in 'photos' folder under 'public' disk
+            $photoPath = $photo->store('photos', 'public');
+
+            // Base URL for accessing the photo
+            $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
+
+            // Construct the photo URL
+            $photoUrl = $baseUrl . 'photos/' . basename($photoPath);
+
+            // Log the photo URL
+            // Log::info('New Photo URL: ' . $photoUrl);
+
+            // Update the user's photo in the users table
+            DB::table('users')->where('google_id', $user->google_id)->update([
+                'photo' => $photoUrl,
+                'updated_at' => now(),
+            ]);
+
+            // Log user photo update
+            // Log::info('User photo updated for user ID: ' . $user->google_id);
+        } else {
+            Log::error('Uploaded photo is not valid.');
+        }
+    }
+
+    // Fetch the updated portfolio
+    $updatedPortfolio = DB::table('portfolios')->where('id', $id)->first();
+
+    // Fetch the updated user details
+    $updatedUser = DB::table('users')->where('google_id', $user->google_id)->first();
+
+    // Log the updated portfolio and user details
+    // Log::info('Updated Portfolio: ', (array) $updatedPortfolio);
+    // Log::info('Updated User: ', (array) $updatedUser);
+
+    // Return only the desired fields (portfolio and user) without additional structure
+    return response()->json([
+        'id' => $updatedPortfolio->id,
+        'google_id' => $updatedPortfolio->user_id,
+        'name' => $updatedUser->name,
+        'email' => $updatedUser->email,
+        'major_id' => $updatedPortfolio->major_id,
+        'phone_number' => $updatedPortfolio->phone_number,
+        'about' => $updatedPortfolio->about,
+        'working_status' => $updatedPortfolio->working_status,
+        'status' => $updatedPortfolio->status,
+        'photo' => $photoUrl ? $photoUrl : $updatedUser->photo // Return updated photo URL
+    ], 200);
+}
 
 
 
