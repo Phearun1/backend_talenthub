@@ -21,8 +21,11 @@ class NotificationController extends Controller
             // Add other user data as needed
         ];
         
+        // Convert array to object for the email template
+        $userObject = (object) $userData;
+        
         try {
-            Mail::to($userData['email'])->send(new MyTestEmail($userData));
+            Mail::to($userData['email'])->send(new MyTestEmail($userObject));
             
             return response()->json([
                 'message' => 'Email sent successfully',
