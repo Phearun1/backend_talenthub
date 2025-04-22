@@ -249,26 +249,45 @@ class ProjectController extends Controller
             'file' => 'nullable|file|mimes:zip',  // Validate file
             'image' => 'nullable|array',  // Ensure image is an array for multiple upload
             'image.*' => 'image|mimes:jpeg,png,jpg,gif,svg', // Validate each image in array
-            'programming_language_id' => 'required|integer',
+            'programming_language' => 'required|string|max:255', // Changed from ID to name
             'project_visibility_status' => 'required|integer',
-            'deleted_images' => 'nullable|array', // IDs of images to delete
         ]);
-
+    
         // Check if the project exists
         $project = DB::table('projects')->where('id', $id)->first();
-
+    
         if (!$project) {
             return response()->json(['error' => 'Project not found.'], 404);
         }
-
+    
         // Ensure that the project belongs to the authenticated user and their portfolio
         $portfolio = DB::table('portfolios')->where('id', $project->portfolio_id)->first();
         $userId = $request->user()->google_id;
-
+    
         if (!$portfolio || $portfolio->user_id != $userId) {
             return response()->json(['error' => 'You are not authorized to update this project.'], 403);
         }
-
+    
+        // Handle programming language - check if it exists or create new one
+        $programmingLanguageName = $request->input('programming_language');
+        $programmingLanguage = DB::table('programming_languages')
+            ->where('programming_language', $programmingLanguageName)
+            ->first();
+    
+        if (!$programmingLanguage) {
+            // Create a new programming language
+            $programmingLanguageId = DB::table('programming_languages')->insertGetId([
+                'programming_language' => $programmingLanguageName,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            
+            Log::info('Created new programming language: ' . $programmingLanguageName . ' with ID: ' . $programmingLanguageId);
+        } else {
+            $programmingLanguageId = $programmingLanguage->id;
+            Log::info('Using existing programming language: ' . $programmingLanguageName . ' with ID: ' . $programmingLanguageId);
+        }
+    
         // Process file upload if a new file is provided
         $filePath = $project->file; // Default to current file path
         if ($request->hasFile('file')) {
@@ -280,47 +299,47 @@ class ProjectController extends Controller
                     Log::info('Deleted old project file using unlink: ' . $oldFilePath);
                 }
             }
-
+    
             // Store the new file
             $file = $request->file('file');
             $filePath = $file->store('projects', 'public');
             Log::info('New project file uploaded: ' . $filePath);
         }
-
-        // Delete images if specified
-        $deletedImages = $request->input('deleted_images', []);
-        if (!empty($deletedImages)) {
-            foreach ($deletedImages as $imageId) {
-                $image = DB::table('project_images')->where('id', $imageId)->first();
-
-                if ($image && $image->project_id == $id) {
-                    // Delete the image file using unlink
-                    $imagePath = storage_path('app/public/' . $image->image);
-                    if (file_exists($imagePath)) {
-                        unlink($imagePath);
-                        Log::info('Deleted project image using unlink: ' . $imagePath);
-                    }
-
-                    // Delete the record from the database
-                    DB::table('project_images')->where('id', $imageId)->delete();
-                    Log::info('Deleted project image record with ID: ' . $imageId);
+    
+        // Handle the case where image[] is explicitly set to null (delete all existing images)
+        if ($request->has('image') && $request->input('image') === null) {
+            // Get all current images for the project
+            $existingImages = DB::table('project_images')->where('project_id', $id)->get();
+            
+            // Delete each image file and its database record
+            foreach ($existingImages as $image) {
+                $imagePath = storage_path('app/public/' . $image->image);
+                if (file_exists($imagePath)) {
+                    unlink($imagePath);
+                    Log::info('Deleted project image using unlink: ' . $imagePath);
                 }
+                
+                // Delete the database record
+                DB::table('project_images')->where('id', $image->id)->delete();
+                Log::info('Deleted project image record with ID: ' . $image->id);
             }
+            
+            Log::info('All images deleted for project ID: ' . $id);
         }
-
+    
         // Handle new image uploads
         $newImageUrls = [];
         if ($request->hasFile('image')) {
             $images = $request->file('image');
             Log::info('New images detected: ' . count($images));
-
+    
             foreach ($images as $image) {
                 try {
                     if ($image->isValid()) {
                         // Generate a unique filename
                         $filename = time() . '_' . $image->getClientOriginalName();
                         $imagePath = $image->storeAs('project_images', $filename, 'public');
-
+    
                         // Insert into project_images table
                         $imageId = DB::table('project_images')->insertGetId([
                             'project_id' => $id,
@@ -328,14 +347,14 @@ class ProjectController extends Controller
                             'created_at' => now(),
                             'updated_at' => now(),
                         ]);
-
+    
                         // Build image URL
                         $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
                         $newImageUrls[] = [
                             'id' => $imageId,
                             'url' => $baseUrl . $imagePath
                         ];
-
+    
                         Log::info('New image uploaded and inserted: ' . $imagePath);
                     } else {
                         Log::error('Invalid image file: ' . $image->getClientOriginalName());
@@ -345,7 +364,7 @@ class ProjectController extends Controller
                 }
             }
         }
-
+    
         // Update the project in the database
         DB::table('projects')->where('id', $id)->update([
             'title' => $request->input('title'),
@@ -353,11 +372,24 @@ class ProjectController extends Controller
             'instruction' => $request->input('instruction'),
             'link' => $request->input('link'),
             'file' => $filePath,
-            'programming_language_id' => $request->input('programming_language_id'),
+            'programming_language_id' => $programmingLanguageId,
             'project_visibility_status' => $request->input('project_visibility_status'),
             'updated_at' => now(),
         ]);
-
+    
+        // Update the project_languages relationship - First remove existing relationship
+        DB::table('project_languages')->where('project_id', $id)->delete();
+        
+        // Then create the new relationship
+        DB::table('project_languages')->insert([
+            'project_id' => $id,
+            'programming_language_id' => $programmingLanguageId,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        
+        Log::info('Updated project-language relationship: Project ID ' . $id . ' -> Language ID ' . $programmingLanguageId);
+    
         // Get all current images for the project
         $allImages = DB::table('project_images')
             ->where('project_id', $id)
@@ -369,14 +401,15 @@ class ProjectController extends Controller
                     'url' => $baseUrl . $image->image
                 ];
             });
-
+    
         // Base URL for accessing the files
         $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
         $fileUrl = $filePath ? $baseUrl . $filePath : null;
-
+    
         // Fetch the updated project details
         $projectDetails = DB::table('projects')
             ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
+            ->join('programming_languages', 'projects.programming_language_id', '=', 'programming_languages.id')
             ->select(
                 'portfolios.id as portfolio_id',
                 'projects.id as project_id',
@@ -384,12 +417,12 @@ class ProjectController extends Controller
                 'projects.description',
                 'projects.instruction',
                 'projects.link',
-                'projects.programming_language_id',
+                'programming_languages.programming_language as programming_language',
                 'projects.project_visibility_status'
             )
             ->where('projects.id', $id)
             ->first();
-
+    
         // Return a success response
         return response()->json([
             'message' => 'Project updated successfully.',
