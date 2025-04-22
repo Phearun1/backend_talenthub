@@ -90,6 +90,7 @@ class PortfolioController extends Controller
                     'users.google_id as id',
                     'users.name',
                     'users.email',
+                    'users.photo',
                     'endorsement_statuses.status as status',
                     'endorsement_statuses.id as status_id'
                 )
@@ -123,6 +124,7 @@ class PortfolioController extends Controller
                     'users.google_id as id',
                     'users.name as name',
                     'users.email as email',
+                    'users.photo as photo',
                     'endorsement_statuses.id as status_id',
                     'endorsement_statuses.status as status'
                 )
