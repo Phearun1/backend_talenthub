@@ -39,7 +39,7 @@ class NotificationController extends Controller
     {
         $user = new \stdClass();
         $user->name = "Sal Duong";
-        $user->email = "phearun6600@gmail.com";
+        $user->email = "salduong97@gmail.com";
     
         // Send the email to the specified email address
         Mail::to($user->email)->send(new MyTestEmail($user));
