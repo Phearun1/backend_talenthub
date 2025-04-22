@@ -81,7 +81,8 @@ class ProjectController extends Controller
         }
 
         // Return the project details
-        return response()->json($project);
+        return response()->json($project, 200, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
     }
 
     public function createProject(Request $request)
