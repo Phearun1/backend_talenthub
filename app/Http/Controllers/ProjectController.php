@@ -141,7 +141,7 @@ class ProjectController extends Controller
     //         'image_url' => $imagePath ? $baseUrl . 'project_images/' . basename($imagePath) : null,
     //     ], 200);
     // }
-    
+
 
     public function viewAllProjects(Request $request)
     {
@@ -149,18 +149,18 @@ class ProjectController extends Controller
         $request->validate([
             'portfolio_id' => 'required|integer',
         ]);
-        
+
         $portfolioId = $request->input('portfolio_id');
-        
+
         // Verify the portfolio exists
         $portfolio = DB::table('portfolios')
             ->where('id', $portfolioId)
             ->first();
-            
+
         if (!$portfolio) {
             return response()->json(['error' => 'Portfolio not found.'], 404);
         }
-        
+
         // Retrieve all projects for the specified portfolio with only the required fields
         $projects = DB::table('projects')
             ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
@@ -171,14 +171,14 @@ class ProjectController extends Controller
             )
             ->where('projects.portfolio_id', $portfolioId)
             ->get();
-            
+
         // Return the projects data
         return response()->json([
             'portfolio_id' => $portfolioId,
             'projects' => $projects
         ]);
     }
-    
+
     public function createProject(Request $request)
     {
         // Validate the incoming request data
@@ -189,6 +189,7 @@ class ProjectController extends Controller
             'instruction' => 'required|string|max:255',
             'link' => 'nullable|string|max:255',
             'file' => 'nullable|file|mimes:zip',  // Validate file
+            'image' => 'nullable|array', // Ensure image is treated as array
             'image.*' => 'nullable|image', // Validate multiple images
             'programming_language_id' => 'required|integer',
             'project_visibility_status' => 'required|integer',
@@ -217,25 +218,29 @@ class ProjectController extends Controller
             $filePath = $file->store('projects', 'public'); // Store file in 'projects' folder, 'public' disk
             Log::info('Project file uploaded: ' . $filePath);
         }
-
         // Handle multiple image uploads
         $imagePaths = [];
         if ($request->hasFile('image')) {
-            // Check if 'image' is an array (multiple files) or a single file
+            Log::info('Raw request files data: ', $request->allFiles());
+
             $images = $request->file('image');
+            Log::info('Image files received: ', is_array($images) ? ['count' => count($images)] : ['single file']);
 
             // If it's a single file, convert it to an array to handle uniformly
             if (!is_array($images)) {
                 $images = [$images]; // Wrap the single image in an array
             }
 
-            Log::info('Number of images uploaded: ' . count($images));
+            Log::info('Number of images to process: ' . count($images));
 
             foreach ($images as $image) {
-                // Store each image in 'project_images' folder, 'public' disk
-                $imagePath = $image->store('project_images', 'public');
-                $imagePaths[] = $imagePath;
-                Log::info('Image uploaded: ' . $imagePath);
+                try {
+                    $imagePath = $image->store('project_images', 'public');
+                    $imagePaths[] = $imagePath;
+                    Log::info('Image uploaded: ' . $imagePath);
+                } catch (\Exception $e) {
+                    Log::error('Error uploading image: ' . $e->getMessage());
+                }
             }
         }
 
