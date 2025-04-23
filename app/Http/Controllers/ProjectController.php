@@ -844,14 +844,14 @@ public function updateProject(Request $request, $id)
     }
 
 
-    public function downloadProject(Request $request, $id)
+    public function downloadProject($id, Request $request)
     {
-        // No need to re-validate project_id since it's already in the route parameter
+        // Validate the query parameter
         $request->validate([
             'portfolio_id' => 'required|integer',
         ]);
 
-        $portfolioId = $request->input('portfolio_id');
+        $portfolioId = $request->query('portfolio_id');
 
         // Find the project with improved query
         $project = DB::table('projects')
