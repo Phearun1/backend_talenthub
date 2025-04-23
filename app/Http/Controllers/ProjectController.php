@@ -50,9 +50,10 @@ class ProjectController extends Controller
 
     public function viewProjectDetail($projectId)
     {
-        // Retrieve the project details
+        // Retrieve the project details with user's Google ID
         $project = DB::table('projects')
             ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
+            ->join('users', 'portfolios.user_id', '=', 'users.google_id')
             ->select(
                 'portfolios.id as portfolio_id',
                 'projects.id as project_id',
@@ -65,12 +66,10 @@ class ProjectController extends Controller
                 'projects.project_visibility_status',
                 'projects.created_at',
                 'projects.updated_at',
+                'users.google_id'
             )
             ->where('projects.id', $projectId)
             ->first();
-
-        // Log the query result for debugging
-        Log::info('Project Query Result: ', (array) $project);
 
         // Check if the project exists
         if (!$project) {
@@ -79,7 +78,6 @@ class ProjectController extends Controller
 
         // Return the project details
         return response()->json($project, 200, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-
     }
 
     public function createProject(Request $request)
@@ -843,5 +841,56 @@ public function updateProject(Request $request, $id)
     {
         $project = DB::table('projects')->where('id', $id)->delete();
         return response()->json(['message' => 'Project deleted successfully.'], 200);
+    }
+
+
+    public function downloadProject(Request $request, $id)
+    {
+        // No need to re-validate project_id since it's already in the route parameter
+        $request->validate([
+            'portfolio_id' => 'required|integer',
+        ]);
+
+        $portfolioId = $request->input('portfolio_id');
+
+        // Find the project with improved query
+        $project = DB::table('projects')
+            ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
+            ->select(
+                'projects.id',
+                'projects.title', 
+                'projects.link',
+                'projects.file'
+            )
+            ->where('portfolios.id', $portfolioId)
+            ->where('projects.id', $id)
+            ->first();
+
+        if (!$project) {
+            return response()->json(['error' => 'Project not found.'], 404);
+        }
+
+        // Check if project has a link or file
+        if (empty($project->link) && empty($project->file)) {
+            return response()->json(['error' => 'Project has no downloadable content.'], 404);
+        }
+
+        // Prepare the response data
+        $responseData = [
+            'project_id' => $project->id,
+            'title' => $project->title,
+        ];
+
+        // Add link if exists
+        if (!empty($project->link)) {
+            $responseData['link'] = $project->link;
+        }
+
+        // Add file URL if exists
+        if (!empty($project->file)) {
+            $responseData['file_url'] = asset('storage/' . $project->file);
+        }
+
+        return response()->json($responseData);
     }
 }

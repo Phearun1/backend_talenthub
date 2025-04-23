@@ -61,6 +61,7 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
     // project
     Route::post('/create_project', [ProjectController::class, 'createProject']);
     Route::post('/update_project/{id}', [ProjectController::class, 'updateProject']);
+    Route::post('/download_project/{id}', [ProjectController::class, 'downloadProject']);
 
     Route::delete('/projects/{projectId}/file', [ProjectController::class, 'removeProjectFile']);
     Route::delete('/project-images/{imageId}', [ProjectController::class, 'removeProjectImage']);
