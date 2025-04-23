@@ -648,8 +648,10 @@ public function updateProject(Request $request, $id)
                 $filename = time() . '_' . $file->getClientOriginalName();
                 
                 // Direct file storage without validation
-                $filePath = Storage::disk('public')->putFileAs('projects', $file, $filename);
-                Log::info('Direct file storage attempt result: ' . $filePath);
+                $filePath = 'projects/' . $filename;
+                $success = Storage::disk('public')->put($filePath, file_get_contents($file->getRealPath()));
+                $filePath = $success ? $filePath : null;
+                Log::info('Direct file storage attempt result: ' . ($success ? 'success' : 'failed'));
                 
                 // Double check file exists
                 if (Storage::disk('public')->exists($filePath)) {
