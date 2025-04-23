@@ -430,9 +430,152 @@ class ProjectController extends Controller
     //     ], 200);
     // }
 
-    public function updateProject(Request $request, $id)
+//     public function updateProject(Request $request, $id)
+// {
+//     // Validate the incoming request data
+//     $request->validate([
+//         'title' => 'required|string|max:255',
+//         'description' => 'required|string|max:255',
+//         'instruction' => 'required|string|max:255',
+//         'link' => 'nullable|string|max:255',
+//         'file' => 'nullable|file|mimes:zip',
+//         'image' => 'nullable|array',
+//         'image.*' => 'image|mimes:jpeg,png,jpg,gif,svg',
+//         'programming_language' => 'required|string|max:255',
+//         'project_visibility_status' => 'required|integer',
+//     ]);
+
+//     $project = DB::table('projects')->where('id', $id)->first();
+//     if (!$project) {
+//         return response()->json(['error' => 'Project not found.'], 404);
+//     }
+
+//     $portfolio = DB::table('portfolios')->where('id', $project->portfolio_id)->first();
+//     $userId = $request->user()->google_id;
+
+//     if (!$portfolio || $portfolio->user_id != $userId) {
+//         return response()->json(['error' => 'You are not authorized to update this project.'], 403);
+//     }
+
+//     // Handle programming language
+//     $languageName = $request->input('programming_language');
+//     $language = DB::table('programming_languages')->where('programming_language', $languageName)->first();
+//     if (!$language) {
+//         $languageId = DB::table('programming_languages')->insertGetId([
+//             'programming_language' => $languageName,
+//             'created_at' => now(),
+//             'updated_at' => now(),
+//         ]);
+//     } else {
+//         $languageId = $language->id;
+//     }
+
+//     // Handle new file
+//     $filePath = $project->file;
+//     if ($request->hasFile('file')) {
+//         if ($project->file) {
+//             $oldFilePath = storage_path('app/public/' . $project->file);
+//             if (file_exists($oldFilePath)) {
+//                 unlink($oldFilePath);
+//             }
+//         }
+
+//         $file = $request->file('file');
+//         $filePath = $file->store('projects', 'public');
+//     }
+
+//     // If 'image' is explicitly null (client sent "null"), delete all current images
+//     if ($request->has('image') && $request->input('image') === null) {
+//         $existingImages = DB::table('project_images')->where('project_id', $id)->get();
+//         foreach ($existingImages as $img) {
+//             $imgPath = storage_path('app/public/' . $img->image);
+//             if (file_exists($imgPath)) {
+//                 unlink($imgPath);
+//             }
+//             DB::table('project_images')->where('id', $img->id)->delete();
+//         }
+//     }
+
+//     // Upload new images
+//     $newImageUrls = [];
+//     if ($request->hasFile('image')) {
+//         foreach ($request->file('image') as $img) {
+//             if ($img->isValid()) {
+//                 $filename = time() . '_' . $img->getClientOriginalName();
+//                 $storedPath = $img->storeAs('project_images', $filename, 'public');
+
+//                 $imgId = DB::table('project_images')->insertGetId([
+//                     'project_id' => $id,
+//                     'image' => $storedPath,
+//                     'created_at' => now(),
+//                     'updated_at' => now(),
+//                 ]);
+
+//                 $newImageUrls[] = [
+//                     'id' => $imgId,
+//                     'url' => asset('storage/' . $storedPath)
+//                 ];
+//             }
+//         }
+//     }
+
+//     // Update the main project record
+//     DB::table('projects')->where('id', $id)->update([
+//         'title' => $request->input('title'),
+//         'description' => $request->input('description'),
+//         'instruction' => $request->input('instruction'),
+//         'link' => $request->input('link'),
+//         'file' => $filePath,
+//         'programming_language_id' => $languageId,
+//         'project_visibility_status' => $request->input('project_visibility_status'),
+//         'updated_at' => now(),
+//     ]);
+
+//     // Update project_languages relationship
+//     DB::table('project_languages')->where('project_id', $id)->delete();
+//     DB::table('project_languages')->insert([
+//         'project_id' => $id,
+//         'programming_language_id' => $languageId,
+//         'created_at' => now(),
+//         'updated_at' => now(),
+//     ]);
+
+//     // Get all current image URLs
+//     $allImages = DB::table('project_images')->where('project_id', $id)->get()->map(function ($image) {
+//         return [
+//             'id' => $image->id,
+//             'url' => asset('storage/' . $image->image)
+//         ];
+//     });
+
+//     $fileUrl = $filePath ? asset('storage/' . $filePath) : null;
+
+//     $projectDetails = DB::table('projects')
+//         ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
+//         ->join('programming_languages', 'projects.programming_language_id', '=', 'programming_languages.id')
+//         ->select(
+//             'portfolios.id as portfolio_id',
+//             'projects.id as project_id',
+//             'projects.title',
+//             'projects.description',
+//             'projects.instruction',
+//             'projects.link',
+//             'programming_languages.programming_language as programming_language',
+//             'projects.project_visibility_status'
+//         )
+//         ->where('projects.id', $id)
+//         ->first();
+
+//     return response()->json([
+//         'message' => 'Project updated successfully.',
+//         'project' => $projectDetails,
+//         'file_url' => $fileUrl,
+//         'images' => $allImages,
+//     ]);
+// }
+
+public function updateProject(Request $request, $id)
 {
-    // Validate the incoming request data
     $request->validate([
         'title' => 'required|string|max:255',
         'description' => 'required|string|max:255',
@@ -454,72 +597,65 @@ class ProjectController extends Controller
     $userId = $request->user()->google_id;
 
     if (!$portfolio || $portfolio->user_id != $userId) {
-        return response()->json(['error' => 'You are not authorized to update this project.'], 403);
+        return response()->json(['error' => 'Unauthorized.'], 403);
     }
 
     // Handle programming language
     $languageName = $request->input('programming_language');
     $language = DB::table('programming_languages')->where('programming_language', $languageName)->first();
-    if (!$language) {
-        $languageId = DB::table('programming_languages')->insertGetId([
+    $languageId = $language
+        ? $language->id
+        : DB::table('programming_languages')->insertGetId([
             'programming_language' => $languageName,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
-    } else {
-        $languageId = $language->id;
-    }
 
-    // Handle new file
+    // FILE: Delete if explicitly null, or update if a new file is uploaded
     $filePath = $project->file;
-    if ($request->hasFile('file')) {
+    if ($request->has('file') && $request->input('file') === null) {
         if ($project->file) {
             $oldFilePath = storage_path('app/public/' . $project->file);
-            if (file_exists($oldFilePath)) {
-                unlink($oldFilePath);
-            }
+            if (file_exists($oldFilePath)) unlink($oldFilePath);
         }
-
+        $filePath = null;
+    } elseif ($request->hasFile('file')) {
+        if ($project->file) {
+            $oldFilePath = storage_path('app/public/' . $project->file);
+            if (file_exists($oldFilePath)) unlink($oldFilePath);
+        }
         $file = $request->file('file');
         $filePath = $file->store('projects', 'public');
     }
 
-    // If 'image' is explicitly null (client sent "null"), delete all current images
+    // IMAGES: Delete all if explicitly null
     if ($request->has('image') && $request->input('image') === null) {
         $existingImages = DB::table('project_images')->where('project_id', $id)->get();
         foreach ($existingImages as $img) {
             $imgPath = storage_path('app/public/' . $img->image);
-            if (file_exists($imgPath)) {
-                unlink($imgPath);
-            }
+            if (file_exists($imgPath)) unlink($imgPath);
             DB::table('project_images')->where('id', $img->id)->delete();
         }
     }
 
-    // Upload new images
-    $newImageUrls = [];
+    // Upload new images if present
     if ($request->hasFile('image')) {
         foreach ($request->file('image') as $img) {
             if ($img->isValid()) {
                 $filename = time() . '_' . $img->getClientOriginalName();
                 $storedPath = $img->storeAs('project_images', $filename, 'public');
 
-                $imgId = DB::table('project_images')->insertGetId([
+                DB::table('project_images')->insert([
                     'project_id' => $id,
                     'image' => $storedPath,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
-
-                $newImageUrls[] = [
-                    'id' => $imgId,
-                    'url' => asset('storage/' . $storedPath)
-                ];
             }
         }
     }
 
-    // Update the main project record
+    // Update project
     DB::table('projects')->where('id', $id)->update([
         'title' => $request->input('title'),
         'description' => $request->input('description'),
@@ -531,7 +667,7 @@ class ProjectController extends Controller
         'updated_at' => now(),
     ]);
 
-    // Update project_languages relationship
+    // Update project_languages table
     DB::table('project_languages')->where('project_id', $id)->delete();
     DB::table('project_languages')->insert([
         'project_id' => $id,
@@ -540,15 +676,14 @@ class ProjectController extends Controller
         'updated_at' => now(),
     ]);
 
-    // Get all current image URLs
+    // Gather response data
+    $fileUrl = $filePath ? asset('storage/' . $filePath) : null;
     $allImages = DB::table('project_images')->where('project_id', $id)->get()->map(function ($image) {
         return [
             'id' => $image->id,
-            'url' => asset('storage/' . $image->image)
+            'url' => asset('storage/' . $image->image),
         ];
     });
-
-    $fileUrl = $filePath ? asset('storage/' . $filePath) : null;
 
     $projectDetails = DB::table('projects')
         ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
@@ -573,6 +708,7 @@ class ProjectController extends Controller
         'images' => $allImages,
     ]);
 }
+
 
 
     public function removeProjectImage(Request $request, $imageId)
