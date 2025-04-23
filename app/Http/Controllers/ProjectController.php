@@ -83,7 +83,6 @@ class ProjectController extends Controller
             return response()->json([
                 'error' => 'This project is not public.',
                 'project_id' => $project->project_id,
-                'title' => $project->title,
                 'project_visibility_status' => $project->project_visibility_status
             ], 403);
         }
