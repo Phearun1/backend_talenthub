@@ -48,7 +48,7 @@ class ProjectController extends Controller
         ]);
     }
 
-    public function viewProjectDetail($projectId)
+    public function viewProjectDetail($projectId, Request $request)
     {
         // Retrieve the project details with user's Google ID
         $project = DB::table('projects')
@@ -58,15 +58,54 @@ class ProjectController extends Controller
                 'portfolios.id as portfolio_id',
                 'projects.id as project_id',
                 'projects.title',
+                'users.google_id',
+                'projects.project_visibility_status'
+            )
+            ->where('projects.id', $projectId)
+            ->first();
+    
+        // Check if the project exists
+        if (!$project) {
+            return response()->json(['error' => 'Project not found.'], 404);
+        }
+    
+        // Check if the project is public or if the authenticated user is the owner
+        $isPublic = ($project->project_visibility_status == 0);
+        $isOwner = false;
+    
+        // Check if user is authenticated and is the owner
+        if ($request->user()) {
+            $isOwner = ($request->user()->google_id == $project->google_id);
+        }
+    
+        // If project is not public and user is not the owner, return limited info
+        if (!$isPublic && !$isOwner) {
+            return response()->json([
+                'error' => 'This project is not public.',
+                'project_id' => $project->project_id,
+                'title' => $project->title,
+                'project_visibility_status' => $project->project_visibility_status
+            ], 403);
+        }
+    
+        // For public projects or if user is owner, return full details
+        $fullProject = DB::table('projects')
+            ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
+            ->join('users', 'portfolios.user_id', '=', 'users.google_id')
+            ->join('programming_languages', 'projects.programming_language_id', '=', 'programming_languages.id')
+            ->select(
+                'portfolios.id as portfolio_id',
+                'projects.id as project_id',
+                'projects.title',
                 'projects.description',
                 'projects.instruction',
                 'projects.link',
                 DB::raw("CASE
-                    WHEN projects.file IS NOT NULL AND projects.project_visibility_status = 0
+                    WHEN projects.file IS NOT NULL 
                     THEN CONCAT('https://talenthub.newlinkmarketing.com/storage/', projects.file)
                     ELSE NULL
                 END as file"),
-                'projects.programming_language_id',
+                'programming_languages.programming_language',
                 'projects.project_visibility_status',
                 'projects.created_at',
                 'projects.updated_at',
@@ -74,14 +113,24 @@ class ProjectController extends Controller
             )
             ->where('projects.id', $projectId)
             ->first();
-
-        // Check if the project exists
-        if (!$project) {
-            return response()->json(['error' => 'Project not found.'], 404);
-        }
-
+    
+        // Get project images
+        $images = DB::table('project_images')
+            ->where('project_id', $projectId)
+            ->get()
+            ->map(function ($image) {
+                return [
+                    'id' => $image->id,
+                    'url' => 'https://talenthub.newlinkmarketing.com/storage/' . $image->image
+                ];
+            });
+    
+        // Combine project details with images
+        $response = (array) $fullProject;
+        $response['images'] = $images;
+    
         // Return the project details
-        return response()->json($project, 200, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        return response()->json($response, 200, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     }
 
     public function createProject(Request $request)
