@@ -849,61 +849,68 @@ class ProjectController extends Controller
         $request->validate([
             'portfolio_id' => 'required|integer',
         ]);
-
+    
         $portfolioId = $request->query('portfolio_id');
-
-        // // Log the input parameters for debugging
-        // Log::info('downloadProject request:', [
-        //     'project_id' => $id,
-        //     'portfolio_id' => $portfolioId
-        // ]);
-
+    
+        // Log the input parameters for debugging
+        Log::info('downloadProject request:', [
+            'project_id' => $id,
+            'portfolio_id' => $portfolioId
+        ]);
+    
         // First verify the project exists independently
         $projectExists = DB::table('projects')
             ->where('id', $id)
             ->exists();
-
+    
         if (!$projectExists) {
-            // Log::error('Project not found with ID: ' . $id);
+            Log::error('Project not found with ID: ' . $id);
             return response()->json(['error' => 'Project not found.'], 404);
         }
-
+    
         // Then verify the portfolio exists
         $portfolioExists = DB::table('portfolios')
             ->where('id', $portfolioId)
             ->exists();
-
+    
         if (!$portfolioExists) {
-            // Log::error('Portfolio not found with ID: ' . $portfolioId);
+            Log::error('Portfolio not found with ID: ' . $portfolioId);
             return response()->json(['error' => 'Portfolio not found.'], 404);
         }
-
-        // Now find the project with the correct portfolio relationship
+    
+        // Now find the project with the correct portfolio relationship and check visibility status
         $project = DB::table('projects')
             ->select(
                 'projects.id',
                 'projects.title',
                 'projects.link',
                 'projects.file',
-                'projects.portfolio_id'
+                'projects.portfolio_id',
+                'projects.project_visibility_status'
             )
             ->where('id', $id)
             ->first();
-
+    
         // Verify the project belongs to the specified portfolio
         if ($project->portfolio_id != $portfolioId) {
-            // Log::error('Project ' . $id . ' does not belong to portfolio ' . $portfolioId);
+            Log::error('Project ' . $id . ' does not belong to portfolio ' . $portfolioId);
             return response()->json(['error' => 'Project does not belong to the specified portfolio.'], 404);
         }
-
+    
+        // Check if project is public (project_visibility_status = 0)
+        if ($project->project_visibility_status != 0) {
+            Log::error('Project ' . $id . ' is not public. Visibility status: ' . $project->project_visibility_status);
+            return response()->json(['error' => 'Project is not available for download.'], 403);
+        }
+    
         // Check if project has a file
         if (empty($project->file)) {
             return response()->json(['error' => 'Project has no downloadable file.'], 404);
         }
-
+    
         // Return the file URL in the requested format
         $fileUrl = 'https://talenthub.newlinkmarketing.com/storage/' . $project->file;
-
+    
         Log::info('Project download response prepared with file URL: ' . $fileUrl);
         return response()->json([
             'file' => $fileUrl

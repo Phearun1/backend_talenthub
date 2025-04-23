@@ -21,6 +21,7 @@ Route::get('/view_all_companies', [ExperienceController::class, 'viewAllCompanie
 Route::get('/users', [UserController::class, 'view_all_user']);
 
 Route::post('/send-welcome-email', [NotificationController::class, 'sendWelcomeEmail']);
+Route::get('/download_project/{id}', [ProjectController::class, 'downloadProject']);
 
 
 // view all projects
@@ -61,8 +62,7 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
     // project
     Route::post('/create_project', [ProjectController::class, 'createProject']);
     Route::post('/update_project/{id}', [ProjectController::class, 'updateProject']);
-    Route::get('/download_project/{id}', [ProjectController::class, 'downloadProject']);
-
+    
     Route::delete('/projects/{projectId}/file', [ProjectController::class, 'removeProjectFile']);
     Route::delete('/project-images/{imageId}', [ProjectController::class, 'removeProjectImage']);
     Route::delete('/delete_project/{id}', [ProjectController::class, 'deleteProject']);
