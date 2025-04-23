@@ -581,8 +581,8 @@ public function updateProject(Request $request, $id)
         'description' => 'required|string|max:255',
         'instruction' => 'required|string|max:255',
         'link' => 'nullable|string|max:255',
-        'file' => 'nullable|file|mimes:zip',
-        'image' => 'nullable|array',
+        'file' => 'nullable|mimes:zip', // Removed the 'file' validation which can cause issues
+        'image' => 'nullable', // Changed to allow any format (array or null)
         'image.*' => 'image|mimes:jpeg,png,jpg,gif,svg',
         'programming_language' => 'required|string|max:255',
         'project_visibility_status' => 'required|integer',
@@ -611,21 +611,43 @@ public function updateProject(Request $request, $id)
             'updated_at' => now(),
         ]);
 
-    // FILE: Delete if explicitly null, or update if a new file is uploaded
+    // FILE: Handle file upload with improved error handling
     $filePath = $project->file;
+    
+    // Check if request wants to explicitly delete the file
     if ($request->has('file') && $request->input('file') === null) {
         if ($project->file) {
             $oldFilePath = storage_path('app/public/' . $project->file);
             if (file_exists($oldFilePath)) unlink($oldFilePath);
+            Log::info('File deleted because request set file=null');
         }
         $filePath = null;
-    } elseif ($request->hasFile('file')) {
-        if ($project->file) {
-            $oldFilePath = storage_path('app/public/' . $project->file);
-            if (file_exists($oldFilePath)) unlink($oldFilePath);
+    } 
+    // Check if there's a new file upload
+    elseif ($request->hasFile('file')) {
+        try {
+            $file = $request->file('file');
+            
+            // Add extra validation and logging
+            if ($file->isValid()) {
+                // Delete old file if exists
+                if ($project->file) {
+                    $oldFilePath = storage_path('app/public/' . $project->file);
+                    if (file_exists($oldFilePath)) unlink($oldFilePath);
+                }
+                
+                // Store new file with unique name
+                $filename = time() . '_' . $file->getClientOriginalName();
+                $filePath = $file->storeAs('projects', $filename, 'public');
+                Log::info('File uploaded successfully: ' . $filePath);
+            } else {
+                Log::error('Invalid file upload: ' . $file->getErrorMessage());
+                return response()->json(['error' => 'Invalid file: ' . $file->getErrorMessage()], 422);
+            }
+        } catch (\Exception $e) {
+            Log::error('File upload exception: ' . $e->getMessage());
+            return response()->json(['error' => 'File upload failed: ' . $e->getMessage()], 500);
         }
-        $file = $request->file('file');
-        $filePath = $file->store('projects', 'public');
     }
 
     // IMAGES: Delete all if explicitly null
@@ -636,22 +658,35 @@ public function updateProject(Request $request, $id)
             if (file_exists($imgPath)) unlink($imgPath);
             DB::table('project_images')->where('id', $img->id)->delete();
         }
+        Log::info('All images deleted for project ID: ' . $id);
     }
 
-    // Upload new images if present
+    // Upload new images if present with improved error handling
     if ($request->hasFile('image')) {
-        foreach ($request->file('image') as $img) {
-            if ($img->isValid()) {
-                $filename = time() . '_' . $img->getClientOriginalName();
-                $storedPath = $img->storeAs('project_images', $filename, 'public');
+        try {
+            $images = $request->file('image');
+            Log::info('Processing ' . count($images) . ' images');
+            
+            foreach ($images as $img) {
+                if ($img->isValid()) {
+                    $filename = time() . '_' . $img->getClientOriginalName();
+                    $storedPath = $img->storeAs('project_images', $filename, 'public');
 
-                DB::table('project_images')->insert([
-                    'project_id' => $id,
-                    'image' => $storedPath,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
+                    DB::table('project_images')->insert([
+                        'project_id' => $id,
+                        'image' => $storedPath,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                    
+                    Log::info('Image uploaded successfully: ' . $storedPath);
+                } else {
+                    Log::error('Invalid image: ' . $img->getErrorMessage());
+                }
             }
+        } catch (\Exception $e) {
+            Log::error('Image upload exception: ' . $e->getMessage());
+            // Continue processing - don't fail the whole request because of image upload issues
         }
     }
 
