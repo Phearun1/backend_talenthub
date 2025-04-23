@@ -69,6 +69,9 @@ class ProjectController extends Controller
             ->where('projects.id', $projectId)
             ->first();
 
+        // Log the query result for debugging
+        Log::info('Project Query Result: ', (array) $project);
+
         // Check if the project exists
         if (!$project) {
             return response()->json(['error' => 'Project not found.'], 404);
