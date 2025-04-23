@@ -122,10 +122,10 @@ class ProjectController extends Controller
                 'updated_at' => now(),
             ]);
             
-            Log::info('Created new programming language: ' . $programmingLanguageName . ' with ID: ' . $programmingLanguageId);
+            // Log::info('Created new programming language: ' . $programmingLanguageName . ' with ID: ' . $programmingLanguageId);
         } else {
             $programmingLanguageId = $programmingLanguage->id;
-            Log::info('Using existing programming language: ' . $programmingLanguageName . ' with ID: ' . $programmingLanguageId);
+            // Log::info('Using existing programming language: ' . $programmingLanguageName . ' with ID: ' . $programmingLanguageId);
         }
     
         // Handle file upload (for project file)
@@ -133,26 +133,26 @@ class ProjectController extends Controller
         if ($request->hasFile('file')) {
             $file = $request->file('file');
             $filePath = $file->store('projects', 'public'); // Store file in 'projects' folder, 'public' disk
-            Log::info('Project file uploaded: ' . $filePath);
+            // Log::info('Project file uploaded: ' . $filePath);
         }
     
         // Handle multiple image uploads
         $imagePaths = [];
         if ($request->hasFile('image')) {
             $images = $request->file('image');
-            Log::info('Multiple images detected: ' . count($images));
+            // Log::info('Multiple images detected: ' . count($images));
     
             foreach ($images as $image) {
                 try {
                     if ($image->isValid()) {
                         $imagePath = $image->store('project_images', 'public');
                         $imagePaths[] = $imagePath;
-                        Log::info('Image uploaded: ' . $imagePath);
+                        // Log::info('Image uploaded: ' . $imagePath);
                     } else {
-                        Log::error('Invalid image file: ' . $image->getClientOriginalName());
+                        // Log::error('Invalid image file: ' . $image->getClientOriginalName());
                     }
                 } catch (\Exception $e) {
-                    Log::error('Error uploading image: ' . $e->getMessage());
+                    // Log::error('Error uploading image: ' . $e->getMessage());
                 }
             }
         }
@@ -172,7 +172,7 @@ class ProjectController extends Controller
         ]);
     
         // Log project ID after insertion
-        Log::info('Project created with ID: ' . $projectId);
+        // Log::info('Project created with ID: ' . $projectId);
         
         // Create the relationship in project_languages table
         DB::table('project_languages')->insert([
@@ -182,7 +182,7 @@ class ProjectController extends Controller
             'updated_at' => now(),
         ]);
         
-        Log::info('Created project-language relationship: Project ID ' . $projectId . ' -> Language ID ' . $programmingLanguageId);
+        // Log::info('Created project-language relationship: Project ID ' . $projectId . ' -> Language ID ' . $programmingLanguageId);
     
         // Insert images into the project_images table
         $imageUrls = [];
@@ -200,9 +200,9 @@ class ProjectController extends Controller
                     $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
                     $imageUrls[] = $baseUrl . $imagePath;
     
-                    Log::info('Inserted image into project_images: ' . $imagePath);
+                    // Log::info('Inserted image into project_images: ' . $imagePath);
                 } catch (\Exception $e) {
-                    Log::error('Error inserting image into project_images: ' . $e->getMessage());
+                    // Log::error('Error inserting image into project_images: ' . $e->getMessage());
                 }
             }
         }
@@ -614,6 +614,13 @@ public function updateProject(Request $request, $id)
     // FILE: Handle file upload with improved error handling
     $filePath = $project->file;
     
+    // Debug information
+    Log::info('File upload request details: ', [
+        'has_file' => $request->hasFile('file'),
+        'file_key_exists' => $request->has('file'),
+        'file_value' => $request->file('file')
+    ]);
+    
     // Check if request wants to explicitly delete the file
     if ($request->has('file') && $request->input('file') === null) {
         if ($project->file) {
@@ -627,6 +634,12 @@ public function updateProject(Request $request, $id)
     elseif ($request->hasFile('file')) {
         try {
             $file = $request->file('file');
+            Log::info('File object details: ', [
+                'original_name' => $file->getClientOriginalName(),
+                'mime_type' => $file->getMimeType(),
+                'size' => $file->getSize(),
+                'error' => $file->getError()
+            ]);
             
             // Add extra validation and logging
             if ($file->isValid()) {
@@ -634,18 +647,28 @@ public function updateProject(Request $request, $id)
                 if ($project->file) {
                     $oldFilePath = storage_path('app/public/' . $project->file);
                     if (file_exists($oldFilePath)) unlink($oldFilePath);
+                    Log::info('Deleted old file: ' . $oldFilePath);
                 }
                 
                 // Store new file with unique name
                 $filename = time() . '_' . $file->getClientOriginalName();
                 $filePath = $file->storeAs('projects', $filename, 'public');
                 Log::info('File uploaded successfully: ' . $filePath);
+                
+                // Double-check the file was actually saved
+                $newFilePath = storage_path('app/public/' . $filePath);
+                if (file_exists($newFilePath)) {
+                    Log::info('File verified on disk: ' . $newFilePath . ' (Size: ' . filesize($newFilePath) . ' bytes)');
+                } else {
+                    Log::error('File not found on disk after upload: ' . $newFilePath);
+                    return response()->json(['error' => 'File upload failed: File not saved to disk'], 500);
+                }
             } else {
-                Log::error('Invalid file upload: ' . $file->getErrorMessage());
-                return response()->json(['error' => 'Invalid file: ' . $file->getErrorMessage()], 422);
+                Log::error('Invalid file upload: ' . $file->getError());
+                return response()->json(['error' => 'Invalid file: ' . $file->getError()], 422);
             }
         } catch (\Exception $e) {
-            Log::error('File upload exception: ' . $e->getMessage());
+            Log::error('File upload exception: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
             return response()->json(['error' => 'File upload failed: ' . $e->getMessage()], 500);
         }
     }
@@ -658,14 +681,14 @@ public function updateProject(Request $request, $id)
             if (file_exists($imgPath)) unlink($imgPath);
             DB::table('project_images')->where('id', $img->id)->delete();
         }
-        Log::info('All images deleted for project ID: ' . $id);
+        // Log::info('All images deleted for project ID: ' . $id);
     }
 
     // Upload new images if present with improved error handling
     if ($request->hasFile('image')) {
         try {
             $images = $request->file('image');
-            Log::info('Processing ' . count($images) . ' images');
+            // Log::info('Processing ' . count($images) . ' images');
             
             foreach ($images as $img) {
                 if ($img->isValid()) {
@@ -679,13 +702,13 @@ public function updateProject(Request $request, $id)
                         'updated_at' => now(),
                     ]);
                     
-                    Log::info('Image uploaded successfully: ' . $storedPath);
+                    // Log::info('Image uploaded successfully: ' . $storedPath);
                 } else {
-                    Log::error('Invalid image: ' . $img->getErrorMessage());
+                    // Log::error('Invalid image: ' . $img->getErrorMessage());
                 }
             }
         } catch (\Exception $e) {
-            Log::error('Image upload exception: ' . $e->getMessage());
+            // Log::error('Image upload exception: ' . $e->getMessage());
             // Continue processing - don't fail the whole request because of image upload issues
         }
     }
