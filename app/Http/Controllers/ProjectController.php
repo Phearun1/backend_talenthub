@@ -61,7 +61,11 @@ class ProjectController extends Controller
                 'projects.description',
                 'projects.instruction',
                 'projects.link',
-                'projects.file',
+                DB::raw("CASE
+                    WHEN projects.file IS NOT NULL AND projects.project_visibility_status = 0
+                    THEN CONCAT('https://talenthub.newlinkmarketing.com/storage/', projects.file)
+                    ELSE NULL
+                END as file"),
                 'projects.programming_language_id',
                 'projects.project_visibility_status',
                 'projects.created_at',
