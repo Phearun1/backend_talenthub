@@ -617,8 +617,7 @@ public function updateProject(Request $request, $id)
     // Debug information
     Log::info('File upload request details: ', [
         'has_file' => $request->hasFile('file'),
-        'file_key_exists' => $request->has('file'),
-        'file_value' => $request->file('file')
+        'file_key_exists' => $request->has('file')
     ]);
     
     // Check if request wants to explicitly delete the file
@@ -634,82 +633,68 @@ public function updateProject(Request $request, $id)
     elseif ($request->hasFile('file')) {
         try {
             $file = $request->file('file');
-            Log::info('File object details: ', [
+            
+            // Detailed logging for debugging
+            Log::info('File upload object received: ', [
                 'original_name' => $file->getClientOriginalName(),
                 'mime_type' => $file->getMimeType(),
                 'size' => $file->getSize(),
                 'error' => $file->getError()
             ]);
             
-            // Add extra validation and logging
-            if ($file->isValid()) {
-                // Delete old file if exists
-                if ($project->file) {
-                    $oldFilePath = storage_path('app/public/' . $project->file);
-                    if (file_exists($oldFilePath)) unlink($oldFilePath);
-                    Log::info('Deleted old file: ' . $oldFilePath);
-                }
-                
-                // Store new file with unique name
+            // Basic attempt to store the file directly
+            try {
+                // Generate unique filename
                 $filename = time() . '_' . $file->getClientOriginalName();
-                $filePath = $file->storeAs('projects', $filename, 'public');
-                Log::info('File uploaded successfully: ' . $filePath);
                 
-                // Double-check the file was actually saved
-                $newFilePath = storage_path('app/public/' . $filePath);
-                if (file_exists($newFilePath)) {
-                    Log::info('File verified on disk: ' . $newFilePath . ' (Size: ' . filesize($newFilePath) . ' bytes)');
+                // Direct file storage without validation
+                $filePath = Storage::disk('public')->putFileAs('projects', $file, $filename);
+                Log::info('Direct file storage attempt result: ' . $filePath);
+                
+                // Double check file exists
+                if (Storage::disk('public')->exists($filePath)) {
+                    Log::info('File found at path: ' . $filePath . ' with size: ' . Storage::disk('public')->size($filePath));
                 } else {
-                    Log::error('File not found on disk after upload: ' . $newFilePath);
-                    return response()->json(['error' => 'File upload failed: File not saved to disk'], 500);
+                    Log::error('File not found after direct storage attempt');
                 }
-            } else {
-                Log::error('Invalid file upload: ' . $file->getError());
-                return response()->json(['error' => 'Invalid file: ' . $file->getError()], 422);
+            } catch (\Exception $e) {
+                Log::error('Direct storage exception: ' . $e->getMessage());
             }
-        } catch (\Exception $e) {
-            Log::error('File upload exception: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
-            return response()->json(['error' => 'File upload failed: ' . $e->getMessage()], 500);
-        }
-    }
-
-    // IMAGES: Delete all if explicitly null
-    if ($request->has('image') && $request->input('image') === null) {
-        $existingImages = DB::table('project_images')->where('project_id', $id)->get();
-        foreach ($existingImages as $img) {
-            $imgPath = storage_path('app/public/' . $img->image);
-            if (file_exists($imgPath)) unlink($imgPath);
-            DB::table('project_images')->where('id', $img->id)->delete();
-        }
-        // Log::info('All images deleted for project ID: ' . $id);
-    }
-
-    // Upload new images if present with improved error handling
-    if ($request->hasFile('image')) {
-        try {
-            $images = $request->file('image');
-            // Log::info('Processing ' . count($images) . ' images');
             
-            foreach ($images as $img) {
-                if ($img->isValid()) {
-                    $filename = time() . '_' . $img->getClientOriginalName();
-                    $storedPath = $img->storeAs('project_images', $filename, 'public');
-
-                    DB::table('project_images')->insert([
-                        'project_id' => $id,
-                        'image' => $storedPath,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
-                    
-                    // Log::info('Image uploaded successfully: ' . $storedPath);
+            // If direct storage failed, try another approach
+            if (empty($filePath)) {
+                // Create storage directory if it doesn't exist
+                $uploadPath = storage_path('app/public/projects');
+                if (!file_exists($uploadPath)) {
+                    mkdir($uploadPath, 0777, true);
+                    Log::info('Created storage directory: ' . $uploadPath);
+                }
+                
+                // Generate unique filename
+                $filename = time() . '_' . $file->getClientOriginalName();
+                $destinationPath = 'projects/' . $filename;
+                
+                // Move file manually
+                $success = $file->move(storage_path('app/public/projects'), $filename);
+                if ($success) {
+                    $filePath = $destinationPath;
+                    Log::info('Manual file move successful: ' . $filePath);
                 } else {
-                    // Log::error('Invalid image: ' . $img->getErrorMessage());
+                    Log::error('Manual file move failed');
                 }
             }
+            
+            // Final check - if we still have no file path, report the error
+            if (empty($filePath)) {
+                Log::error('All file upload methods failed');
+                return response()->json(['error' => 'File upload failed after multiple attempts'], 500);
+            }
+            
         } catch (\Exception $e) {
-            // Log::error('Image upload exception: ' . $e->getMessage());
-            // Continue processing - don't fail the whole request because of image upload issues
+            Log::error('File upload exception: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['error' => 'File upload failed: ' . $e->getMessage()], 500);
         }
     }
 
