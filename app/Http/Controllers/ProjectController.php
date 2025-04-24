@@ -320,9 +320,9 @@ class ProjectController extends Controller
             });
             
         // Get project endorsers
-        $endorsers = DB::table('project_endorsements')
-            ->join('users', 'project_endorsements.user_id', '=', 'users.google_id')
-            ->where('project_endorsements.project_id', $projectId)
+        $endorsers = DB::table('project_endorsers')
+            ->join('users', 'project_endorsers.user_id', '=', 'users.google_id')
+            ->where('project_endorsers.project_id', $projectId)
             ->select(
                 'users.google_id',
                 'users.name',
