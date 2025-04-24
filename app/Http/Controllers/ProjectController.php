@@ -132,6 +132,104 @@ class ProjectController extends Controller
     //     return response()->json($response, 200, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     // }
 
+    // public function viewProjectDetail($projectId, Request $request)
+    // {
+    //     // Retrieve the project details with user's Google ID
+    //     $project = DB::table('projects')
+    //         ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
+    //         ->join('users', 'portfolios.user_id', '=', 'users.google_id')
+    //         ->select(
+    //             'portfolios.id as portfolio_id',
+    //             'projects.id as project_id',
+    //             'projects.title',
+    //             'users.google_id',
+    //             'projects.project_visibility_status'
+    //         )
+    //         ->where('projects.id', $projectId)
+    //         ->first();
+
+    //     // Check if the project exists
+    //     if (!$project) {
+    //         return response()->json(['error' => 'Project not found.'], 404);
+    //     }
+
+    //     // Check if the project is public or if the authenticated user is the owner
+    //     $isPublic = ($project->project_visibility_status == 0);
+    //     $isOwner = false;
+
+    //     // Check if user is authenticated and is the owner
+    //     if ($request->user()) {
+    //         $isOwner = ($request->user()->google_id == $project->google_id);
+    //     }
+
+    //     // If project is not public and user is not the owner, return limited info
+    //     if (!$isPublic && !$isOwner) {
+    //         return response()->json([
+    //             'error' => 'This project is not public.',
+    //             'project_id' => $project->project_id,
+    //             'title' => $project->title,
+    //             'project_visibility_status' => $project->project_visibility_status
+    //         ], 403);
+    //     }
+
+    //     // For public projects or if user is owner, return full details
+    //     $fullProject = DB::table('projects')
+    //         ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
+    //         ->join('users', 'portfolios.user_id', '=', 'users.google_id')
+    //         ->select(
+    //             'portfolios.id as portfolio_id',
+    //             'projects.id as project_id',
+    //             'projects.title',
+    //             'projects.description',
+    //             'projects.instruction',
+    //             'projects.link',
+    //             DB::raw("CASE
+    //                 WHEN projects.file IS NOT NULL 
+    //                 THEN CONCAT('https://talenthub.newlinkmarketing.com/storage/', projects.file)
+    //                 ELSE NULL
+    //             END as file"),
+    //             'projects.project_visibility_status',
+    //             'projects.created_at',
+    //             'projects.updated_at',
+    //             'users.google_id'
+    //         )
+    //         ->where('projects.id', $projectId)
+    //         ->first();
+
+    //     // Get all programming languages for this project
+    //     $programmingLanguages = DB::table('project_languages')
+    //         ->join('programming_languages', 'project_languages.programming_language_id', '=', 'programming_languages.id')
+    //         ->where('project_languages.project_id', $projectId)
+    //         ->select('programming_languages.id', 'programming_languages.programming_language')
+    //         ->get()
+    //         ->map(function ($language) {
+    //             return [
+    //                 'id' => $language->id,
+    //                 'name' => $language->programming_language
+    //             ];
+    //         })
+    //         ->toArray();
+
+    //     // Get project images
+    //     $images = DB::table('project_images')
+    //         ->where('project_id', $projectId)
+    //         ->get()
+    //         ->map(function ($image) {
+    //             return [
+    //                 'id' => $image->id,
+    //                 'url' => 'https://talenthub.newlinkmarketing.com/storage/' . $image->image
+    //             ];
+    //         });
+
+    //     // Combine project details with images and languages
+    //     $response = (array) $fullProject;
+    //     $response['programming_languages'] = $programmingLanguages;
+    //     $response['images'] = $images;
+
+    //     // Return the project details
+    //     return response()->json($response, 200, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    // }
+
     public function viewProjectDetail($projectId, Request $request)
     {
         // Retrieve the project details with user's Google ID
@@ -147,21 +245,21 @@ class ProjectController extends Controller
             )
             ->where('projects.id', $projectId)
             ->first();
-
+    
         // Check if the project exists
         if (!$project) {
             return response()->json(['error' => 'Project not found.'], 404);
         }
-
+    
         // Check if the project is public or if the authenticated user is the owner
         $isPublic = ($project->project_visibility_status == 0);
         $isOwner = false;
-
+    
         // Check if user is authenticated and is the owner
         if ($request->user()) {
             $isOwner = ($request->user()->google_id == $project->google_id);
         }
-
+    
         // If project is not public and user is not the owner, return limited info
         if (!$isPublic && !$isOwner) {
             return response()->json([
@@ -171,7 +269,7 @@ class ProjectController extends Controller
                 'project_visibility_status' => $project->project_visibility_status
             ], 403);
         }
-
+    
         // For public projects or if user is owner, return full details
         $fullProject = DB::table('projects')
             ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
@@ -195,7 +293,7 @@ class ProjectController extends Controller
             )
             ->where('projects.id', $projectId)
             ->first();
-
+    
         // Get all programming languages for this project
         $programmingLanguages = DB::table('project_languages')
             ->join('programming_languages', 'project_languages.programming_language_id', '=', 'programming_languages.id')
@@ -209,7 +307,7 @@ class ProjectController extends Controller
                 ];
             })
             ->toArray();
-
+    
         // Get project images
         $images = DB::table('project_images')
             ->where('project_id', $projectId)
@@ -220,12 +318,49 @@ class ProjectController extends Controller
                     'url' => 'https://talenthub.newlinkmarketing.com/storage/' . $image->image
                 ];
             });
-
-        // Combine project details with images and languages
+            
+        // Get project endorsers
+        $endorsers = DB::table('project_endorsements')
+            ->join('users', 'project_endorsements.user_id', '=', 'users.google_id')
+            ->where('project_endorsements.project_id', $projectId)
+            ->select(
+                'users.google_id',
+                'users.name',
+            )
+            ->get()
+            ->map(function ($endorser) {
+                return [
+                    'id' => $endorser->google_id,
+                    'name' => $endorser->name,
+                ];
+            })
+            ->toArray();
+            
+        // Get project collaborators
+        $collaborators = DB::table('project_collaborators')
+            ->join('users', 'project_collaborators.user_id', '=', 'users.google_id')
+            ->where('project_collaborators.project_id', $projectId)
+            ->select(
+                'users.google_id',
+                'users.name',
+               
+            )
+            ->get()
+            ->map(function ($collaborator) {
+                return [
+                    'id' => $collaborator->google_id,
+                    'name' => $collaborator->name,
+                ];
+            })
+            ->toArray();
+    
+        // Combine project details with images, languages, endorsers and collaborators
         $response = (array) $fullProject;
         $response['programming_languages'] = $programmingLanguages;
         $response['images'] = $images;
-
+        $response['endorsers'] = $endorsers;
+        $response['collaborators'] = $collaborators;
+    
         // Return the project details
         return response()->json($response, 200, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     }
