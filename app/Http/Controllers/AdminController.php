@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 use App\Models\Admin;
 use App\Models\User;
 
@@ -61,6 +62,20 @@ class AdminController extends Controller
 
         return response()->json(['message' => 'Success', 'admin' => $admin]);
     }
+
+
+    // Method to view all users with specific fields
+    public function view_all_user()
+    {
+        // Fetch all users from the 'users' table with only specific fields
+        $users = DB::table('users')
+            ->select('id', 'email', 'name', 'photo', 'google_id', 'role_id')
+            ->get();
+    
+        // Return the list of users as a JSON response
+        return response()->json($users);
+    }
+
 
 
 }
