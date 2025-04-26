@@ -417,16 +417,21 @@ class ProjectController extends Controller
 
     // Check if the project is public
     if ($project->project_visibility_status == 0) {
-        // Public project: No need for Bearer token, just return full details
         return $this->getFullProjectDetails($projectId);
     }
 
-    // If project is private, we need to check for authenticated user via Sanctum
-    $user = $request->user(); // Gets the authenticated user via Sanctum
+    // Instead of using $request->user(), we get token from body
+    $token = $request->input('token'); // <-- Get token from body
 
-    // Check if the user is authenticated
+    if (!$token) {
+        return response()->json(['error' => 'Authentication token required.'], 401);
+    }
+
+    // Manually authenticate user using the token
+    $user = \Laravel\Sanctum\PersonalAccessToken::findToken($token)?->tokenable;
+
     if (!$user) {
-        return response()->json(['error' => 'User authentication required for private projects.'], 401);
+        return response()->json(['error' => 'Invalid token.'], 401);
     }
 
     // Check if the authenticated user matches the project owner (compare user_id)
@@ -437,6 +442,7 @@ class ProjectController extends Controller
     // If the user is the owner, return full project details
     return $this->getFullProjectDetails($projectId);
 }
+
 
 // Method to return full project details
 private function getFullProjectDetails($projectId)
