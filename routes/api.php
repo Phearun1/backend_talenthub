@@ -62,9 +62,12 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
     // project
     Route::post('/create_project', [ProjectController::class, 'createProject']);
     Route::post('/update_project/{id}', [ProjectController::class, 'updateProject']);
-    
-    Route::delete('/projects/{projectId}/file', [ProjectController::class, 'removeProjectFile']);
-    Route::delete('/project-images/{imageId}', [ProjectController::class, 'removeProjectImage']);
+
+    Route::delete('/remove_project_file/{projectId}', [ProjectController::class, 'removeProjectFile']);
+    Route::delete('/remove_project_images/{imageId}', [ProjectController::class, 'removeProjectImage']);
+
+
+
     Route::delete('/delete_project/{id}', [ProjectController::class, 'deleteProject']);
 
 
@@ -91,7 +94,7 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
     // Delete an experience
     Route::delete('/delete_experience/{id}', [ExperienceController::class, 'deleteExperience']);
 
-   
+
 
 
     // Endorser route
