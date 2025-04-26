@@ -58,7 +58,7 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
     Route::put('/update_skill/{id}', [SkillController::class, 'updateSkill']);  // Edit skill
     Route::delete('/delete_skill/{id}', [SkillController::class, 'deleteSkill']);  // Delete skill
 
-
+          
     //portfolio
 
     Route::get('/view_portfolio_details/{userID}', [PortfolioController::class, 'viewPortfolioDetails']);

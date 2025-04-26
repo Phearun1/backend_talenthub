@@ -144,119 +144,128 @@ class PortfolioController extends Controller
 
 
     public function viewPortfolioDetails(Request $request, $userID)
-    {
-        $portfolio = DB::table('portfolios')
-            ->join('users', 'portfolios.user_id', '=', 'users.google_id')
-            ->select(
-                'portfolios.id',
-                'portfolios.user_id',
-                'portfolios.major_id as major',
-                'portfolios.phone_number',
-                'portfolios.about',
-                'portfolios.working_status',
-                'portfolios.status',
-                'portfolios.created_at',
-                'portfolios.updated_at',
-                'users.name as user_name',
-                'users.email',
-                'users.photo',
-                'users.role_id'
-            )
-            ->where('portfolios.user_id', $userID)
-            ->first();
+{
+    $portfolio = DB::table('portfolios')
+        ->join('users', 'portfolios.user_id', '=', 'users.google_id')
+        ->select(
+            'portfolios.id',
+            'portfolios.user_id',
+            'portfolios.major_id as major',
+            'portfolios.phone_number',
+            'portfolios.about',
+            'portfolios.working_status',
+            'portfolios.status',
+            'portfolios.created_at',
+            'portfolios.updated_at',
+            'users.name as user_name',
+            'users.email',
+            'users.photo',
+            'users.role_id'
+        )
+        ->where('portfolios.user_id', $userID)
+        ->first();
 
-        if (!$portfolio) {
-            return response()->json(['error' => 'Portfolio not found.'], 404);
-        }
-
-        $portfolioId = $portfolio->id;
-
-        // Detect if user is authenticated
-        $currentUser = $request->user();
-
-        $isOwner = $currentUser && $currentUser->google_id == $portfolio->user_id;
-
-        // Get only the specific fields from projects related to the portfolio
-        $projectsQuery = DB::table('projects')
-            ->select('id', 'portfolio_id', 'title')
-            ->where('portfolio_id', $portfolioId);
-
-        if (!$isOwner) {
-            $projectsQuery->where('status', 'public');
-        }
-
-        $projects = $projectsQuery->get();
-
-        // Get other related data like education, achievements, skills, etc.
-        $education = DB::table('education')->where('portfolio_id', $portfolioId)->get();
-        $achievements = DB::table('achievements')->where('portfolio_id', $portfolioId)->get();
-        $skills = DB::table('skills')->where('portfolio_id', $portfolioId)->get();
-        $experiences = DB::table('experiences')->where('portfolio_id', $portfolioId)->get();
-
-        // Modify experiences and achievements
-        foreach ($experiences as $experience) {
-            $company = DB::table('companies')->where('id', $experience->company_id)->first();
-            $experience->company_name = $company ? $company->company_name : 'Unknown';
-            unset($experience->company_id);
-
-            $rawEndorsers = DB::table('experience_endorsers')
-                ->join('users', 'experience_endorsers.user_id', '=', 'users.google_id')
-                ->join('experience_endorsement_statuses', function ($join) use ($experience) {
-                    $join->on('experience_endorsement_statuses.endorser_id', '=', 'experience_endorsers.user_id')
-                        ->where('experience_endorsement_statuses.experience_id', '=', $experience->id);
-                })
-                ->join('endorsement_statuses', 'experience_endorsement_statuses.experience_status_id', '=', 'endorsement_statuses.id')
-                ->select(
-                    'users.google_id as id',
-                    'users.name',
-                    'users.email',
-                    'endorsement_statuses.status as status',
-                    'endorsement_statuses.id as status_id'
-                )
-                ->where('experience_endorsers.experience_id', $experience->id)
-                ->get();
-
-            $experience->endorsers = collect($rawEndorsers)->unique('id')->values();
-        }
-
-        foreach ($achievements as $achievement) {
-            $achievement->endorsers = DB::table('achievement_endorsers')
-                ->join('users', 'achievement_endorsers.user_id', '=', 'users.google_id')
-                ->join('achievement_endorsement_statuses', function ($join) use ($achievement) {
-                    $join->on('achievement_endorsement_statuses.endorser_id', '=', 'achievement_endorsers.user_id')
-                        ->where('achievement_endorsement_statuses.achievement_id', '=', $achievement->id);
-                })
-                ->join('endorsement_statuses', 'achievement_endorsement_statuses.endorsement_status_id', '=', 'endorsement_statuses.id')
-                ->select('users.google_id as id', 'users.name', 'users.email', 'endorsement_statuses.status as status', 'endorsement_statuses.id as status_id')
-                ->distinct()
-                ->get();
-        }
-
-        foreach ($skills as $skill) {
-            $skill->endorsers = DB::table('skill_endorsement_statuses')
-                ->join('users', 'skill_endorsement_statuses.endorser_id', '=', 'users.google_id')
-                ->join('endorsement_statuses', 'skill_endorsement_statuses.endorsement_status_id', '=', 'endorsement_statuses.id')
-                ->select(
-                    'users.google_id as id',
-                    'users.name as name',
-                    'users.email as email',
-                    'endorsement_statuses.id as status_id',
-                    'endorsement_statuses.status as status'
-                )
-                ->where('skill_endorsement_statuses.skill_id', $skill->id)
-                ->distinct()
-                ->get();
-        }
-
-        return response()->json([
-            'portfolio' => $portfolio,
-            'projects' => $projects,
-            'education' => $education,
-            'achievements' => $achievements,
-            'skills' => $skills,
-            'experiences' => $experiences,
-        ]);
+    if (!$portfolio) {
+        return response()->json(['error' => 'Portfolio not found.'], 404);
     }
+
+    $portfolioId = $portfolio->id;
+
+    // Detect if user is authenticated
+    $currentUser = $request->user();
+    $isOwner = $currentUser && $currentUser->google_id == $portfolio->user_id;
+
+    // Get only the specific fields from projects related to the portfolio
+    $projectsQuery = DB::table('projects')
+        ->select('id', 'portfolio_id', 'title')
+        ->where('portfolio_id', $portfolioId);
+
+    if (!$isOwner) {
+        // Only show public projects if not the owner
+        $projectsQuery->where('project_visibility_status', 0);
+    }
+
+    $projects = $projectsQuery->get();
+
+    // Get other related data
+    $education = DB::table('education')->where('portfolio_id', $portfolioId)->get();
+    $achievements = DB::table('achievements')->where('portfolio_id', $portfolioId)->get();
+    $skills = DB::table('skills')->where('portfolio_id', $portfolioId)->get();
+    $experiences = DB::table('experiences')->where('portfolio_id', $portfolioId)->get();
+
+    // Modify experiences
+    foreach ($experiences as $experience) {
+        $company = DB::table('companies')->where('id', $experience->company_id)->first();
+        $experience->company_name = $company ? $company->company_name : 'Unknown';
+        unset($experience->company_id);
+
+        $rawEndorsers = DB::table('experience_endorsers')
+            ->join('users', 'experience_endorsers.user_id', '=', 'users.google_id')
+            ->join('experience_endorsement_statuses', function ($join) use ($experience) {
+                $join->on('experience_endorsement_statuses.endorser_id', '=', 'experience_endorsers.user_id')
+                    ->where('experience_endorsement_statuses.experience_id', '=', $experience->id);
+            })
+            ->join('endorsement_statuses', 'experience_endorsement_statuses.experience_status_id', '=', 'endorsement_statuses.id')
+            ->select(
+                'users.google_id as id',
+                'users.name',
+                'users.email',
+                'endorsement_statuses.status as status',
+                'endorsement_statuses.id as status_id'
+            )
+            ->where('experience_endorsers.experience_id', $experience->id)
+            ->get();
+
+        $experience->endorsers = collect($rawEndorsers)->unique('id')->values();
+    }
+
+    // Modify achievements
+    foreach ($achievements as $achievement) {
+        $achievement->endorsers = DB::table('achievement_endorsers')
+            ->join('users', 'achievement_endorsers.user_id', '=', 'users.google_id')
+            ->join('achievement_endorsement_statuses', function ($join) use ($achievement) {
+                $join->on('achievement_endorsement_statuses.endorser_id', '=', 'achievement_endorsers.user_id')
+                    ->where('achievement_endorsement_statuses.achievement_id', '=', $achievement->id);
+            })
+            ->join('endorsement_statuses', 'achievement_endorsement_statuses.endorsement_status_id', '=', 'endorsement_statuses.id')
+            ->select(
+                'users.google_id as id',
+                'users.name',
+                'users.email',
+                'endorsement_statuses.status as status',
+                'endorsement_statuses.id as status_id'
+            )
+            ->distinct()
+            ->get();
+    }
+
+    // Modify skills
+    foreach ($skills as $skill) {
+        $skill->endorsers = DB::table('skill_endorsement_statuses')
+            ->join('users', 'skill_endorsement_statuses.endorser_id', '=', 'users.google_id')
+            ->join('endorsement_statuses', 'skill_endorsement_statuses.endorsement_status_id', '=', 'endorsement_statuses.id')
+            ->select(
+                'users.google_id as id',
+                'users.name as name',
+                'users.email as email',
+                'endorsement_statuses.id as status_id',
+                'endorsement_statuses.status as status'
+            )
+            ->where('skill_endorsement_statuses.skill_id', $skill->id)
+            ->distinct()
+            ->get();
+    }
+
+    return response()->json([
+        'portfolio' => $portfolio,
+        'projects' => $projects,
+        'education' => $education,
+        'achievements' => $achievements,
+        'skills' => $skills,
+        'experiences' => $experiences,
+    ]);
+}
+
 
 
 
