@@ -86,8 +86,14 @@ class ProjectController extends Controller
 
         // Return the projects data
         return response()->json([
-            'portfolio_id' => $portfolioId,
-            'projects' => $projects
+            'projects' => $projects->map(function ($project) {
+            return [
+                'portfolio_id' => $project->portfolio_id,
+                'project_id' => $project->project_id,
+                'title' => $project->title,
+                'project_visibility_status' => $project->project_visibility_status
+            ];
+            })
         ]);
     }
 
