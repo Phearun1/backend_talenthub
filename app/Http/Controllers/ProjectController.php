@@ -399,7 +399,7 @@ class ProjectController extends Controller
     // Retrieve the project details with user's authentication token
     $project = DB::table('projects')
         ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
-        ->join('users', 'portfolios.user_id', '=', 'users.id') // Use users.id for authentication
+        ->join('users', 'portfolios.user_id', '=', 'users.google_id') // Use users.id for authentication
         ->select(
             'portfolios.id as portfolio_id',
             'projects.id as project_id',
