@@ -137,19 +137,31 @@ class ProjectController extends Controller
                 ];
             });
 
-        // Get project endorsers
+        // Get project endorsers with their endorsement status
         $endorsers = DB::table('project_endorsers')
             ->join('users', 'project_endorsers.user_id', '=', 'users.google_id')
+            ->leftJoin('project_endorsement_statuses', function ($join) use ($projectId) {
+                $join->on('project_endorsers.user_id', '=', 'project_endorsement_statuses.endorser_id')
+                    ->where('project_endorsement_statuses.project_id', '=', DB::raw('project_endorsers.project_id'));
+            })
             ->where('project_endorsers.project_id', $projectId)
             ->select(
+                'users.id',
                 'users.google_id',
                 'users.name',
+                'users.email',
+                'project_endorsement_statuses.endorsement_status_id',
+                'project_endorsers.created_at as joined_at'
             )
             ->get()
             ->map(function ($endorser) {
                 return [
-                    'id' => $endorser->google_id,
+                    'id' => $endorser->id,
+                    'google_id' => $endorser->google_id,
                     'name' => $endorser->name,
+                    'email' => $endorser->email,
+                    'endorsement_status' => $endorser->endorsement_status_id ?? 0, // Default to 0 if null
+                    'joined_at' => $endorser->joined_at
                 ];
             })
             ->toArray();
@@ -739,40 +751,40 @@ class ProjectController extends Controller
 
 
     public function deleteProject($id)
-{
-    $project = DB::table('projects')->where('id', $id)->first();
+    {
+        $project = DB::table('projects')->where('id', $id)->first();
 
-    if (!$project) {
-        return response()->json(['error' => 'Project not found.'], 404);
-    }
-
-    // Delete project file from storage
-    if ($project->file) {
-        $filePath = storage_path('app/public/' . $project->file);
-        if (file_exists($filePath)) {
-            unlink($filePath);
-            Log::info('Deleted project file: ' . $filePath);
+        if (!$project) {
+            return response()->json(['error' => 'Project not found.'], 404);
         }
-    }
 
-    // Delete associated images from storage
-    $images = DB::table('project_images')->where('project_id', $id)->get();
-    foreach ($images as $image) {
-        $imagePath = storage_path('app/public/' . $image->image);
-        if (file_exists($imagePath)) {
-            unlink($imagePath);
-            Log::info('Deleted project image: ' . $imagePath);
+        // Delete project file from storage
+        if ($project->file) {
+            $filePath = storage_path('app/public/' . $project->file);
+            if (file_exists($filePath)) {
+                unlink($filePath);
+                Log::info('Deleted project file: ' . $filePath);
+            }
         }
+
+        // Delete associated images from storage
+        $images = DB::table('project_images')->where('project_id', $id)->get();
+        foreach ($images as $image) {
+            $imagePath = storage_path('app/public/' . $image->image);
+            if (file_exists($imagePath)) {
+                unlink($imagePath);
+                Log::info('Deleted project image: ' . $imagePath);
+            }
+        }
+
+        // Delete image records
+        DB::table('project_images')->where('project_id', $id)->delete();
+
+        // Delete the project
+        DB::table('projects')->where('id', $id)->delete();
+
+        return response()->json(['message' => 'Project and associated files/images deleted successfully.']);
     }
-
-    // Delete image records
-    DB::table('project_images')->where('project_id', $id)->delete();
-
-    // Delete the project
-    DB::table('projects')->where('id', $id)->delete();
-
-    return response()->json(['message' => 'Project and associated files/images deleted successfully.']);
-}
 
 
     public function downloadProject($id, Request $request)
