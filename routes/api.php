@@ -60,7 +60,7 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
 
 
     // portfolio
-    Route::get('/view_project_detail/{id}', [ProjectController::class, 'viewProjectDetail']);
+    Route::post('/view_project_detail/{projectId}', [ProjectController::class, 'viewProjectDetail']);
 
     // project
 
