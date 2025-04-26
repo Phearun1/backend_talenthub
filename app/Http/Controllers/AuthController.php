@@ -254,4 +254,8 @@ class AuthController extends Controller
 
         return response()->json(['message' => 'Admin successfully logged out']);
     }
+
+
+
+    
 }

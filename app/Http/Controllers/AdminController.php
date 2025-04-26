@@ -65,7 +65,28 @@ class AdminController extends Controller
 
 
 
+    public function adminChangePassword(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'old_password' => 'required|string',
+            'new_password' => 'required|string|min:8|confirmed',
+        ]);
 
+        if ($validator->fails()) {
+            return response()->json(['error' => 'Invalid password'], 400);
+        }
+
+        $admin = $request->user();
+        if (!Hash::check($request->old_password, $admin->password)) {
+            return response()->json(['error' => 'Old password is incorrect'], 400);
+        }
+
+        $admin->password = Hash::make($request->new_password);
+        $admin->save();
+
+        return response()->json(['message' => 'Password changed successfully']);
+    }
+    
     // Method to view all users with specific fields
     public function viewAllUser(Request $request)
     {
