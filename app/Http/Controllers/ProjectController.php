@@ -48,188 +48,6 @@ class ProjectController extends Controller
         ]);
     }
 
-    // public function viewProjectDetail($projectId, Request $request)
-    // {
-    //     // Retrieve the project details with user's Google ID
-    //     $project = DB::table('projects')
-    //         ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
-    //         ->join('users', 'portfolios.user_id', '=', 'users.google_id')
-    //         ->select(
-    //             'portfolios.id as portfolio_id',
-    //             'projects.id as project_id',
-    //             'projects.title',
-    //             'users.google_id',
-    //             'projects.project_visibility_status'
-    //         )
-    //         ->where('projects.id', $projectId)
-    //         ->first();
-
-    //     // Check if the project exists
-    //     if (!$project) {
-    //         return response()->json(['error' => 'Project not found.'], 404);
-    //     }
-
-    //     // Check if the project is public or if the authenticated user is the owner
-    //     $isPublic = ($project->project_visibility_status == 0);
-    //     $isOwner = false;
-
-    //     // Check if user is authenticated and is the owner
-    //     if ($request->user()) {
-    //         $isOwner = ($request->user()->google_id == $project->google_id);
-    //     }
-
-    //     // If project is not public and user is not the owner, return limited info
-    //     if (!$isPublic && !$isOwner) {
-    //         return response()->json([
-    //             'error' => 'This project is not public.',
-    //             'project_id' => $project->project_id,
-    //             'project_visibility_status' => $project->project_visibility_status
-    //         ], 403);
-    //     }
-
-    //     // For public projects or if user is owner, return full details
-    //     $fullProject = DB::table('projects')
-    //         ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
-    //         ->join('users', 'portfolios.user_id', '=', 'users.google_id')
-    //         ->join('programming_languages', 'projects.programming_language_id', '=', 'programming_languages.id')
-    //         ->select(
-    //             'portfolios.id as portfolio_id',
-    //             'projects.id as project_id',
-    //             'projects.title',
-    //             'projects.description',
-    //             'projects.instruction',
-    //             'projects.link',
-    //             DB::raw("CASE
-    //                 WHEN projects.file IS NOT NULL 
-    //                 THEN CONCAT('https://talenthub.newlinkmarketing.com/storage/', projects.file)
-    //                 ELSE NULL
-    //             END as file"),
-    //             'programming_languages.programming_language',
-    //             'projects.project_visibility_status',
-    //             'projects.created_at',
-    //             'projects.updated_at',
-    //             'users.google_id'
-    //         )
-    //         ->where('projects.id', $projectId)
-    //         ->first();
-
-    //     // Get project images
-    //     $images = DB::table('project_images')
-    //         ->where('project_id', $projectId)
-    //         ->get()
-    //         ->map(function ($image) {
-    //             return [
-    //                 'id' => $image->id,
-    //                 'url' => 'https://talenthub.newlinkmarketing.com/storage/' . $image->image
-    //             ];
-    //         });
-
-    //     // Combine project details with images
-    //     $response = (array) $fullProject;
-    //     $response['images'] = $images;
-
-    //     // Return the project details
-    //     return response()->json($response, 200, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-    // }
-
-    // public function viewProjectDetail($projectId, Request $request)
-    // {
-    //     // Retrieve the project details with user's Google ID
-    //     $project = DB::table('projects')
-    //         ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
-    //         ->join('users', 'portfolios.user_id', '=', 'users.google_id')
-    //         ->select(
-    //             'portfolios.id as portfolio_id',
-    //             'projects.id as project_id',
-    //             'projects.title',
-    //             'users.google_id',
-    //             'projects.project_visibility_status'
-    //         )
-    //         ->where('projects.id', $projectId)
-    //         ->first();
-
-    //     // Check if the project exists
-    //     if (!$project) {
-    //         return response()->json(['error' => 'Project not found.'], 404);
-    //     }
-
-    //     // Check if the project is public or if the authenticated user is the owner
-    //     $isPublic = ($project->project_visibility_status == 0);
-    //     $isOwner = false;
-
-    //     // Check if user is authenticated and is the owner
-    //     if ($request->user()) {
-    //         $isOwner = ($request->user()->google_id == $project->google_id);
-    //     }
-
-    //     // If project is not public and user is not the owner, return limited info
-    //     if (!$isPublic && !$isOwner) {
-    //         return response()->json([
-    //             'error' => 'This project is not public.',
-    //             'project_id' => $project->project_id,
-    //             'title' => $project->title,
-    //             'project_visibility_status' => $project->project_visibility_status
-    //         ], 403);
-    //     }
-
-    //     // For public projects or if user is owner, return full details
-    //     $fullProject = DB::table('projects')
-    //         ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
-    //         ->join('users', 'portfolios.user_id', '=', 'users.google_id')
-    //         ->select(
-    //             'portfolios.id as portfolio_id',
-    //             'projects.id as project_id',
-    //             'projects.title',
-    //             'projects.description',
-    //             'projects.instruction',
-    //             'projects.link',
-    //             DB::raw("CASE
-    //                 WHEN projects.file IS NOT NULL 
-    //                 THEN CONCAT('https://talenthub.newlinkmarketing.com/storage/', projects.file)
-    //                 ELSE NULL
-    //             END as file"),
-    //             'projects.project_visibility_status',
-    //             'projects.created_at',
-    //             'projects.updated_at',
-    //             'users.google_id'
-    //         )
-    //         ->where('projects.id', $projectId)
-    //         ->first();
-
-    //     // Get all programming languages for this project
-    //     $programmingLanguages = DB::table('project_languages')
-    //         ->join('programming_languages', 'project_languages.programming_language_id', '=', 'programming_languages.id')
-    //         ->where('project_languages.project_id', $projectId)
-    //         ->select('programming_languages.id', 'programming_languages.programming_language')
-    //         ->get()
-    //         ->map(function ($language) {
-    //             return [
-    //                 'id' => $language->id,
-    //                 'name' => $language->programming_language
-    //             ];
-    //         })
-    //         ->toArray();
-
-    //     // Get project images
-    //     $images = DB::table('project_images')
-    //         ->where('project_id', $projectId)
-    //         ->get()
-    //         ->map(function ($image) {
-    //             return [
-    //                 'id' => $image->id,
-    //                 'url' => 'https://talenthub.newlinkmarketing.com/storage/' . $image->image
-    //             ];
-    //         });
-
-    //     // Combine project details with images and languages
-    //     $response = (array) $fullProject;
-    //     $response['programming_languages'] = $programmingLanguages;
-    //     $response['images'] = $images;
-
-    //     // Return the project details
-    //     return response()->json($response, 200, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-    // }
-
     public function viewProjectDetail($projectId, Request $request)
     {
         // Retrieve the project details with user's Google ID
@@ -875,253 +693,404 @@ class ProjectController extends Controller
     //     ]);
     // }
 
+    // public function updateProject(Request $request, $id)
+    // {
+    //     $request->validate([
+    //         'title' => 'required|string|max:255',
+    //         'description' => 'required|string|max:255',
+    //         'instruction' => 'required|string|max:255',
+    //         'link' => 'nullable|string|max:255',
+    //         'file' => 'nullable|mimes:zip', // Removed the 'file' validation which can cause issues
+    //         'image' => 'nullable', // Changed to allow any format (array or null)
+    //         'image.*' => 'image|mimes:jpeg,png,jpg,gif,svg',
+    //         'programming_languages' => 'required|array', // Changed to array of languages
+    //         'programming_languages.*' => 'string|max:255', // Validate each language
+    //         'project_visibility_status' => 'required|integer',
+    //     ]);
+
+    //     $project = DB::table('projects')->where('id', $id)->first();
+    //     if (!$project) {
+    //         return response()->json(['error' => 'Project not found.'], 404);
+    //     }
+
+    //     $portfolio = DB::table('portfolios')->where('id', $project->portfolio_id)->first();
+    //     $userId = $request->user()->google_id;
+
+    //     if (!$portfolio || $portfolio->user_id != $userId) {
+    //         return response()->json(['error' => 'Unauthorized.'], 403);
+    //     }
+
+    //     // Process languages - create any that don't exist and collect IDs
+    //     $programmingLanguageIds = [];
+    //     $programmingLanguageNames = $request->input('programming_languages');
+
+    //     foreach ($programmingLanguageNames as $languageName) {
+    //         // Check if the language already exists
+    //         $language = DB::table('programming_languages')
+    //             ->where('programming_language', $languageName)
+    //             ->first();
+
+    //         if (!$language) {
+    //             // Create a new programming language
+    //             $languageId = DB::table('programming_languages')->insertGetId([
+    //                 'programming_language' => $languageName,
+    //                 'created_at' => now(),
+    //                 'updated_at' => now(),
+    //             ]);
+    //             Log::info('Created new programming language: ' . $languageName . ' with ID: ' . $languageId);
+    //             $programmingLanguageIds[] = $languageId;
+    //         } else {
+    //             $programmingLanguageIds[] = $language->id;
+    //             Log::info('Using existing programming language: ' . $languageName . ' with ID: ' . $language->id);
+    //         }
+    //     }
+
+    //     // Use the first language as the primary language for the project
+    //     $primaryLanguageId = !empty($programmingLanguageIds) ? $programmingLanguageIds[0] : null;
+
+    //     if (!$primaryLanguageId) {
+    //         return response()->json(['error' => 'At least one programming language is required.'], 422);
+    //     }
+
+    //     // FILE: Handle file upload with improved error handling
+    //     $filePath = $project->file;
+
+    //     // Debug information
+    //     Log::info('File upload request details: ', [
+    //         'has_file' => $request->hasFile('file'),
+    //         'file_key_exists' => $request->has('file')
+    //     ]);
+
+    //     // Check if request wants to explicitly delete the file
+    //     if ($request->has('file') && $request->input('file') === null) {
+    //         if ($project->file) {
+    //             $oldFilePath = storage_path('app/public/' . $project->file);
+    //             if (file_exists($oldFilePath)) unlink($oldFilePath);
+    //             Log::info('File deleted because request set file=null');
+    //         }
+    //         $filePath = null;
+    //     }
+    //     // Check if there's a new file upload
+    //     elseif ($request->hasFile('file')) {
+    //         try {
+    //             $file = $request->file('file');
+
+    //             // Detailed logging for debugging
+    //             Log::info('File upload object received: ', [
+    //                 'original_name' => $file->getClientOriginalName(),
+    //                 'mime_type' => $file->getMimeType(),
+    //                 'size' => $file->getSize(),
+    //                 'error' => $file->getError()
+    //             ]);
+
+    //             // Basic attempt to store the file directly
+    //             try {
+    //                 // Generate unique filename
+    //                 $filename = time() . '_' . $file->getClientOriginalName();
+
+    //                 // Direct file storage without validation
+    //                 $filePath = 'projects/' . $filename;
+    //                 $success = Storage::disk('public')->put($filePath, file_get_contents($file->getRealPath()));
+    //                 $filePath = $success ? $filePath : null;
+    //                 Log::info('Direct file storage attempt result: ' . ($success ? 'success' : 'failed'));
+
+    //                 // Double check file exists
+    //                 if (Storage::disk('public')->exists($filePath)) {
+    //                     Log::info('File found at path: ' . $filePath . ' with size: ' . Storage::disk('public')->size($filePath));
+    //                 } else {
+    //                     Log::error('File not found after direct storage attempt');
+    //                 }
+    //             } catch (\Exception $e) {
+    //                 Log::error('Direct storage exception: ' . $e->getMessage());
+    //             }
+
+    //             // If direct storage failed, try another approach
+    //             if (empty($filePath)) {
+    //                 // Create storage directory if it doesn't exist
+    //                 $uploadPath = storage_path('app/public/projects');
+    //                 if (!file_exists($uploadPath)) {
+    //                     mkdir($uploadPath, 0777, true);
+    //                     Log::info('Created storage directory: ' . $uploadPath);
+    //                 }
+
+    //                 // Generate unique filename
+    //                 $filename = time() . '_' . $file->getClientOriginalName();
+    //                 $destinationPath = 'projects/' . $filename;
+
+    //                 // Move file manually
+    //                 $success = $file->move(storage_path('app/public/projects'), $filename);
+    //                 if ($success) {
+    //                     $filePath = $destinationPath;
+    //                     Log::info('Manual file move successful: ' . $filePath);
+    //                 } else {
+    //                     Log::error('Manual file move failed');
+    //                 }
+    //             }
+
+    //             // Final check - if we still have no file path, report the error
+    //             if (empty($filePath)) {
+    //                 Log::error('All file upload methods failed');
+    //                 return response()->json(['error' => 'File upload failed after multiple attempts'], 500);
+    //             }
+    //         } catch (\Exception $e) {
+    //             Log::error('File upload exception: ' . $e->getMessage(), [
+    //                 'trace' => $e->getTraceAsString()
+    //             ]);
+    //             return response()->json(['error' => 'File upload failed: ' . $e->getMessage()], 500);
+    //         }
+    //     }
+
+    //     // IMAGES: Handle image uploads if present
+    //     if ($request->hasFile('image')) {
+    //         $images = $request->file('image');
+    //         Log::info('Processing ' . count($images) . ' images for project ID: ' . $id);
+
+    //         foreach ($images as $image) {
+    //             try {
+    //                 if ($image->isValid()) {
+    //                     $imagePath = $image->store('project_images', 'public');
+
+    //                     DB::table('project_images')->insert([
+    //                         'project_id' => $id,
+    //                         'image' => $imagePath,
+    //                         'created_at' => now(),
+    //                         'updated_at' => now(),
+    //                     ]);
+    //                     Log::info('Image uploaded successfully: ' . $imagePath);
+    //                 } else {
+    //                     Log::error('Invalid image file: ' . $image->getClientOriginalName());
+    //                 }
+    //             } catch (\Exception $e) {
+    //                 Log::error('Error uploading image: ' . $e->getMessage());
+    //             }
+    //         }
+    //     }
+
+    //     // Update project with primary language
+    //     DB::table('projects')->where('id', $id)->update([
+    //         'title' => $request->input('title'),
+    //         'description' => $request->input('description'),
+    //         'instruction' => $request->input('instruction'),
+    //         'link' => $request->input('link'),
+    //         'file' => $filePath,
+    //         'programming_language_id' => $primaryLanguageId, // Use the first language as primary
+    //         'project_visibility_status' => $request->input('project_visibility_status'),
+    //         'updated_at' => now(),
+    //     ]);
+
+    //     // Update project_languages table with all languages
+    //     DB::table('project_languages')->where('project_id', $id)->delete();
+
+    //     foreach ($programmingLanguageIds as $languageId) {
+    //         DB::table('project_languages')->insert([
+    //             'project_id' => $id,
+    //             'programming_language_id' => $languageId,
+    //             'created_at' => now(),
+    //             'updated_at' => now(),
+    //         ]);
+    //         Log::info('Updated project-language relationship: Project ID ' . $id . ' -> Language ID ' . $languageId);
+    //     }
+
+    //     // Gather response data
+    //     $fileUrl = $filePath ? asset('storage/' . $filePath) : null;
+    //     $allImages = DB::table('project_images')->where('project_id', $id)->get()->map(function ($image) {
+    //         return [
+    //             'id' => $image->id,
+    //             'url' => asset('storage/' . $image->image),
+    //         ];
+    //     });
+
+    //     // Get all languages for this project
+    //     $programmingLanguages = DB::table('project_languages')
+    //         ->join('programming_languages', 'project_languages.programming_language_id', '=', 'programming_languages.id')
+    //         ->where('project_languages.project_id', $id)
+    //         ->select('programming_languages.id', 'programming_languages.programming_language')
+    //         ->get()
+    //         ->map(function ($language) {
+    //             return [
+    //                 'id' => $language->id,
+    //                 'name' => $language->programming_language
+    //             ];
+    //         })
+    //         ->toArray();
+
+    //     // Fetch updated project details
+    //     $projectDetails = DB::table('projects')
+    //         ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
+    //         ->select(
+    //             'portfolios.id as portfolio_id',
+    //             'projects.id as project_id',
+    //             'projects.title',
+    //             'projects.description',
+    //             'projects.instruction',
+    //             'projects.link',
+    //             'projects.project_visibility_status'
+    //         )
+    //         ->where('projects.id', $id)
+    //         ->first();
+
+    //     // Convert to array and add programming languages
+    //     $projectDetailsArray = (array) $projectDetails;
+    //     $projectDetailsArray['programming_languages'] = $programmingLanguages;
+
+    //     return response()->json([
+    //         'message' => 'Project updated successfully.',
+    //         'project' => $projectDetailsArray,
+    //         'file_url' => $fileUrl,
+    //         'images' => $allImages,
+    //     ]);
+    // }
+
+
     public function updateProject(Request $request, $id)
-    {
-        $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'required|string|max:255',
-            'instruction' => 'required|string|max:255',
-            'link' => 'nullable|string|max:255',
-            'file' => 'nullable|mimes:zip', // Removed the 'file' validation which can cause issues
-            'image' => 'nullable', // Changed to allow any format (array or null)
-            'image.*' => 'image|mimes:jpeg,png,jpg,gif,svg',
-            'programming_languages' => 'required|array', // Changed to array of languages
-            'programming_languages.*' => 'string|max:255', // Validate each language
-            'project_visibility_status' => 'required|integer',
-        ]);
+{
+    $request->validate([
+        'title' => 'required|string|max:255',
+        'description' => 'required|string|max:255',
+        'instruction' => 'required|string|max:255',
+        'link' => 'nullable|string|max:255',
+        'file' => 'nullable|mimes:zip',
+        'image' => 'nullable',
+        'image.*' => 'image|mimes:jpeg,png,jpg,gif,svg',
+        'programming_languages' => 'required|array',
+        'programming_languages.*' => 'string|max:255',
+        'project_visibility_status' => 'required|integer',
+    ]);
 
-        $project = DB::table('projects')->where('id', $id)->first();
-        if (!$project) {
-            return response()->json(['error' => 'Project not found.'], 404);
-        }
+    $project = DB::table('projects')->where('id', $id)->first();
+    if (!$project) {
+        return response()->json(['error' => 'Project not found.'], 404);
+    }
 
-        $portfolio = DB::table('portfolios')->where('id', $project->portfolio_id)->first();
-        $userId = $request->user()->google_id;
+    $portfolio = DB::table('portfolios')->where('id', $project->portfolio_id)->first();
+    $userId = $request->user()->google_id;
 
-        if (!$portfolio || $portfolio->user_id != $userId) {
-            return response()->json(['error' => 'Unauthorized.'], 403);
-        }
+    if (!$portfolio || $portfolio->user_id != $userId) {
+        return response()->json(['error' => 'Unauthorized.'], 403);
+    }
 
-        // Process languages - create any that don't exist and collect IDs
-        $programmingLanguageIds = [];
-        $programmingLanguageNames = $request->input('programming_languages');
+    // Handle programming languages
+    $programmingLanguageIds = [];
+    foreach ($request->input('programming_languages') as $languageName) {
+        $language = DB::table('programming_languages')
+            ->where('programming_language', $languageName)
+            ->first();
 
-        foreach ($programmingLanguageNames as $languageName) {
-            // Check if the language already exists
-            $language = DB::table('programming_languages')
-                ->where('programming_language', $languageName)
-                ->first();
-
-            if (!$language) {
-                // Create a new programming language
-                $languageId = DB::table('programming_languages')->insertGetId([
-                    'programming_language' => $languageName,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-                Log::info('Created new programming language: ' . $languageName . ' with ID: ' . $languageId);
-                $programmingLanguageIds[] = $languageId;
-            } else {
-                $programmingLanguageIds[] = $language->id;
-                Log::info('Using existing programming language: ' . $languageName . ' with ID: ' . $language->id);
-            }
-        }
-
-        // Use the first language as the primary language for the project
-        $primaryLanguageId = !empty($programmingLanguageIds) ? $programmingLanguageIds[0] : null;
-
-        if (!$primaryLanguageId) {
-            return response()->json(['error' => 'At least one programming language is required.'], 422);
-        }
-
-        // FILE: Handle file upload with improved error handling
-        $filePath = $project->file;
-
-        // Debug information
-        Log::info('File upload request details: ', [
-            'has_file' => $request->hasFile('file'),
-            'file_key_exists' => $request->has('file')
-        ]);
-
-        // Check if request wants to explicitly delete the file
-        if ($request->has('file') && $request->input('file') === null) {
-            if ($project->file) {
-                $oldFilePath = storage_path('app/public/' . $project->file);
-                if (file_exists($oldFilePath)) unlink($oldFilePath);
-                Log::info('File deleted because request set file=null');
-            }
-            $filePath = null;
-        }
-        // Check if there's a new file upload
-        elseif ($request->hasFile('file')) {
-            try {
-                $file = $request->file('file');
-
-                // Detailed logging for debugging
-                Log::info('File upload object received: ', [
-                    'original_name' => $file->getClientOriginalName(),
-                    'mime_type' => $file->getMimeType(),
-                    'size' => $file->getSize(),
-                    'error' => $file->getError()
-                ]);
-
-                // Basic attempt to store the file directly
-                try {
-                    // Generate unique filename
-                    $filename = time() . '_' . $file->getClientOriginalName();
-
-                    // Direct file storage without validation
-                    $filePath = 'projects/' . $filename;
-                    $success = Storage::disk('public')->put($filePath, file_get_contents($file->getRealPath()));
-                    $filePath = $success ? $filePath : null;
-                    Log::info('Direct file storage attempt result: ' . ($success ? 'success' : 'failed'));
-
-                    // Double check file exists
-                    if (Storage::disk('public')->exists($filePath)) {
-                        Log::info('File found at path: ' . $filePath . ' with size: ' . Storage::disk('public')->size($filePath));
-                    } else {
-                        Log::error('File not found after direct storage attempt');
-                    }
-                } catch (\Exception $e) {
-                    Log::error('Direct storage exception: ' . $e->getMessage());
-                }
-
-                // If direct storage failed, try another approach
-                if (empty($filePath)) {
-                    // Create storage directory if it doesn't exist
-                    $uploadPath = storage_path('app/public/projects');
-                    if (!file_exists($uploadPath)) {
-                        mkdir($uploadPath, 0777, true);
-                        Log::info('Created storage directory: ' . $uploadPath);
-                    }
-
-                    // Generate unique filename
-                    $filename = time() . '_' . $file->getClientOriginalName();
-                    $destinationPath = 'projects/' . $filename;
-
-                    // Move file manually
-                    $success = $file->move(storage_path('app/public/projects'), $filename);
-                    if ($success) {
-                        $filePath = $destinationPath;
-                        Log::info('Manual file move successful: ' . $filePath);
-                    } else {
-                        Log::error('Manual file move failed');
-                    }
-                }
-
-                // Final check - if we still have no file path, report the error
-                if (empty($filePath)) {
-                    Log::error('All file upload methods failed');
-                    return response()->json(['error' => 'File upload failed after multiple attempts'], 500);
-                }
-            } catch (\Exception $e) {
-                Log::error('File upload exception: ' . $e->getMessage(), [
-                    'trace' => $e->getTraceAsString()
-                ]);
-                return response()->json(['error' => 'File upload failed: ' . $e->getMessage()], 500);
-            }
-        }
-
-        // IMAGES: Handle image uploads if present
-        if ($request->hasFile('image')) {
-            $images = $request->file('image');
-            Log::info('Processing ' . count($images) . ' images for project ID: ' . $id);
-
-            foreach ($images as $image) {
-                try {
-                    if ($image->isValid()) {
-                        $imagePath = $image->store('project_images', 'public');
-
-                        DB::table('project_images')->insert([
-                            'project_id' => $id,
-                            'image' => $imagePath,
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
-                        Log::info('Image uploaded successfully: ' . $imagePath);
-                    } else {
-                        Log::error('Invalid image file: ' . $image->getClientOriginalName());
-                    }
-                } catch (\Exception $e) {
-                    Log::error('Error uploading image: ' . $e->getMessage());
-                }
-            }
-        }
-
-        // Update project with primary language
-        DB::table('projects')->where('id', $id)->update([
-            'title' => $request->input('title'),
-            'description' => $request->input('description'),
-            'instruction' => $request->input('instruction'),
-            'link' => $request->input('link'),
-            'file' => $filePath,
-            'programming_language_id' => $primaryLanguageId, // Use the first language as primary
-            'project_visibility_status' => $request->input('project_visibility_status'),
-            'updated_at' => now(),
-        ]);
-
-        // Update project_languages table with all languages
-        DB::table('project_languages')->where('project_id', $id)->delete();
-
-        foreach ($programmingLanguageIds as $languageId) {
-            DB::table('project_languages')->insert([
-                'project_id' => $id,
-                'programming_language_id' => $languageId,
+        if (!$language) {
+            $languageId = DB::table('programming_languages')->insertGetId([
+                'programming_language' => $languageName,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
-            Log::info('Updated project-language relationship: Project ID ' . $id . ' -> Language ID ' . $languageId);
+            $programmingLanguageIds[] = $languageId;
+        } else {
+            $programmingLanguageIds[] = $language->id;
         }
+    }
 
-        // Gather response data
-        $fileUrl = $filePath ? asset('storage/' . $filePath) : null;
-        $allImages = DB::table('project_images')->where('project_id', $id)->get()->map(function ($image) {
+    $primaryLanguageId = $programmingLanguageIds[0] ?? null;
+    if (!$primaryLanguageId) {
+        return response()->json(['error' => 'At least one programming language is required.'], 422);
+    }
+
+    // Handle file upload (no more null check)
+    $filePath = $project->file;
+    if ($request->hasFile('file')) {
+        try {
+            $file = $request->file('file');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $stored = Storage::disk('public')->put('projects/' . $filename, file_get_contents($file->getRealPath()));
+            $filePath = $stored ? 'projects/' . $filename : null;
+        } catch (\Exception $e) {
+            Log::error('File upload failed: ' . $e->getMessage());
+            return response()->json(['error' => 'File upload failed'], 500);
+        }
+    }
+
+    // Handle image upload
+    if ($request->hasFile('image')) {
+        foreach ($request->file('image') as $image) {
+            if ($image->isValid()) {
+                $imagePath = $image->store('project_images', 'public');
+                DB::table('project_images')->insert([
+                    'project_id' => $id,
+                    'image' => $imagePath,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        }
+    }
+
+    // Update project record
+    DB::table('projects')->where('id', $id)->update([
+        'title' => $request->input('title'),
+        'description' => $request->input('description'),
+        'instruction' => $request->input('instruction'),
+        'link' => $request->input('link'),
+        'file' => $filePath,
+        'programming_language_id' => $primaryLanguageId,
+        'project_visibility_status' => $request->input('project_visibility_status'),
+        'updated_at' => now(),
+    ]);
+
+    // Sync languages
+    DB::table('project_languages')->where('project_id', $id)->delete();
+    foreach ($programmingLanguageIds as $languageId) {
+        DB::table('project_languages')->insert([
+            'project_id' => $id,
+            'programming_language_id' => $languageId,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
+    // Response
+    $fileUrl = $filePath ? asset('storage/' . $filePath) : null;
+    $allImages = DB::table('project_images')->where('project_id', $id)->get()->map(function ($image) {
+        return [
+            'id' => $image->id,
+            'url' => asset('storage/' . $image->image),
+        ];
+    });
+
+    $programmingLanguages = DB::table('project_languages')
+        ->join('programming_languages', 'project_languages.programming_language_id', '=', 'programming_languages.id')
+        ->where('project_languages.project_id', $id)
+        ->select('programming_languages.id', 'programming_languages.programming_language')
+        ->get()
+        ->map(function ($lang) {
             return [
-                'id' => $image->id,
-                'url' => asset('storage/' . $image->image),
+                'id' => $lang->id,
+                'name' => $lang->programming_language,
             ];
         });
 
-        // Get all languages for this project
-        $programmingLanguages = DB::table('project_languages')
-            ->join('programming_languages', 'project_languages.programming_language_id', '=', 'programming_languages.id')
-            ->where('project_languages.project_id', $id)
-            ->select('programming_languages.id', 'programming_languages.programming_language')
-            ->get()
-            ->map(function ($language) {
-                return [
-                    'id' => $language->id,
-                    'name' => $language->programming_language
-                ];
-            })
-            ->toArray();
+    $projectDetails = DB::table('projects')
+        ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
+        ->select(
+            'portfolios.id as portfolio_id',
+            'projects.id as project_id',
+            'projects.title',
+            'projects.description',
+            'projects.instruction',
+            'projects.link',
+            'projects.project_visibility_status'
+        )
+        ->where('projects.id', $id)
+        ->first();
 
-        // Fetch updated project details
-        $projectDetails = DB::table('projects')
-            ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
-            ->select(
-                'portfolios.id as portfolio_id',
-                'projects.id as project_id',
-                'projects.title',
-                'projects.description',
-                'projects.instruction',
-                'projects.link',
-                'projects.project_visibility_status'
-            )
-            ->where('projects.id', $id)
-            ->first();
+    $projectDetailsArray = (array) $projectDetails;
+    $projectDetailsArray['programming_languages'] = $programmingLanguages;
 
-        // Convert to array and add programming languages
-        $projectDetailsArray = (array) $projectDetails;
-        $projectDetailsArray['programming_languages'] = $programmingLanguages;
+    return response()->json([
+        'message' => 'Project updated successfully.',
+        'project' => $projectDetailsArray,
+        'file_url' => $fileUrl,
+        'images' => $allImages,
+    ]);
+}
 
-        return response()->json([
-            'message' => 'Project updated successfully.',
-            'project' => $projectDetailsArray,
-            'file_url' => $fileUrl,
-            'images' => $allImages,
-        ]);
-    }
 
     public function removeProjectImage(Request $request, $imageId)
     {
