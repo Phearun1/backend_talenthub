@@ -675,7 +675,7 @@ class ProjectController extends Controller
         ]);
     }
 
-    
+
     public function removeProjectImage(Request $request, $imageId)
     {
         $image = DB::table('project_images')->where('id', $imageId)->first();
@@ -739,10 +739,40 @@ class ProjectController extends Controller
 
 
     public function deleteProject($id)
-    {
-        $project = DB::table('projects')->where('id', $id)->delete();
-        return response()->json(['message' => 'Project deleted successfully.'], 200);
+{
+    $project = DB::table('projects')->where('id', $id)->first();
+
+    if (!$project) {
+        return response()->json(['error' => 'Project not found.'], 404);
     }
+
+    // Delete project file from storage
+    if ($project->file) {
+        $filePath = storage_path('app/public/' . $project->file);
+        if (file_exists($filePath)) {
+            unlink($filePath);
+            Log::info('Deleted project file: ' . $filePath);
+        }
+    }
+
+    // Delete associated images from storage
+    $images = DB::table('project_images')->where('project_id', $id)->get();
+    foreach ($images as $image) {
+        $imagePath = storage_path('app/public/' . $image->image);
+        if (file_exists($imagePath)) {
+            unlink($imagePath);
+            Log::info('Deleted project image: ' . $imagePath);
+        }
+    }
+
+    // Delete image records
+    DB::table('project_images')->where('project_id', $id)->delete();
+
+    // Delete the project
+    DB::table('projects')->where('id', $id)->delete();
+
+    return response()->json(['message' => 'Project and associated files/images deleted successfully.']);
+}
 
 
     public function downloadProject($id, Request $request)
