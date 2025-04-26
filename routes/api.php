@@ -19,7 +19,7 @@ Route::post('/admin_login', [AuthController::class, 'adminLogin']);
 
 Route::get('/view_all_companies', [ExperienceController::class, 'viewAllCompanies']);
 
-Route::get('/users', [UserController::class, 'view_all_user']);
+Route::get('/users', [AdminController::class, 'view_all_user']);
 
 Route::post('/send-welcome-email', [NotificationController::class, 'sendWelcomeEmail']);
 Route::get('/download_project/{id}', [ProjectController::class, 'downloadProject']);
