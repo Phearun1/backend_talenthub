@@ -395,53 +395,60 @@ class ProjectController extends Controller
 
 
     public function viewProjectDetail($projectId, Request $request)
-{
-    // Retrieve the project details with user's authentication token
-    $project = DB::table('projects')
-        ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
-        ->join('users', 'portfolios.user_id', '=', 'users.google_id') // Use users.id for authentication
-        ->select(
-            'portfolios.id as portfolio_id',
-            'projects.id as project_id',
-            'projects.title',
-            'users.id as user_id',
-            'projects.project_visibility_status'
-        )
-        ->where('projects.id', $projectId)
-        ->first();
-
-    // Check if the project exists
-    if (!$project) {
-        return response()->json(['error' => 'Project not found.'], 404);
-    }
-
-    // Check if the project is public
-    if ($project->project_visibility_status == 0) {
+    {
+        // Retrieve project with its relationships to portfolio and user
+        $projectData = DB::table('projects')
+            ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
+            ->join('users', 'portfolios.user_id', '=', 'users.google_id')
+            ->select(
+                'projects.id as project_id',
+                'projects.title',
+                'projects.project_visibility_status',
+                'portfolios.id as portfolio_id',
+                'users.id as user_id',
+                'users.google_id',
+                'portfolios.user_id as portfolio_user_id'
+            )
+            ->where('projects.id', $projectId)
+            ->first();
+    
+        // Check if the project exists
+        if (!$projectData) {
+            return response()->json(['error' => 'Project not found.'], 404);
+        }
+    
+        // If project is public, return full details without authentication
+        if ($projectData->project_visibility_status == 0) {
+            return $this->getFullProjectDetails($projectId);
+        }
+    
+        // For private projects, check authentication
+        $token = $request->input('token');
+    
+        if (!$token) {
+            return response()->json(['error' => 'Authentication token required for private projects.'], 401);
+        }
+    
+        // Authenticate with token
+        $user = \Laravel\Sanctum\PersonalAccessToken::findToken($token)?->tokenable;
+    
+        if (!$user) {
+            return response()->json(['error' => 'Invalid token.'], 401);
+        }
+    
+        // Comprehensive authorization check:
+        // 1. Check if user ID matches portfolio's user_id (Google ID)
+        // 2. Ensure the project belongs to this portfolio
+        if ($user->google_id != $projectData->portfolio_user_id) {
+            return response()->json([
+                'error' => 'You do not have permission to view this project.',
+                'details' => 'This project belongs to another user.'
+            ], 403);
+        }
+    
+        // If user is authorized, return full project details
         return $this->getFullProjectDetails($projectId);
     }
-
-    // Instead of using $request->user(), we get token from body
-    $token = $request->input('token'); // <-- Get token from body
-
-    if (!$token) {
-        return response()->json(['error' => 'Authentication token required.'], 401);
-    }
-
-    // Manually authenticate user using the token
-    $user = \Laravel\Sanctum\PersonalAccessToken::findToken($token)?->tokenable;
-
-    if (!$user) {
-        return response()->json(['error' => 'Invalid token.'], 401);
-    }
-
-    // Check if the authenticated user matches the project owner (compare user_id)
-    if ($user->id != $project->user_id) {
-        return response()->json(['error' => 'This project is private.'], 403);
-    }
-
-    // If the user is the owner, return full project details
-    return $this->getFullProjectDetails($projectId);
-}
 
 
 // Method to return full project details
