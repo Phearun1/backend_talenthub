@@ -444,7 +444,7 @@ private function getFullProjectDetails($projectId)
     // Get full project details (the rest of your original logic)
     $fullProject = DB::table('projects')
         ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
-        ->join('users', 'portfolios.user_id', '=', 'users.id') // Use users.id for authentication
+        ->join('users', 'portfolios.user_id', '=', 'users.google_id') // Use users.id for authentication
         ->select(
             'portfolios.id as portfolio_id',
             'projects.id as project_id',
