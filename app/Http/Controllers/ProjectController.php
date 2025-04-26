@@ -492,7 +492,7 @@ private function getFullProjectDetails($projectId)
 
     // Get project endorsers with their endorsement status
     $endorsers = DB::table('project_endorsers')
-        ->join('users', 'project_endorsers.user_id', '=', 'users.id') // Use users.id for authentication
+        ->join('users', 'project_endorsers.user_id', '=', 'users.google_id') // Use users.id for authentication
         ->leftJoin('project_endorsement_statuses', function ($join) use ($projectId) {
             $join->on('project_endorsers.user_id', '=', 'project_endorsement_statuses.endorser_id')
                 ->where('project_endorsement_statuses.project_id', '=', DB::raw('project_endorsers.project_id'));
@@ -517,7 +517,7 @@ private function getFullProjectDetails($projectId)
 
     // Get project collaborators with their invitation status
     $collaborators = DB::table('project_collaborators')
-        ->join('users', 'project_collaborators.user_id', '=', 'users.id') // Use users.id for authentication
+        ->join('users', 'project_collaborators.user_id', '=', 'users.google_id') // Use users.id for authentication
         ->leftJoin('project_collaborator_invitation_statuses', function ($join) use ($projectId) {
             $join->on('project_collaborators.user_id', '=', 'project_collaborator_invitation_statuses.collaborator_id')
                 ->where('project_collaborator_invitation_statuses.project_id', '=', DB::raw('project_collaborators.project_id'));
