@@ -32,7 +32,7 @@ Route::middleware([\Fruitcake\Cors\HandleCors::class])->group(function () {
 
     Route::get('/view_all_portfolio', [PortfolioController::class, 'viewAllPortfolio']);
     Route::get('/view_portfolio_details/{userID}', [PortfolioController::class, 'viewPortfolioDetails']);
-    Route::get('/view_project_detail/{id}', [ProjectController::class, 'viewProjectDetail']);
+    
     Route::get('view_achievement_detail/{id}', [AchievementController::class, 'viewAchievementDetail']);
 });
 
@@ -59,6 +59,8 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
     Route::delete('/delete_skill/{id}', [SkillController::class, 'deleteSkill']);  // Delete skill
 
 
+    // portfolio
+    Route::get('/view_project_detail/{id}', [ProjectController::class, 'viewProjectDetail']);
 
     // project
 
