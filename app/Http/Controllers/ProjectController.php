@@ -151,7 +151,7 @@ class ProjectController extends Controller
                 'users.name',
                 'users.email',
                 'project_endorsement_statuses.endorsement_status_id',
-                'project_endorsers.created_at as joined_at'
+
             )
             ->get()
             ->map(function ($endorser) {
@@ -166,23 +166,35 @@ class ProjectController extends Controller
             })
             ->toArray();
 
-        // Get project collaborators
+        // Get project collaborators with their invitation status
         $collaborators = DB::table('project_collaborators')
             ->join('users', 'project_collaborators.user_id', '=', 'users.google_id')
+            ->leftJoin('project_collaborator_invitation_statuses', function ($join) use ($projectId) {
+                $join->on('project_collaborators.user_id', '=', 'project_collaborator_invitation_statuses.collaborator_id')
+                    ->where('project_collaborator_invitation_statuses.project_id', '=', DB::raw('project_collaborators.project_id'));
+            })
             ->where('project_collaborators.project_id', $projectId)
             ->select(
+                'users.id',
                 'users.google_id',
                 'users.name',
-
+                'users.email',
+                'project_collaborator_invitation_statuses.project_collab_status_id',
+                'project_collaborators.created_at as joined_at'
             )
             ->get()
             ->map(function ($collaborator) {
                 return [
-                    'id' => $collaborator->google_id,
+                    'id' => $collaborator->id,
+                    'google_id' => $collaborator->google_id,
                     'name' => $collaborator->name,
+                    'email' => $collaborator->email,
+                    'collaboration_status' => $collaborator->project_collab_status_id ?? 0, // Default to 0 if null
                 ];
             })
             ->toArray();
+
+
 
         // Combine project details with images, languages, endorsers and collaborators
         $response = (array) $fullProject;
