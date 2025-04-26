@@ -32,11 +32,11 @@ Route::middleware([\Fruitcake\Cors\HandleCors::class])->group(function () {
 
     Route::get('/view_all_portfolio', [PortfolioController::class, 'viewAllPortfolio']);
     Route::get('/view_portfolio_details/{userID}', [PortfolioController::class, 'viewPortfolioDetails']);
-    Route::get('/view_project_detail/{id}', [ProjectController::class, 'viewProjectDetail']);
+
     Route::get('view_achievement_detail/{id}', [AchievementController::class, 'viewAchievementDetail']);
 });
 
-Route::get('/view_all_projects', [ProjectController::class, 'viewAllProjects']);
+
 
 
 Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
@@ -61,9 +61,13 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
 
 
     // project
-    Route::post('/create_project', [ProjectController::class, 'createProject']);
-    Route::post('/update_project/{id}', [ProjectController::class, 'updateProject']);
 
+    Route::get('/view_all_projects', [ProjectController::class, 'viewAllProjects']);
+    Route::post('/create_project', [ProjectController::class, 'createProject']);
+
+    Route::post('/update_project/{id}', [ProjectController::class, 'updateProject']);
+    Route::get('/view_project_detail/{id}', [ProjectController::class, 'viewProjectDetail']);
+    
     Route::delete('/remove_project_file/{projectId}', [ProjectController::class, 'removeProjectFile']);
     Route::delete('/remove_project_images/{imageId}', [ProjectController::class, 'removeProjectImage']);
 
@@ -111,10 +115,9 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
 
 
     // User Management
-    
+
     Route::middleware('role:3')->get('/users', [AdminController::class, 'viewAllUser']);
     Route::middleware('role:3')->post('/update_user_role/{id}', [AdminController::class, 'updateUserRole']);
     Route::middleware('role:3')->post('/admin_change_password', [AdminController::class, 'adminChangePassword']);
     Route::middleware('role:3')->post('/admin/logout', [AuthController::class, 'adminLogout']);
-
 });

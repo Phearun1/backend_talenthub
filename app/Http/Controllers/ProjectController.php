@@ -10,6 +10,42 @@ use Illuminate\Support\Facades\Storage;
 class ProjectController extends Controller
 {
 
+    // public function viewAllProjects(Request $request)
+    // {
+    //     // Validate the request
+    //     $request->validate([
+    //         'portfolio_id' => 'required|integer',
+    //     ]);
+
+    //     $portfolioId = $request->input('portfolio_id');
+
+    //     // Verify the portfolio exists
+    //     $portfolio = DB::table('portfolios')
+    //         ->where('id', $portfolioId)
+    //         ->first();
+
+    //     if (!$portfolio) {
+    //         return response()->json(['error' => 'Portfolio not found.'], 404);
+    //     }
+
+    //     // Retrieve all projects for the specified portfolio with only the required fields
+    //     $projects = DB::table('projects')
+    //         ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
+    //         ->select(
+    //             'portfolios.id as portfolio_id',
+    //             'projects.id as project_id',
+    //             'projects.title'
+    //         )
+    //         ->where('projects.portfolio_id', $portfolioId)
+    //         ->get();
+
+    //     // Return the projects data
+    //     return response()->json([
+    //         'portfolio_id' => $portfolioId,
+    //         'projects' => $projects
+    //     ]);
+    // }
+
     public function viewAllProjects(Request $request)
     {
         // Validate the request
@@ -28,16 +64,25 @@ class ProjectController extends Controller
             return response()->json(['error' => 'Portfolio not found.'], 404);
         }
 
-        // Retrieve all projects for the specified portfolio with only the required fields
-        $projects = DB::table('projects')
+        $user = $request->user();
+
+        // Retrieve all projects for the specified portfolio
+        $projectsQuery = DB::table('projects')
             ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
             ->select(
                 'portfolios.id as portfolio_id',
                 'projects.id as project_id',
-                'projects.title'
+                'projects.title',
+                'projects.project_visibility_status'
             )
-            ->where('projects.portfolio_id', $portfolioId)
-            ->get();
+            ->where('projects.portfolio_id', $portfolioId);
+
+        // If user is not the owner, only show public projects
+        if (!$user || $user->google_id !== $portfolio->user_id) {
+            $projectsQuery->where('projects.project_visibility_status', 0); // Only public
+        }
+
+        $projects = $projectsQuery->get();
 
         // Return the projects data
         return response()->json([
@@ -45,6 +90,7 @@ class ProjectController extends Controller
             'projects' => $projects
         ]);
     }
+
 
     public function viewProjectDetail($projectId, Request $request)
     {
@@ -715,7 +761,4 @@ class ProjectController extends Controller
             'file' => $fileUrl
         ]);
     }
-
-
-
 }
