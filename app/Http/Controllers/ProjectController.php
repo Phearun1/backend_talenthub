@@ -161,7 +161,6 @@ class ProjectController extends Controller
                     'name' => $endorser->name,
                     'email' => $endorser->email,
                     'endorsement_status' => $endorser->endorsement_status_id ?? 0, // Default to 0 if null
-                    'joined_at' => $endorser->joined_at
                 ];
             })
             ->toArray();
