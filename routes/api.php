@@ -19,7 +19,7 @@ Route::post('/admin_login', [AuthController::class, 'adminLogin']);
 
 Route::get('/view_all_companies', [ExperienceController::class, 'viewAllCompanies']);
 
-Route::get('/users', [AdminController::class, 'view_all_user']);
+
 
 Route::post('/send-welcome-email', [NotificationController::class, 'sendWelcomeEmail']);
 Route::get('/download_project/{id}', [ProjectController::class, 'downloadProject']);
@@ -108,5 +108,7 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
     // Admin route 
     Route::middleware('role:3')->post('/admin/create_admin_account', [AdminController::class, 'adminCreateAdminAccount']);
     Route::middleware('role:3')->post('/admin/create_endorser_account', [AdminController::class, 'adminCreateEndorserAccount']);
+    Route::middleware('role:3')->get('/users', [AdminController::class, 'view_all_user']);
     Route::middleware('role:3')->post('/admin/logout', [AuthController::class, 'adminLogout']);
+
 });

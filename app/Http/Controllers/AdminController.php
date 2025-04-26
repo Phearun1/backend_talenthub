@@ -65,17 +65,19 @@ class AdminController extends Controller
 
 
     // Method to view all users with specific fields
-    public function view_all_user()
+    public function view_all_user(Request $request)
     {
+        // Check if the authenticated user is an admin (role_id = 3)
+        if ($request->user() && $request->user()->role_id !== 3) {
+            return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
+        }
+
         // Fetch all users from the 'users' table with only specific fields
         $users = DB::table('users')
             ->select('id', 'email', 'name', 'photo', 'google_id', 'role_id')
             ->get();
-    
+
         // Return the list of users as a JSON response
         return response()->json($users);
     }
-
-
-
 }
