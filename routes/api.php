@@ -108,7 +108,12 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
     // Admin route 
     Route::middleware('role:3')->post('/admin/create_admin_account', [AdminController::class, 'adminCreateAdminAccount']);
     Route::middleware('role:3')->post('/admin/create_endorser_account', [AdminController::class, 'adminCreateEndorserAccount']);
-    Route::middleware('role:3')->get('/users', [AdminController::class, 'view_all_user']);
+
+
+    // User Management
+    
+    Route::middleware('role:3')->get('/users', [AdminController::class, 'viewAllUser']);
+    Route::middleware('role:3')->post('/update_user_role/{id}', [AdminController::class, 'updateUserRole']);
     Route::middleware('role:3')->post('/admin/logout', [AuthController::class, 'adminLogout']);
 
 });

@@ -64,8 +64,10 @@ class AdminController extends Controller
     }
 
 
+
+
     // Method to view all users with specific fields
-    public function view_all_user(Request $request)
+    public function viewAllUser(Request $request)
     {
         // Check if the authenticated user is an admin (role_id = 3)
         if ($request->user() && $request->user()->role_id !== 3) {
@@ -79,5 +81,52 @@ class AdminController extends Controller
 
         // Return the list of users as a JSON response
         return response()->json($users);
+    }
+
+    public function updateUserRole(Request $request, $id)
+    {
+        // Check if the authenticated user is an admin (role_id = 3)
+        if ($request->user() && $request->user()->role_id !== 3) {
+            return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
+        }
+
+        // Validate request
+        $validator = Validator::make($request->all(), [
+            'role_id' => 'required|integer|in:1,2,3', // Only allow valid role IDs (1=Student, 2=Endorser, 3=Admin)
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 400);
+        }
+
+        // Get the user
+        $user = User::find($id);
+
+        if (!$user) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
+
+        // Get the original role for the response
+        $originalRole = $user->role_id;
+
+        // Map role IDs to role names for the response
+        $roleNames = [
+            1 => 'Student',
+            2 => 'Endorser',
+            3 => 'Admin'
+        ];
+
+        // Update the role
+        $user->role_id = $request->role_id;
+        $user->save();
+
+        // Return success response with before/after details
+        return response()->json([
+            'message' => 'User role updated successfully',
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'role_id' => $user->role_id,
+        ]);
     }
 }
