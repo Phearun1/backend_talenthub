@@ -59,6 +59,9 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
     Route::delete('/delete_skill/{id}', [SkillController::class, 'deleteSkill']);  // Delete skill
 
 
+    //portfolio
+
+    Route::get('/view_portfolio_details/{userID}', [PortfolioController::class, 'viewPortfolioDetails']);
 
     // project
 
@@ -67,7 +70,7 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
 
     Route::post('/update_project/{id}', [ProjectController::class, 'updateProject']);
     Route::get('/view_project_detail/{id}', [ProjectController::class, 'viewProjectDetail']);
-    
+
     Route::delete('/remove_project_file/{projectId}', [ProjectController::class, 'removeProjectFile']);
     Route::delete('/remove_project_images/{imageId}', [ProjectController::class, 'removeProjectImage']);
 

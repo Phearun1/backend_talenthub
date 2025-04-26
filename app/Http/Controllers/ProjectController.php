@@ -10,41 +10,7 @@ use Illuminate\Support\Facades\Storage;
 class ProjectController extends Controller
 {
 
-    // public function viewAllProjects(Request $request)
-    // {
-    //     // Validate the request
-    //     $request->validate([
-    //         'portfolio_id' => 'required|integer',
-    //     ]);
-
-    //     $portfolioId = $request->input('portfolio_id');
-
-    //     // Verify the portfolio exists
-    //     $portfolio = DB::table('portfolios')
-    //         ->where('id', $portfolioId)
-    //         ->first();
-
-    //     if (!$portfolio) {
-    //         return response()->json(['error' => 'Portfolio not found.'], 404);
-    //     }
-
-    //     // Retrieve all projects for the specified portfolio with only the required fields
-    //     $projects = DB::table('projects')
-    //         ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
-    //         ->select(
-    //             'portfolios.id as portfolio_id',
-    //             'projects.id as project_id',
-    //             'projects.title'
-    //         )
-    //         ->where('projects.portfolio_id', $portfolioId)
-    //         ->get();
-
-    //     // Return the projects data
-    //     return response()->json([
-    //         'portfolio_id' => $portfolioId,
-    //         'projects' => $projects
-    //     ]);
-    // }
+    
 
     public function viewAllProjects(Request $request)
     {
