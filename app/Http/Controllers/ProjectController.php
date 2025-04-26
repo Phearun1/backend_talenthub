@@ -179,7 +179,6 @@ class ProjectController extends Controller
                 'users.name',
                 'users.email',
                 'project_collaborator_invitation_statuses.project_collab_status_id',
-                'project_collaborators.created_at as joined_at'
             )
             ->get()
             ->map(function ($collaborator) {
