@@ -399,7 +399,7 @@ public function viewProjectDetail($projectId, Request $request)
             'description' => 'required|string|max:255',
             'instruction' => 'required|string|max:255',
             'link' => 'nullable|string|max:255',
-            'file' => 'nullable|file|mimes:zip',  // Validate file
+            'file' => 'nullable|file',  // Validate file
             'image' => 'nullable|array',  // Ensure image is an array for multiple upload
             'image.*' => 'image|mimes:jpeg,png,jpg,gif,svg', // Validate each image in array
             'programming_languages' => 'required|array', // Changed to array of languages
