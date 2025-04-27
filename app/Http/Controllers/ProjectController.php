@@ -11,7 +11,7 @@ use Laravel\Sanctum\PersonalAccessToken;
 class ProjectController extends Controller
 {
 
-    
+
 
     public function viewAllProjects(Request $request)
     {
@@ -54,12 +54,12 @@ class ProjectController extends Controller
         // Return the projects data
         return response()->json([
             'projects' => $projects->map(function ($project) {
-            return [
-                'portfolio_id' => $project->portfolio_id,
-                'project_id' => $project->project_id,
-                'title' => $project->title,
-                'project_visibility_status' => $project->project_visibility_status
-            ];
+                return [
+                    'portfolio_id' => $project->portfolio_id,
+                    'project_id' => $project->project_id,
+                    'title' => $project->title,
+                    'project_visibility_status' => $project->project_visibility_status
+                ];
             })
         ]);
     }
@@ -238,43 +238,43 @@ class ProjectController extends Controller
     //         )
     //         ->where('projects.id', $projectId)
     //         ->first();
-    
+
     //     // Check if the project exists
     //     if (!$project) {
     //         return response()->json(['error' => 'Project not found.'], 404);
     //     }
-    
+
     //     // Check if the project is public
     //     if ($project->project_visibility_status == 0) {
     //         // Public project: No need for Bearer token, just return full details
     //         return $this->getFullProjectDetails($projectId);
     //     }
-    
+
     //     // If project is private, we need to check for Bearer token in the body
     //     $bearerToken = $request->input('bearer');
-    
+
     //     // If no Bearer token is provided, return an error
     //     if (!$bearerToken) {
     //         return response()->json(['error' => 'Bearer token required for private projects.'], 401);
     //     }
-    
+
     //     // Verify the Bearer token by checking if it belongs to the user and matches the project owner
     //     try {
     //         $user = JWT::decode($bearerToken, env('JWT_SECRET'), ['HS256']); // Replace with your JWT library's decode method
-    
+
     //         // Check if the decoded token's Google ID matches the project owner
     //         if ($user->google_id != $project->google_id) {
     //             return response()->json(['error' => 'This project is private.'], 403);
     //         }
-    
+
     //         // If the user is the owner, return full project details
     //         return $this->getFullProjectDetails($projectId);
-    
+
     //     } catch (\Exception $e) {
     //         return response()->json(['error' => 'Invalid or expired token.'], 401);
     //     }
     // }
-    
+
     // // Method to return full project details
     // private function getFullProjectDetails($projectId)
     // {
@@ -301,7 +301,7 @@ class ProjectController extends Controller
     //         )
     //         ->where('projects.id', $projectId)
     //         ->first();
-    
+
     //     // Get all programming languages for this project
     //     $programmingLanguages = DB::table('project_languages')
     //         ->join('programming_languages', 'project_languages.programming_language_id', '=', 'programming_languages.id')
@@ -315,7 +315,7 @@ class ProjectController extends Controller
     //             ];
     //         })
     //         ->toArray();
-    
+
     //     // Get project images
     //     $images = DB::table('project_images')
     //         ->where('project_id', $projectId)
@@ -326,7 +326,7 @@ class ProjectController extends Controller
     //                 'url' => 'https://talenthub.newlinkmarketing.com/storage/' . $image->image
     //             ];
     //         });
-    
+
     //     // Get project endorsers with their endorsement status
     //     $endorsers = DB::table('project_endorsers')
     //         ->join('users', 'project_endorsers.user_id', '=', 'users.google_id')
@@ -353,7 +353,7 @@ class ProjectController extends Controller
     //             ];
     //         })
     //         ->toArray();
-    
+
     //     // Get project collaborators with their invitation status
     //     $collaborators = DB::table('project_collaborators')
     //         ->join('users', 'project_collaborators.user_id', '=', 'users.google_id')
@@ -380,14 +380,14 @@ class ProjectController extends Controller
     //             ];
     //         })
     //         ->toArray();
-    
+
     //     // Combine project details with images, languages, endorsers and collaborators
     //     $response = (array) $fullProject;
     //     $response['programming_languages'] = $programmingLanguages;
     //     $response['images'] = $images;
     //     $response['endorsers'] = $endorsers;
     //     $response['collaborators'] = $collaborators;
-    
+
     //     // Return the project details
     //     return response()->json($response, 200, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     // }
@@ -395,173 +395,173 @@ class ProjectController extends Controller
 
 
     public function viewProjectDetail($projectId, Request $request)
-{
-    // Retrieve the project details with user's authentication token
-    $project = DB::table('projects')
-        ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
-        ->join('users', 'portfolios.user_id', '=', 'users.google_id') // Use users.id for authentication
-        ->select(
-            'portfolios.id as portfolio_id',
-            'projects.id as project_id',
-            'projects.title',
-            'users.id as user_id',
-            'projects.project_visibility_status'
-        )
-        ->where('projects.id', $projectId)
-        ->first();
+    {
+        // Retrieve the project details with user's authentication token
+        $project = DB::table('projects')
+            ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
+            ->join('users', 'portfolios.user_id', '=', 'users.google_id') // Use users.id for authentication
+            ->select(
+                'portfolios.id as portfolio_id',
+                'projects.id as project_id',
+                'projects.title',
+                'users.id as user_id',
+                'projects.project_visibility_status'
+            )
+            ->where('projects.id', $projectId)
+            ->first();
 
-    // Check if the project exists
-    if (!$project) {
-        return response()->json(['error' => 'Project not found.'], 404);
-    }
+        // Check if the project exists
+        if (!$project) {
+            return response()->json(['error' => 'Project not found.'], 404);
+        }
 
-    // Check if the project is public
-    if ($project->project_visibility_status == 0) {
+        // Check if the project is public
+        if ($project->project_visibility_status == 0) {
+            return $this->getFullProjectDetails($projectId);
+        }
+
+        // Instead of using $request->user(), we get token from body
+        $token = $request->input('token'); // <-- Get token from body
+
+        if (!$token) {
+            return response()->json(['error' => 'Authentication token required.'], 401);
+        }
+
+        // Manually authenticate user using the token
+        $user = \Laravel\Sanctum\PersonalAccessToken::findToken($token)?->tokenable;
+
+        if (!$user) {
+            return response()->json(['error' => 'Invalid token.'], 401);
+        }
+
+        // Check if the authenticated user matches the project owner (compare user_id)
+        if ($user->id != $project->user_id) {
+            return response()->json(['error' => 'This project is private.'], 403);
+        }
+
+        // If the user is the owner, return full project details
         return $this->getFullProjectDetails($projectId);
     }
 
-    // Instead of using $request->user(), we get token from body
-    $token = $request->input('token'); // <-- Get token from body
 
-    if (!$token) {
-        return response()->json(['error' => 'Authentication token required.'], 401);
-    }
-
-    // Manually authenticate user using the token
-    $user = \Laravel\Sanctum\PersonalAccessToken::findToken($token)?->tokenable;
-
-    if (!$user) {
-        return response()->json(['error' => 'Invalid token.'], 401);
-    }
-
-    // Check if the authenticated user matches the project owner (compare user_id)
-    if ($user->id != $project->user_id) {
-        return response()->json(['error' => 'This project is private.'], 403);
-    }
-
-    // If the user is the owner, return full project details
-    return $this->getFullProjectDetails($projectId);
-}
-
-
-// Method to return full project details
-private function getFullProjectDetails($projectId)
-{
-    // Get full project details (the rest of your original logic)
-    $fullProject = DB::table('projects')
-        ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
-        ->join('users', 'portfolios.user_id', '=', 'users.google_id') // Use users.id for authentication
-        ->select(
-            'portfolios.id as portfolio_id',
-            'projects.id as project_id',
-            'projects.title',
-            'projects.description',
-            'projects.instruction',
-            'projects.link',
-            DB::raw("CASE
+    // Method to return full project details
+    private function getFullProjectDetails($projectId)
+    {
+        // Get full project details (the rest of your original logic)
+        $fullProject = DB::table('projects')
+            ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
+            ->join('users', 'portfolios.user_id', '=', 'users.google_id') // Use users.id for authentication
+            ->select(
+                'portfolios.id as portfolio_id',
+                'projects.id as project_id',
+                'projects.title',
+                'projects.description',
+                'projects.instruction',
+                'projects.link',
+                DB::raw("CASE
                 WHEN projects.file IS NOT NULL 
                 THEN CONCAT('https://talenthub.newlinkmarketing.com/storage/', projects.file)
                 ELSE NULL
             END as file"),
-            'projects.project_visibility_status',
-            'projects.created_at',
-            'projects.updated_at',
-            'users.google_id as google_id'
-        )
-        ->where('projects.id', $projectId)
-        ->first();
+                'projects.project_visibility_status',
+                'projects.created_at',
+                'projects.updated_at',
+                'users.google_id as google_id'
+            )
+            ->where('projects.id', $projectId)
+            ->first();
 
-    // Get all programming languages for this project
-    $programmingLanguages = DB::table('project_languages')
-        ->join('programming_languages', 'project_languages.programming_language_id', '=', 'programming_languages.id')
-        ->where('project_languages.project_id', $projectId)
-        ->select('programming_languages.id', 'programming_languages.programming_language')
-        ->get()
-        ->map(function ($language) {
-            return [
-                'id' => $language->id,
-                'name' => $language->programming_language
-            ];
-        })
-        ->toArray();
+        // Get all programming languages for this project
+        $programmingLanguages = DB::table('project_languages')
+            ->join('programming_languages', 'project_languages.programming_language_id', '=', 'programming_languages.id')
+            ->where('project_languages.project_id', $projectId)
+            ->select('programming_languages.id', 'programming_languages.programming_language')
+            ->get()
+            ->map(function ($language) {
+                return [
+                    'id' => $language->id,
+                    'name' => $language->programming_language
+                ];
+            })
+            ->toArray();
 
-    // Get project images
-    $images = DB::table('project_images')
-        ->where('project_id', $projectId)
-        ->get()
-        ->map(function ($image) {
-            return [
-                'id' => $image->id,
-                'url' => 'https://talenthub.newlinkmarketing.com/storage/' . $image->image
-            ];
-        });
+        // Get project images
+        $images = DB::table('project_images')
+            ->where('project_id', $projectId)
+            ->get()
+            ->map(function ($image) {
+                return [
+                    'id' => $image->id,
+                    'url' => 'https://talenthub.newlinkmarketing.com/storage/' . $image->image
+                ];
+            });
 
-    // Get project endorsers with their endorsement status
-    $endorsers = DB::table('project_endorsers')
-        ->join('users', 'project_endorsers.user_id', '=', 'users.google_id') // Use users.id for authentication
-        ->leftJoin('project_endorsement_statuses', function ($join) use ($projectId) {
-            $join->on('project_endorsers.user_id', '=', 'project_endorsement_statuses.endorser_id')
-                ->where('project_endorsement_statuses.project_id', '=', DB::raw('project_endorsers.project_id'));
-        })
-        ->where('project_endorsers.project_id', $projectId)
-        ->select(
-            'users.id',
-            'users.name',
-            'users.email',
-            'users.google_id',
-            'project_endorsement_statuses.endorsement_status_id'
-        )
-        ->get()
-        ->map(function ($endorser) {
-            return [
-                'id' => $endorser->id,
-                'name' => $endorser->name,
-                'email' => $endorser->email,
-                'google_id' => $endorser->google_id,
-                'endorsement_status' => $endorser->endorsement_status_id ?? 0, // Default to 0 if null
-            ];
-        })
-        ->toArray();
+        // Get project endorsers with their endorsement status
+        $endorsers = DB::table('project_endorsers')
+            ->join('users', 'project_endorsers.user_id', '=', 'users.google_id') // Use users.id for authentication
+            ->leftJoin('project_endorsement_statuses', function ($join) use ($projectId) {
+                $join->on('project_endorsers.user_id', '=', 'project_endorsement_statuses.endorser_id')
+                    ->where('project_endorsement_statuses.project_id', '=', DB::raw('project_endorsers.project_id'));
+            })
+            ->where('project_endorsers.project_id', $projectId)
+            ->select(
+                'users.id',
+                'users.name',
+                'users.email',
+                'users.google_id',
+                'project_endorsement_statuses.endorsement_status_id'
+            )
+            ->get()
+            ->map(function ($endorser) {
+                return [
+                    'id' => $endorser->id,
+                    'name' => $endorser->name,
+                    'email' => $endorser->email,
+                    'google_id' => $endorser->google_id,
+                    'endorsement_status' => $endorser->endorsement_status_id ?? 0, // Default to 0 if null
+                ];
+            })
+            ->toArray();
 
-    // Get project collaborators with their invitation status
-    $collaborators = DB::table('project_collaborators')
-        ->join('users', 'project_collaborators.user_id', '=', 'users.google_id') // Use users.id for authentication
-        ->leftJoin('project_collaborator_invitation_statuses', function ($join) use ($projectId) {
-            $join->on('project_collaborators.user_id', '=', 'project_collaborator_invitation_statuses.collaborator_id')
-                ->where('project_collaborator_invitation_statuses.project_id', '=', DB::raw('project_collaborators.project_id'));
-        })
-        ->where('project_collaborators.project_id', $projectId)
-        ->select(
-            'users.id',
-            'users.name',
-            'users.email',
-            'users.google_id',
-            'project_collaborator_invitation_statuses.project_collab_status_id'
-        )
-        ->get()
-        ->map(function ($collaborator) {
-            return [
-                'id' => $collaborator->id,
-                'name' => $collaborator->name,
-                'email' => $collaborator->email,
-                'google_id' => $collaborator->google_id,
-                'collaboration_status' => $collaborator->project_collab_status_id ?? 0, // Default to 0 if null
-            ];
-        })
-        ->toArray();
+        // Get project collaborators with their invitation status
+        $collaborators = DB::table('project_collaborators')
+            ->join('users', 'project_collaborators.user_id', '=', 'users.google_id') // Use users.id for authentication
+            ->leftJoin('project_collaborator_invitation_statuses', function ($join) use ($projectId) {
+                $join->on('project_collaborators.user_id', '=', 'project_collaborator_invitation_statuses.collaborator_id')
+                    ->where('project_collaborator_invitation_statuses.project_id', '=', DB::raw('project_collaborators.project_id'));
+            })
+            ->where('project_collaborators.project_id', $projectId)
+            ->select(
+                'users.id',
+                'users.name',
+                'users.email',
+                'users.google_id',
+                'project_collaborator_invitation_statuses.project_collab_status_id'
+            )
+            ->get()
+            ->map(function ($collaborator) {
+                return [
+                    'id' => $collaborator->id,
+                    'name' => $collaborator->name,
+                    'email' => $collaborator->email,
+                    'google_id' => $collaborator->google_id,
+                    'collaboration_status' => $collaborator->project_collab_status_id ?? 0, // Default to 0 if null
+                ];
+            })
+            ->toArray();
 
-    // Combine project details with images, languages, endorsers and collaborators
-    $response = (array) $fullProject;
-    $response['programming_languages'] = $programmingLanguages;
-    $response['images'] = $images;
-    $response['endorsers'] = $endorsers;
-    $response['collaborators'] = $collaborators;
+        // Combine project details with images, languages, endorsers and collaborators
+        $response = (array) $fullProject;
+        $response['programming_languages'] = $programmingLanguages;
+        $response['images'] = $images;
+        $response['endorsers'] = $endorsers;
+        $response['collaborators'] = $collaborators;
 
-    // Return the project details
-    return response()->json($response, 200, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-}
+        // Return the project details
+        return response()->json($response, 200, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    }
 
-    
+
 
 
 
@@ -1075,5 +1075,142 @@ private function getFullProjectDetails($projectId)
         return response()->json([
             'file' => $fileUrl
         ]);
+    }
+
+
+    public function addEndorserToProject(Request $request, $projectId)
+    {
+        // Validate the request data - only emails are required now
+        $request->validate([
+            'emails' => 'required|array',
+            'emails.*' => 'email|max:255',
+        ]);
+
+        // Check if the project exists
+        $project = DB::table('projects')->where('id', $projectId)->first();
+        if (!$project) {
+            return response()->json(['error' => 'Project not found.'], 404);
+        }
+
+        // Check if the authenticated user is the project owner
+        $portfolio = DB::table('portfolios')->where('id', $project->portfolio_id)->first();
+        if (!$portfolio || $portfolio->user_id !== $request->user()->google_id) {
+            return response()->json(['error' => 'You are not authorized to add endorsers to this project.'], 403);
+        }
+
+        $addedEndorsers = [];
+        $existingEndorsers = [];
+        $notFoundUsers = [];
+
+        // Set the default endorsement status to 1 (pending)
+        $endorsementStatusId = 1; // Pending status
+
+        foreach ($request->input('emails') as $email) {
+            // Find user by email
+            $user = DB::table('users')->where('email', $email)->first();
+
+            if (!$user) {
+                $notFoundUsers[] = $email;
+                continue;
+            }
+
+            // Check if the endorser already exists for this project
+            $existingEndorser = DB::table('project_endorsers')
+                ->where('project_id', $projectId)
+                ->where('user_id', $user->google_id)
+                ->first();
+
+            if ($existingEndorser) {
+                $existingEndorsers[] = [
+                    'email' => $email,
+                    'name' => $user->name
+                ];
+                continue;
+            }
+
+            // Insert the new endorser into the database using google_id
+            DB::table('project_endorsers')->insert([
+                'project_id' => $projectId,
+                'user_id' => $user->google_id,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            // Insert the endorsement status into the database with default status pending (1)
+            DB::table('project_endorsement_statuses')->insert([
+                'project_id' => $projectId,
+                'endorser_id' => $user->google_id,
+                'endorsement_status_id' => $endorsementStatusId, // Always set to pending (1)
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            // Get the status name for the response
+            $statusName = DB::table('endorsement_statuses')
+                ->where('id', $endorsementStatusId)
+                ->value('status') ?? 'Pending';
+
+            $addedEndorsers[] = [
+                'id' => $user->id,
+                'email' => $email,
+                'name' => $user->name,
+                'google_id' => $user->google_id,
+                'endorsement_status' => [
+                    'id' => $endorsementStatusId,
+                    'name' => $statusName
+                ]
+            ];
+        }
+
+        return response()->json([
+            'message' => 'Endorsers added successfully',
+            'added' => $addedEndorsers,
+            'existing' => $existingEndorsers,
+            'not_found' => $notFoundUsers
+        ]);
+    }
+
+    public function addCollaboratorToProject(Request $request, $projectId)
+    {
+        // Validate the request data
+        $request->validate([
+            'collaborator_id' => 'required|string|max:255',
+            'collaboration_status_id' => 'required|integer',
+        ]);
+
+        // Check if the project exists
+        $project = DB::table('projects')->where('id', $projectId)->first();
+        if (!$project) {
+            return response()->json(['error' => 'Project not found.'], 404);
+        }
+
+        // Check if the collaborator already exists for this project
+        $existingCollaborator = DB::table('project_collaborators')
+            ->where('project_id', $projectId)
+            ->where('user_id', $request->input('collaborator_id'))
+            ->first();
+
+        if ($existingCollaborator) {
+            return response()->json(['error' => 'Collaborator already exists for this project.'], 409);
+        }
+
+        // Insert the new collaborator into the database
+        DB::table('project_collaborators')->insert([
+            'project_id' => $projectId,
+            'user_id' => $request->input('collaborator_id'),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // Insert the collaboration status into the database
+        DB::table('project_collaborator_invitation_statuses')->insert([
+            'project_id' => $projectId,
+            'collaborator_id' => $request->input('collaborator_id'),
+            'collaboration_status_id' => $request->input('collaboration_status_id'),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return response()->json(['message' => 'Collaborator added successfully.']);
     }
 }

@@ -43,6 +43,9 @@ Route::middleware([\Fruitcake\Cors\HandleCors::class])->group(function () {
 
 
 
+
+
+
 Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
 
     // Protected route for logout (requires authentication via Sanctum)
@@ -74,8 +77,11 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
     Route::delete('/remove_project_images/{imageId}', [ProjectController::class, 'removeProjectImage']);
 
 
-
     Route::delete('/delete_project/{id}', [ProjectController::class, 'deleteProject']);
+
+
+    Route::post('/add_endorser_to_project/{projectId}', [ProjectController::class, 'addEndorserToProject']);
+    Route::post('/add_collaborator_to_project/{projectId}', [ProjectController::class, 'addCollaboratorToProject']);
 
 
     // Achievements 

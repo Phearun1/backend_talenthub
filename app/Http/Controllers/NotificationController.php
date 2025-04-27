@@ -8,9 +8,7 @@ use App\Mail\MyTestEmail;
 
 class NotificationController extends Controller
 {
-    public function sendCollaborationNotification(){
-
-    }
+    public function sendCollaborationNotification() {}
 
     public function sendWelcomeEmail(Request $request)
     {
@@ -19,13 +17,13 @@ class NotificationController extends Controller
             'email' => $request->input('email'),
             // Add other user data as needed
         ];
-        
+
         // Convert array to object for the email template
         $userObject = (object) $userData;
-        
+
         try {
             Mail::to($userData['email'])->send(new MyTestEmail($userObject));
-            
+
             return response()->json([
                 'message' => 'Email sent successfully',
             ], 200);
@@ -37,17 +35,17 @@ class NotificationController extends Controller
         }
     }
 
-    
+
 
     // public function sendWelcomeEmail()
     // {
     //     $user = new \stdClass();
     //     $user->name = "Vorak";
     //     $user->email = "stvorak@gmail.com";
-    
+
     //     // Send the email to the specified email address
     //     Mail::to($user->email)->send(new MyTestEmail($user));
-    
+
     //     return 'Email sent successfully!';
     // }
 
