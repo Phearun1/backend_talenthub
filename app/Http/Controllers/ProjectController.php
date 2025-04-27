@@ -466,7 +466,7 @@ private function getFullProjectDetails($projectId)
             'projects.project_visibility_status',
             'projects.created_at',
             'projects.updated_at',
-            'users.id as user_id'
+            'users.google_id as google_id'
         )
         ->where('projects.id', $projectId)
         ->first();
