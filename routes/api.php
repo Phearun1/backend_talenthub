@@ -11,6 +11,7 @@ use App\Http\Controllers\EducationController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\AdminController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Mail;
 
 
 // Public route for Google login
@@ -32,16 +33,26 @@ Route::middleware([\Fruitcake\Cors\HandleCors::class])->group(function () {
 
     Route::get('/view_all_portfolio', [PortfolioController::class, 'viewAllPortfolio']);
     Route::get('/view_portfolio_details/{userID}', [PortfolioController::class, 'viewPortfolioDetails']);
-    
+
     Route::get('view_achievement_detail/{id}', [AchievementController::class, 'viewAchievementDetail']);
 });
 
 
-    // portfolio
-    Route::post('/view_project_detail/{projectId}', [ProjectController::class, 'viewProjectDetail']);
+// portfolio
+Route::post('/view_project_detail/{projectId}', [ProjectController::class, 'viewProjectDetail']);
 
 
 
+Route::get('send-mail', function () {
+    $details = [
+        'title' => 'Success',
+        'content' => 'This is an email testing using Laravel-Brevo',
+    ];
+
+    Mail::to('khansrey6600@gmail.com')->send(new \App\Mail\TestMail($details));
+
+    return 'Email sent at ' . now();
+});
 
 
 
@@ -123,10 +134,9 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
 
 
     // User Management
-    
+
     Route::middleware('role:3')->get('/users', [AdminController::class, 'viewAllUser']);
     Route::middleware('role:3')->post('/update_user_role/{id}', [AdminController::class, 'updateUserRole']);
     Route::middleware('role:3')->post('/admin_change_password', [AdminController::class, 'adminChangePassword']);
     Route::middleware('role:3')->post('/admin/logout', [AuthController::class, 'adminLogout']);
-
 });

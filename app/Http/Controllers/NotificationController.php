@@ -15,7 +15,6 @@ class NotificationController extends Controller
         $userData = [
             'name' => $request->input('name'),
             'email' => $request->input('email'),
-            // Add other user data as needed
         ];
 
         // Convert array to object for the email template
