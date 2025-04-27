@@ -508,6 +508,7 @@ private function getFullProjectDetails($projectId)
             'users.id',
             'users.name',
             'users.email',
+            'users.google_id',
             'project_endorsement_statuses.endorsement_status_id'
         )
         ->get()
@@ -516,6 +517,7 @@ private function getFullProjectDetails($projectId)
                 'id' => $endorser->id,
                 'name' => $endorser->name,
                 'email' => $endorser->email,
+                'google_id' => $endorser->google_id,
                 'endorsement_status' => $endorser->endorsement_status_id ?? 0, // Default to 0 if null
             ];
         })
@@ -533,6 +535,7 @@ private function getFullProjectDetails($projectId)
             'users.id',
             'users.name',
             'users.email',
+            'users.google_id',
             'project_collaborator_invitation_statuses.project_collab_status_id'
         )
         ->get()
@@ -541,6 +544,7 @@ private function getFullProjectDetails($projectId)
                 'id' => $collaborator->id,
                 'name' => $collaborator->name,
                 'email' => $collaborator->email,
+                'google_id' => $collaborator->google_id,
                 'collaboration_status' => $collaborator->project_collab_status_id ?? 0, // Default to 0 if null
             ];
         })
