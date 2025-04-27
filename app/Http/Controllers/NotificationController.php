@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 use App\Mail\MyTestEmail;
 
 class NotificationController extends Controller
@@ -42,15 +43,20 @@ class NotificationController extends Controller
             'message' => $request->input('message', 'This is a default test message.')
         ];
 
-        // Send the email
-        Mail::send([], $data, function ($message) {
-            $message->to('recipient@example.com')
+        try {
+            // Send the email
+            Mail::send([], $data, function ($message) {
+                $message->to('recipient@example.com')  // Replace with actual recipient email
                     ->subject('Test Email from TalentHub')
                     ->setBody('Hello, this is a test email from TalentHub.')
                     ->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
-        });
+            });
 
-        return response()->json(['status' => 'Email sent successfully!']);
+            return response()->json(['status' => 'Email sent successfully!']);
+        } catch (\Exception $e) {
+            // Log the error for troubleshooting
+            Log::error('Email sending failed: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to send email.'], 500);
+        }
     }
-
 }
