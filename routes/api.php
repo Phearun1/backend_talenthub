@@ -43,16 +43,7 @@ Route::post('/view_project_detail/{projectId}', [ProjectController::class, 'view
 
 
 
-Route::get('send-mail', function () {
-    $details = [
-        'title' => 'Success',
-        'content' => 'This is an email testing using Laravel-Brevo',
-    ];
 
-    Mail::to('khansrey6600@gmail.com')->send(new \App\Mail\TestMail($details));
-
-    return 'Email sent at ' . now();
-});
 
 
 
