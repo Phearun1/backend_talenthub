@@ -38,16 +38,6 @@ class NotificationController extends Controller
     }
 
 
-    public function sendTestEmail()
-{
-    // Create a new instance of your Mailable class with updated name and email
-    $email = new MyTestEmail((object)[
-        'name' => 'John Doe', // Updated name
-        'email' => 'john.doe@example.com', // Updated email
-    ]);
-
-    // Send the email with content from the welcome.blade.php view
-    Mail::to('khansrey6600@gmail.com')->send($email);
-}
+    
 
 }

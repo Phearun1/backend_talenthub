@@ -1,3 +1,4 @@
+\MyTestEmail.php
 <?php
 namespace App\Mail;
 
@@ -42,10 +43,10 @@ class MyTestEmail extends Mailable
         return new Content(
             view: 'emails.welcome',
             with: [
-                'name' => $this->userData->name,
-                'email' => $this->userData->email,
-                'plainText' => $this->userData->plainText,
-                'htmlContent' => $this->userData->htmlContent
+                'name' => $this->userData->name ?? 'User',
+                'email' => $this->userData->email ?? '',
+                'plainText' => $this->userData->plainText ?? 'Welcome to TalentHub!',
+                'htmlContent' => $this->userData->htmlContent ?? '<p>Thank you for joining our platform.</p>'
             ],
         );
     }
@@ -58,4 +59,3 @@ class MyTestEmail extends Mailable
         return [];
     }
 }
-
