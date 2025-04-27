@@ -35,18 +35,22 @@ class NotificationController extends Controller
     }
 
 
+    public function sendTestEmail(Request $request)
+    {
+        // Optional: You can use request data to customize the email
+        $data = [
+            'message' => $request->input('message', 'This is a default test message.')
+        ];
 
-    // public function sendWelcomeEmail()
-    // {
-    //     $user = new \stdClass();
-    //     $user->name = "Vorak";
-    //     $user->email = "stvorak@gmail.com";
+        // Send the email
+        Mail::send([], $data, function ($message) {
+            $message->to('recipient@example.com')
+                    ->subject('Test Email from TalentHub')
+                    ->setBody('Hello, this is a test email from TalentHub.')
+                    ->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
+        });
 
-    //     // Send the email to the specified email address
-    //     Mail::to($user->email)->send(new MyTestEmail($user));
-
-    //     return 'Email sent successfully!';
-    // }
-
+        return response()->json(['status' => 'Email sent successfully!']);
+    }
 
 }
