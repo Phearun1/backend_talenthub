@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use App\Mail\MyTestEmail;
+use Symfony\Component\Mime\Part\TextPart;
+use Symfony\Component\Mime\Email;
 
 class NotificationController extends Controller
 {
@@ -36,27 +38,15 @@ class NotificationController extends Controller
     }
 
 
-    public function sendTestEmail(Request $request)
-    {
-        // Optional: You can use request data to customize the email
-        $data = [
-            'message' => $request->input('message', 'This is a default test message.')
-        ];
+    public function sendTestEmail()
+{
+    // Create a new instance of your Mailable class
+    $email = new MyTestEmail((object)[
+        'plainText' => 'Your plain text email body content here',
+        'htmlContent' => '<p>Your <strong>HTML</strong> email content here</p>'
+    ]);
 
-        try {
-            // Send the email
-            Mail::send([], $data, function ($message) {
-                $message->to('recipient@example.com')  // Replace with actual recipient email
-                    ->subject('Test Email from TalentHub')
-                    ->setBody('Hello, this is a test email from TalentHub.')
-                    ->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
-            });
-
-            return response()->json(['status' => 'Email sent successfully!']);
-        } catch (\Exception $e) {
-            // Log the error for troubleshooting
-            Log::error('Email sending failed: ' . $e->getMessage());
-            return response()->json(['error' => 'Failed to send email.'], 500);
-        }
-    }
+    // Send the email
+    Mail::to('khansrey6600@gmail.com')->send($email);
+}
 }
