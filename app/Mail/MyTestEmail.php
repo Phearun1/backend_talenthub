@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
@@ -42,16 +41,21 @@ class MyTestEmail extends Mailable
     {
         return new Content(
             view: 'emails.welcome',
+            with: [
+                'name' => $this->userData->name,
+                'email' => $this->userData->email,
+                'plainText' => $this->userData->plainText,
+                'htmlContent' => $this->userData->htmlContent
+            ],
         );
     }
 
     /**
      * Get the attachments for the message.
-     *
-     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
      */
     public function attachments(): array
     {
         return [];
     }
 }
+
