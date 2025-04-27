@@ -63,7 +63,7 @@ class PortfolioController extends Controller
     
         // Get only the specific fields from projects related to the portfolio
         $projects = DB::table('projects')
-            ->select('id', 'portfolio_id', 'title', 'project_visibility_status')
+            ->select('id as project_id', 'portfolio_id', 'title', 'project_visibility_status')
             ->where('portfolio_id', $portfolioId)
             ->get();
     
