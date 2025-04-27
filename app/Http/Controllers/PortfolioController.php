@@ -39,7 +39,7 @@ class PortfolioController extends Controller
             ->join('users', 'portfolios.user_id', '=', 'users.google_id')
             ->select(
                 'portfolios.id',
-                'portfolios.user_id',
+                'portfolios.user_id as google_id',
                 'portfolios.major_id as major',
                 'portfolios.phone_number',
                 'portfolios.about',
