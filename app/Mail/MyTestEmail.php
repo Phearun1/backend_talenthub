@@ -1,4 +1,3 @@
-\MyTestEmail.php
 <?php
 namespace App\Mail;
 
