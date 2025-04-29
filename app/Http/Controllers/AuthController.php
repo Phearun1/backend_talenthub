@@ -73,7 +73,7 @@ class AuthController extends Controller
             return response()->json([
             'error' => 'Your account has been suspended. Please contact an administrator.',
             'user_status' => 0
-            ], 403);
+            ], 200);
         }
 
         // Auto-create portfolio only if not already created
@@ -106,7 +106,7 @@ class AuthController extends Controller
             ]);
         }
 
-        return response()->json(['error' => 'Unauthorized role'], 403);
+        return response()->json(['error' => 'Unauthorized role'], 200);
     }
 
 
