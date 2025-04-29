@@ -45,7 +45,7 @@ class PortfolioController extends Controller
                 'portfolios.phone_number',
                 'portfolios.about',
                 'portfolios.working_status',
-                'users.status as user_status', // Changed from 'status' to 'user_status'
+                'users.status as status', // Changed from 'status' to 'user_status'
                 'portfolios.created_at',
                 'portfolios.updated_at',
                 'users.name as user_name',
