@@ -45,7 +45,7 @@ class PortfolioController extends Controller
                 'portfolios.phone_number',
                 'portfolios.about',
                 'portfolios.working_status',
-                'users.status as user_status', // Changed from 'status' to 'user_status'
+                'users.status as status', // Changed from user_status to status
                 'portfolios.created_at',
                 'portfolios.updated_at',
                 'users.name as user_name',
@@ -61,11 +61,11 @@ class PortfolioController extends Controller
         }
 
         // Check if user has been banned (status = 0)
-        if ($portfolio->user_status === 0) {
+        if ($portfolio->status === 0) {
             return response()->json([
                 'error' => 'The user portfolio has been banned.',
                 'status' => 0
-            ], 200);
+            ], 403);
         }
 
         $portfolioId = $portfolio->id;
