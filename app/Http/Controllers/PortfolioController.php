@@ -63,7 +63,7 @@ class PortfolioController extends Controller
         if ($portfolio->user_status === 0) {
             return response()->json([
                 'error' => 'The user portfolio has been banned.',
-                'status': 0
+                'status' => 0
             ], 403);
         }
     
