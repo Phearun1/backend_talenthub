@@ -31,12 +31,9 @@ class ProjectController extends Controller
             return response()->json(['error' => 'Portfolio not found.'], 404);
         }
     
-        // Check if user is banned (status = 0)
-        if ($portfolio->user_status === 0) {
-            return response()->json([
-                'error' => 'The user portfolio has been banned.',
-                'user_status' => 0
-            ], 200);
+        // Only continue if user is active (status = 1)
+        if ($portfolio->user_status !== 1) {
+            return response()->json(['error' => 'Portfolio not available.'], 200);
         }
     
         $user = $request->user();
