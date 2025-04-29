@@ -151,9 +151,8 @@ public function viewProjectDetail($projectId, Request $request)
                 ELSE NULL
             END as file"),
                 'projects.project_visibility_status',
-                'projects.created_at',
-                'projects.updated_at',
-                'users.google_id as google_id'
+                'users.google_id as google_id',
+                'user.status as user_status' 
             )
             ->where('projects.id', $projectId)
             ->first();
