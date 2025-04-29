@@ -20,7 +20,7 @@ class PortfolioController extends Controller
                 'portfolios.phone_number',
                 'portfolios.about',
                 'portfolios.working_status',
-                'portfolios.status',
+                'users.status as status', // Changed from portfolios.status to users.status
                 'portfolios.created_at',
                 'portfolios.updated_at',
                 'users.name as name',
@@ -29,10 +29,10 @@ class PortfolioController extends Controller
                 'users.role_id as role'
             )
             ->get();
-
+    
         return response()->json($portfolios);
     }
-
+    
     public function viewPortfolioDetails($userID)
     {
         $portfolio = DB::table('portfolios')
@@ -44,7 +44,7 @@ class PortfolioController extends Controller
                 'portfolios.phone_number',
                 'portfolios.about',
                 'portfolios.working_status',
-                'portfolios.status',
+                'users.status as status', // Changed from portfolios.status to users.status
                 'portfolios.created_at',
                 'portfolios.updated_at',
                 'users.name as user_name',
