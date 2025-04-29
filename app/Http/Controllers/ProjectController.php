@@ -152,7 +152,7 @@ public function viewProjectDetail($projectId, Request $request)
             END as file"),
                 'projects.project_visibility_status',
                 'users.google_id as google_id',
-                'user.status as user_status' 
+                'users.status as user_status' 
             )
             ->where('projects.id', $projectId)
             ->first();
