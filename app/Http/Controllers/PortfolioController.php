@@ -33,6 +33,7 @@ class PortfolioController extends Controller
         return response()->json($portfolios);
     }
     
+        <?php
     public function viewPortfolioDetails($userID)
     {
         $portfolio = DB::table('portfolios')
@@ -44,7 +45,7 @@ class PortfolioController extends Controller
                 'portfolios.phone_number',
                 'portfolios.about',
                 'portfolios.working_status',
-                'users.status as status', // Changed from portfolios.status to users.status
+                'users.status as user_status', // Changed from status to user_status
                 'portfolios.created_at',
                 'portfolios.updated_at',
                 'users.name as user_name',
@@ -57,6 +58,14 @@ class PortfolioController extends Controller
     
         if (!$portfolio) {
             return response()->json(['error' => 'Portfolio not found.'], 404);
+        }
+        
+        // Check if user has been banned (status = 0)
+        if ($portfolio->user_status === 0) {
+            return response()->json([
+                'error' => 'The user portfolio has been banned.',
+                'status': 0
+            ], 403);
         }
     
         $portfolioId = $portfolio->id;
