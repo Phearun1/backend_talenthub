@@ -33,7 +33,6 @@ class PortfolioController extends Controller
         return response()->json($portfolios);
     }
     
-        <?php
     public function viewPortfolioDetails($userID)
     {
         $portfolio = DB::table('portfolios')
