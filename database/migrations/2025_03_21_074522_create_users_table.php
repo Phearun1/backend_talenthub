@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('photo')->nullable();
             $table->string('google_id');
             $table->integer('role_id');
+            $table->integer('status');
             $table->timestamps();
         });
     }
