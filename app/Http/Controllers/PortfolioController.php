@@ -65,7 +65,7 @@ class PortfolioController extends Controller
             return response()->json([
                 'error' => 'The user portfolio has been banned.',
                 'status' => 0
-            ], 403);
+            ], 200);
         }
 
         $portfolioId = $portfolio->id;
