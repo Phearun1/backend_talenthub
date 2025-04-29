@@ -70,7 +70,10 @@ class AuthController extends Controller
 
         // Check if user is banned
         if ($user->status === 0) {
-            return response()->json(['error' => 'Your account has been suspended. Please contact an administrator.'], 403);
+            return response()->json([
+            'error' => 'Your account has been suspended. Please contact an administrator.',
+            'user_status' => 0
+            ], 403);
         }
 
         // Auto-create portfolio only if not already created
