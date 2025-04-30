@@ -19,7 +19,11 @@ class NotificationController extends Controller
     {
         try {
             // Get the authenticated user's Google ID
-            $userGoogleId = $request->user()->google_id;
+            $request->validate([
+                'user_google_id' => 'required|string',
+            ]);
+
+            $userGoogleId = $request->input('user_google_id');
             
             if (!$userGoogleId) {
                 return response()->json([
