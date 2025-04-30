@@ -907,7 +907,7 @@ public function viewProjectDetail($projectId, Request $request)
                         'id' => $currentStatus ? $currentStatus->endorsement_status_id : $endorsementStatusId,
                         'name' => $statusName
                     ],
-                    'is_new' => $isNewEndorser
+                    // 'is_new' => $isNewEndorser
                 ];
                 
                 if ($isNewEndorser) {
