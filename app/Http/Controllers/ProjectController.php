@@ -763,7 +763,6 @@ public function viewProjectDetail($projectId, Request $request)
         ]);
     }
 
-        <?php
     public function addEndorserToProject(Request $request, $projectId)
     {
         try {
