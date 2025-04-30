@@ -1179,6 +1179,7 @@ public function viewProjectDetail($projectId, Request $request)
         
             // Set the default collaboration status to 1 (pending)
             $collaborationStatusId = 1; // Pending status
+            $rejectedStatusId = 3;     // Rejected status
         
             foreach ($request->input('emails') as $email) {
                 // Find user by email
@@ -1189,8 +1190,6 @@ public function viewProjectDetail($projectId, Request $request)
                     continue;
                 }
                 
-                // Removed the role check - any user can be a collaborator
-        
                 // Check if the collaborator already exists for this project
                 $existingCollaborator = DB::table('project_collaborators')
                     ->where('project_id', $projectId)
@@ -1199,45 +1198,67 @@ public function viewProjectDetail($projectId, Request $request)
         
                 $isNewCollaborator = !$existingCollaborator;
                 
-                if (!$isNewCollaborator) {
-                    // Collaborator already exists, do nothing and continue adding to response
-                } else {
-                    // Insert the new collaborator into the database using google_id
-                    DB::table('project_collaborators')->insert([
-                        'project_id' => $projectId,
-                        'user_id' => $user->google_id,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
-                }
-        
-                // Check if a collaboration status already exists
+                // Check if this collaborator previously rejected the request
                 $existingStatus = DB::table('project_collaborator_invitation_statuses')
                     ->where('project_id', $projectId)
                     ->where('collaborator_id', $user->google_id)
                     ->first();
                     
-                // Only create a new status if one doesn't exist
-                if (!$existingStatus && $isNewCollaborator) {
-                    // Insert the collaboration status into the database with default status pending (1)
-                    DB::table('project_collaborator_invitation_statuses')->insert([
-                        'project_id' => $projectId,
-                        'collaborator_id' => $user->google_id,
-                        'project_collab_status_id' => $collaborationStatusId, // Changed field name to match DB
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
+                $wasRejected = $existingStatus && $existingStatus->project_collab_status_id === $rejectedStatusId;
+                
+                // If collaborator already exists but previously rejected, allow a new request
+                if (!$isNewCollaborator && !$wasRejected) {
+                    // Collaborator already exists and did not reject
+                    // Get current status info for response
+                    $currentStatus = $existingStatus;
+                } else {
+                    // This is either a new collaborator or one who previously rejected
+                    
+                    if ($wasRejected) {
+                        // Collaborator previously rejected, creating new request
+                    } else {
+                        // Only add to project_collaborators if they don't exist already
+                        if ($isNewCollaborator) {
+                            DB::table('project_collaborators')->insert([
+                                'project_id' => $projectId,
+                                'user_id' => $user->google_id,
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ]);
+                        }
+                    }
+                    
+                    // Update or insert collaboration status
+                    if ($wasRejected) {
+                        // Update existing record if it was rejected
+                        DB::table('project_collaborator_invitation_statuses')
+                            ->where('project_id', $projectId)
+                            ->where('collaborator_id', $user->google_id)
+                            ->update([
+                                'project_collab_status_id' => $collaborationStatusId, // Set back to pending
+                                'updated_at' => now(),
+                            ]);
+                    } else if (!$existingStatus) {
+                        // Insert new record if none exists
+                        DB::table('project_collaborator_invitation_statuses')->insert([
+                            'project_id' => $projectId,
+                            'collaborator_id' => $user->google_id,
+                            'project_collab_status_id' => $collaborationStatusId,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                    }
+                    
+                    // Get updated status for response
+                    $currentStatus = DB::table('project_collaborator_invitation_statuses')
+                        ->where('project_id', $projectId)
+                        ->where('collaborator_id', $user->google_id)
+                        ->first();
                 }
         
-                // Get the current status (either newly created or existing)
-                $currentStatus = DB::table('project_collaborator_invitation_statuses')
-                    ->where('project_id', $projectId)
-                    ->where('collaborator_id', $user->google_id)
-                    ->first();
-                    
                 // Get the status name for the response using the correct field name
                 $statusName = DB::table('project_collaboration_statuses')
-                    ->where('id', $currentStatus ? $currentStatus->project_collab_status_id : $collaborationStatusId) // Changed field name
+                    ->where('id', $currentStatus ? $currentStatus->project_collab_status_id : $collaborationStatusId)
                     ->value('status') ?? 'Pending';
         
                 $collaborator[] = [
@@ -1246,7 +1267,7 @@ public function viewProjectDetail($projectId, Request $request)
                     'name' => $user->name,
                     'google_id' => $user->google_id,
                     'collaboration_status' => [
-                        'id' => $currentStatus ? $currentStatus->project_collab_status_id : $collaborationStatusId, // Changed field name
+                        'id' => $currentStatus ? $currentStatus->project_collab_status_id : $collaborationStatusId,
                         'name' => $statusName
                     ]
                 ];
