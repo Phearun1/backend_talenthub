@@ -1113,7 +1113,6 @@ public function viewProjectDetail($projectId, Request $request)
                         'id' => $currentStatus ? $currentStatus->endorsement_status_id : $endorsementStatusId,
                         'name' => $statusName
                     ],
-                    'previously_rejected' => $wasRejected
                 ];
                 
                 if ($isNewEndorser) {
