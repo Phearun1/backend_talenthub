@@ -44,8 +44,6 @@ class NotificationController extends Controller
                     'requestor.name as requestor_name',
                     'requestor.email as requestor_email',
                     'requestor.google_id as requestor_google_id',
-                    'pes.created_at',
-                    'pes.updated_at'
                 )
                 ->where('pes.endorser_id', '=', $userGoogleId)
                 ->where('pes.endorsement_status_id', '=', 1) // 1 = Pending
@@ -68,8 +66,6 @@ class NotificationController extends Controller
                     'requestor.name as requestor_name',
                     'requestor.email as requestor_email',
                     'requestor.google_id as requestor_google_id',
-                    'pcis.created_at',
-                    'pcis.updated_at'
                 )
                 ->where('pcis.collaborator_id', '=', $userGoogleId)
                 ->where('pcis.project_collab_status_id', '=', 1) // 1 = Pending

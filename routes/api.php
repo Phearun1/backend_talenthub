@@ -114,9 +114,9 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
 
 
 
-    // Endorser route
+    // notification
 
-
+    Route::get('/view_notification', [NotificationController::class, 'viewNotification']);
 
 
 
