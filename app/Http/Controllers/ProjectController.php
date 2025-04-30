@@ -941,6 +941,7 @@ public function viewProjectDetail($projectId, Request $request)
         }
     }
 
+    
     public function addCollaboratorToProject(Request $request, $projectId)
     {
         try {
@@ -968,7 +969,6 @@ public function viewProjectDetail($projectId, Request $request)
         
             $collaborator = [];
             $notFoundUsers = [];
-            $notStudentRoleUsers = []; // Array to track users without student role
         
             // Set the default collaboration status to 1 (pending)
             $collaborationStatusId = 1; // Pending status
@@ -981,17 +981,8 @@ public function viewProjectDetail($projectId, Request $request)
                     $notFoundUsers[] = $email;
                     continue;
                 }
-        
-                // Check if user has role_id = 3 (student role)
-                $hasStudentRole = $user->role_id === 3;
                 
-                if (!$hasStudentRole) {
-                    $notStudentRoleUsers[] = [
-                        'email' => $email,
-                        'name' => $user->name
-                    ];
-                    continue;
-                }
+                // Removed the role check - any user can be a collaborator
         
                 // Check if the collaborator already exists for this project
                 $existingCollaborator = DB::table('project_collaborators')
@@ -1037,7 +1028,7 @@ public function viewProjectDetail($projectId, Request $request)
                     ->where('collaborator_id', $user->google_id)
                     ->first();
                     
-                // Get the status name for the response (assuming you have a table for collaboration status names)
+                // Get the status name for the response
                 $statusName = DB::table('project_collaboration_statuses')
                     ->where('id', $currentStatus ? $currentStatus->collaboration_status_id : $collaborationStatusId)
                     ->value('status') ?? 'Pending';
@@ -1057,8 +1048,6 @@ public function viewProjectDetail($projectId, Request $request)
             return response()->json([
                 'message' => 'Collaborators processed successfully',
                 'collaborator' => $collaborator,
-                'not_found' => $notFoundUsers,
-                'not_student_role' => $notStudentRoleUsers
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
