@@ -1016,7 +1016,7 @@ public function viewProjectDetail($projectId, Request $request)
                     DB::table('project_collaborator_invitation_statuses')->insert([
                         'project_id' => $projectId,
                         'collaborator_id' => $user->google_id,
-                        'collaboration_status_id' => $collaborationStatusId, // Always set to pending (1)
+                        'project_collab_status_id' => $collaborationStatusId, // Changed field name to match DB
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);
@@ -1028,9 +1028,9 @@ public function viewProjectDetail($projectId, Request $request)
                     ->where('collaborator_id', $user->google_id)
                     ->first();
                     
-                // Get the status name for the response
+                // Get the status name for the response using the correct field name
                 $statusName = DB::table('project_collaboration_statuses')
-                    ->where('id', $currentStatus ? $currentStatus->collaboration_status_id : $collaborationStatusId)
+                    ->where('id', $currentStatus ? $currentStatus->project_collab_status_id : $collaborationStatusId) // Changed field name
                     ->value('status') ?? 'Pending';
         
                 $collaborator[] = [
@@ -1039,7 +1039,7 @@ public function viewProjectDetail($projectId, Request $request)
                     'name' => $user->name,
                     'google_id' => $user->google_id,
                     'collaboration_status' => [
-                        'id' => $currentStatus ? $currentStatus->collaboration_status_id : $collaborationStatusId,
+                        'id' => $currentStatus ? $currentStatus->project_collab_status_id : $collaborationStatusId, // Changed field name
                         'name' => $statusName
                     ]
                 ];
@@ -1048,6 +1048,7 @@ public function viewProjectDetail($projectId, Request $request)
             return response()->json([
                 'message' => 'Collaborators processed successfully',
                 'collaborator' => $collaborator,
+                'not_found' => $notFoundUsers
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
