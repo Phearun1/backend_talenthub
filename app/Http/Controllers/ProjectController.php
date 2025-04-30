@@ -763,13 +763,191 @@ public function viewProjectDetail($projectId, Request $request)
         ]);
     }
 
+    // public function addEndorserToProject(Request $request, $projectId)
+    // {
+    //     try {
+    //         // Log::info('addEndorserToProject called', [
+    //         //     'project_id' => $projectId, 
+    //         //     'emails' => $request->input('emails')
+    //         // ]);
+            
+    //         // Validate the request data - only emails are required now
+    //         $request->validate([
+    //             'emails' => 'required|array',
+    //             'emails.*' => 'email|max:255',
+    //         ]);
+        
+    //         // Check if the project exists
+    //         $project = DB::table('projects')->where('id', $projectId)->first();
+    //         if (!$project) {
+    //             // Log::error('Project not found', ['project_id' => $projectId]);
+    //             return response()->json(['error' => 'Project not found.'], 404);
+    //         }
+        
+    //         // Check if the authenticated user is the project owner
+    //         $portfolio = DB::table('portfolios')->where('id', $project->portfolio_id)->first();
+    //         if (!$portfolio) {
+    //             // Log::error('Portfolio not found', ['portfolio_id' => $project->portfolio_id]);
+    //             return response()->json(['error' => 'Portfolio not found.'], 404);
+    //         }
+            
+    //         if ($portfolio->user_id !== $request->user()->google_id) {
+    //             // Log::error('Unauthorized access attempt', [
+    //             //     'user_id' => $request->user()->google_id,
+    //             //     'portfolio_user_id' => $portfolio->user_id
+    //             // ]);
+    //             return response()->json(['error' => 'You are not authorized to add endorsers to this project.'], 403);
+    //         }
+        
+    //         $endorser = [];
+    //         $notFoundUsers = [];
+    //         $notEndorserRoleUsers = []; // New array to track users without endorser role
+        
+    //         // Set the default endorsement status to 1 (pending)
+    //         $endorsementStatusId = 1; // Pending status
+        
+    //         foreach ($request->input('emails') as $email) {
+    //             // Log::info('Processing email', ['email' => $email]);
+                
+    //             // Find user by email
+    //             $user = DB::table('users')->where('email', $email)->first();
+        
+    //             if (!$user) {
+    //                 // Log::info('User not found', ['email' => $email]);
+    //                 $notFoundUsers[] = $email;
+    //                 continue;
+    //             }
+                
+    //             // Log::info('User found', [
+    //             //     'email' => $email,
+    //             //     'user_id' => $user->id,
+    //             //     'google_id' => $user->google_id
+    //             // ]);
+        
+    //             // Check if user has role_id = 2 (endorser role)
+    //             $hasEndorserRole = $user->role_id === 2;
+                
+    //             if (!$hasEndorserRole) {
+    //                 // Log::info('User does not have endorser role', [
+    //                 //     'email' => $email,
+    //                 //     'role_id' => $user->role_id
+    //                 // ]);
+                    
+    //                 $notEndorserRoleUsers[] = [
+    //                     'email' => $email,
+    //                     'name' => $user->name
+    //                 ];
+    //                 continue;
+    //             }
+        
+    //             // Check if the endorser already exists for this project
+    //             $existingEndorser = DB::table('project_endorsers')
+    //                 ->where('project_id', $projectId)
+    //                 ->where('user_id', $user->google_id)
+    //                 ->first();
+        
+    //             $isNewEndorser = !$existingEndorser;
+                
+    //             if (!$isNewEndorser) {
+    //                 // Log::info('Endorser already exists', [
+    //                 //     'email' => $email,
+    //                 //     'project_id' => $projectId
+    //                 // ]);
+    //             } else {
+    //                 // Log::info('Adding new endorser', [
+    //                 //     'email' => $email,
+    //                 //     'project_id' => $projectId,
+    //                 //     'user_id' => $user->google_id
+    //                 // ]);
+            
+    //                 // Insert the new endorser into the database using google_id
+    //                 DB::table('project_endorsers')->insert([
+    //                     'project_id' => $projectId,
+    //                     'user_id' => $user->google_id,
+    //                     'created_at' => now(),
+    //                     'updated_at' => now(),
+    //                 ]);
+    //             }
+        
+    //             // Check if an endorsement status already exists
+    //             $existingStatus = DB::table('project_endorsement_statuses')
+    //                 ->where('project_id', $projectId)
+    //                 ->where('endorser_id', $user->google_id)
+    //                 ->first();
+                    
+    //             // Only create a new status if one doesn't exist
+    //             if (!$existingStatus && $isNewEndorser) {
+    //                 // Insert the endorsement status into the database with default status pending (1)
+    //                 DB::table('project_endorsement_statuses')->insert([
+    //                     'project_id' => $projectId,
+    //                     'endorser_id' => $user->google_id,
+    //                     'endorsement_status_id' => $endorsementStatusId, // Always set to pending (1)
+    //                     'created_at' => now(),
+    //                     'updated_at' => now(),
+    //                 ]);
+    //             }
+        
+    //             // Get the current status (either newly created or existing)
+    //             $currentStatus = DB::table('project_endorsement_statuses')
+    //                 ->where('project_id', $projectId)
+    //                 ->where('endorser_id', $user->google_id)
+    //                 ->first();
+                    
+    //             // Get the status name for the response
+    //             $statusName = DB::table('endorsement_statuses')
+    //                 ->where('id', $currentStatus ? $currentStatus->endorsement_status_id : $endorsementStatusId)
+    //                 ->value('status') ?? 'Pending';
+        
+    //             $endorser[] = [
+    //                 'id' => $user->id,
+    //                 'email' => $email,
+    //                 'name' => $user->name,
+    //                 'google_id' => $user->google_id,
+    //                 'endorsement_status' => [
+    //                     'id' => $currentStatus ? $currentStatus->endorsement_status_id : $endorsementStatusId,
+    //                     'name' => $statusName
+    //                 ],
+    //                 // 'is_new' => $isNewEndorser
+    //             ];
+                
+    //             if ($isNewEndorser) {
+    //                 // Log::info('Endorser successfully added', ['email' => $email]);
+    //             } else {
+    //                 // Log::info('Existing endorser returned', ['email' => $email]);
+    //             }
+    //         }
+            
+    //         // Log::info('addEndorserToProject completed', [
+    //         //     'endorser_count' => count($endorser),
+    //         //     'not_found_count' => count($notFoundUsers),
+    //         //     'not_endorser_role_count' => count($notEndorserRoleUsers)
+    //         // ]);
+        
+    //         return response()->json([
+    //             'message' => 'Endorsers processed successfully',
+    //             'endorser' => $endorser,
+    //         ], 200);
+    //     } catch (\Exception $e) {
+    //         // Log::error('Exception in addEndorserToProject', [
+    //         //     'error' => $e->getMessage(),
+    //         //     'trace' => $e->getTraceAsString(),
+    //         //     'project_id' => $projectId
+    //         // ]);
+            
+    //         return response()->json([
+    //             'error' => 'An error occurred while adding endorsers.',
+    //             'message' => $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
+
     public function addEndorserToProject(Request $request, $projectId)
     {
         try {
-            // Log::info('addEndorserToProject called', [
-            //     'project_id' => $projectId, 
-            //     'emails' => $request->input('emails')
-            // ]);
+            Log::info('addEndorserToProject called', [
+                'project_id' => $projectId, 
+                'emails' => $request->input('emails')
+            ]);
             
             // Validate the request data - only emails are required now
             $request->validate([
@@ -780,58 +958,59 @@ public function viewProjectDetail($projectId, Request $request)
             // Check if the project exists
             $project = DB::table('projects')->where('id', $projectId)->first();
             if (!$project) {
-                // Log::error('Project not found', ['project_id' => $projectId]);
+                Log::error('Project not found', ['project_id' => $projectId]);
                 return response()->json(['error' => 'Project not found.'], 404);
             }
         
             // Check if the authenticated user is the project owner
             $portfolio = DB::table('portfolios')->where('id', $project->portfolio_id)->first();
             if (!$portfolio) {
-                // Log::error('Portfolio not found', ['portfolio_id' => $project->portfolio_id]);
+                Log::error('Portfolio not found', ['portfolio_id' => $project->portfolio_id]);
                 return response()->json(['error' => 'Portfolio not found.'], 404);
             }
             
             if ($portfolio->user_id !== $request->user()->google_id) {
-                // Log::error('Unauthorized access attempt', [
-                //     'user_id' => $request->user()->google_id,
-                //     'portfolio_user_id' => $portfolio->user_id
-                // ]);
+                Log::error('Unauthorized access attempt', [
+                    'user_id' => $request->user()->google_id,
+                    'portfolio_user_id' => $portfolio->user_id
+                ]);
                 return response()->json(['error' => 'You are not authorized to add endorsers to this project.'], 403);
             }
         
             $endorser = [];
             $notFoundUsers = [];
-            $notEndorserRoleUsers = []; // New array to track users without endorser role
+            $notEndorserRoleUsers = []; // Array to track users without endorser role
         
             // Set the default endorsement status to 1 (pending)
             $endorsementStatusId = 1; // Pending status
+            $rejectedStatusId = 3;   // Rejected status
         
             foreach ($request->input('emails') as $email) {
-                // Log::info('Processing email', ['email' => $email]);
+                Log::info('Processing email', ['email' => $email]);
                 
                 // Find user by email
                 $user = DB::table('users')->where('email', $email)->first();
         
                 if (!$user) {
-                    // Log::info('User not found', ['email' => $email]);
+                    Log::info('User not found', ['email' => $email]);
                     $notFoundUsers[] = $email;
                     continue;
                 }
                 
-                // Log::info('User found', [
-                //     'email' => $email,
-                //     'user_id' => $user->id,
-                //     'google_id' => $user->google_id
-                // ]);
+                Log::info('User found', [
+                    'email' => $email,
+                    'user_id' => $user->id,
+                    'google_id' => $user->google_id
+                ]);
         
                 // Check if user has role_id = 2 (endorser role)
                 $hasEndorserRole = $user->role_id === 2;
                 
                 if (!$hasEndorserRole) {
-                    // Log::info('User does not have endorser role', [
-                    //     'email' => $email,
-                    //     'role_id' => $user->role_id
-                    // ]);
+                    Log::info('User does not have endorser role', [
+                        'email' => $email,
+                        'role_id' => $user->role_id
+                    ]);
                     
                     $notEndorserRoleUsers[] = [
                         'email' => $email,
@@ -848,50 +1027,77 @@ public function viewProjectDetail($projectId, Request $request)
         
                 $isNewEndorser = !$existingEndorser;
                 
-                if (!$isNewEndorser) {
-                    // Log::info('Endorser already exists', [
-                    //     'email' => $email,
-                    //     'project_id' => $projectId
-                    // ]);
-                } else {
-                    // Log::info('Adding new endorser', [
-                    //     'email' => $email,
-                    //     'project_id' => $projectId,
-                    //     'user_id' => $user->google_id
-                    // ]);
-            
-                    // Insert the new endorser into the database using google_id
-                    DB::table('project_endorsers')->insert([
-                        'project_id' => $projectId,
-                        'user_id' => $user->google_id,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
-                }
-        
-                // Check if an endorsement status already exists
+                // Check if this endorser previously rejected the request
                 $existingStatus = DB::table('project_endorsement_statuses')
                     ->where('project_id', $projectId)
                     ->where('endorser_id', $user->google_id)
                     ->first();
                     
-                // Only create a new status if one doesn't exist
-                if (!$existingStatus && $isNewEndorser) {
-                    // Insert the endorsement status into the database with default status pending (1)
-                    DB::table('project_endorsement_statuses')->insert([
+                $wasRejected = $existingStatus && $existingStatus->endorsement_status_id === $rejectedStatusId;
+                
+                // If endorser already exists but previously rejected, allow a new request
+                if (!$isNewEndorser && !$wasRejected) {
+                    Log::info('Endorser already exists and did not reject', [
+                        'email' => $email,
                         'project_id' => $projectId,
-                        'endorser_id' => $user->google_id,
-                        'endorsement_status_id' => $endorsementStatusId, // Always set to pending (1)
-                        'created_at' => now(),
-                        'updated_at' => now(),
+                        'status' => $existingStatus ? $existingStatus->endorsement_status_id : 'none'
                     ]);
+                    
+                    // Get current status info for response
+                    $currentStatus = $existingStatus;
+                } else {
+                    // This is either a new endorser or one who previously rejected
+                    
+                    if ($wasRejected) {
+                        Log::info('Endorser previously rejected, creating new request', [
+                            'email' => $email,
+                            'project_id' => $projectId
+                        ]);
+                    } else {
+                        Log::info('Adding new endorser', [
+                            'email' => $email,
+                            'project_id' => $projectId,
+                            'user_id' => $user->google_id
+                        ]);
+                        
+                        // Only add to project_endorsers if they don't exist already
+                        if ($isNewEndorser) {
+                            DB::table('project_endorsers')->insert([
+                                'project_id' => $projectId,
+                                'user_id' => $user->google_id,
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ]);
+                        }
+                    }
+                    
+                    // Update or insert endorsement status
+                    if ($wasRejected) {
+                        // Update existing record if it was rejected
+                        DB::table('project_endorsement_statuses')
+                            ->where('project_id', $projectId)
+                            ->where('endorser_id', $user->google_id)
+                            ->update([
+                                'endorsement_status_id' => $endorsementStatusId, // Set back to pending
+                                'updated_at' => now(),
+                            ]);
+                    } else if (!$existingStatus) {
+                        // Insert new record if none exists
+                        DB::table('project_endorsement_statuses')->insert([
+                            'project_id' => $projectId,
+                            'endorser_id' => $user->google_id,
+                            'endorsement_status_id' => $endorsementStatusId,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                    }
+                    
+                    // Get updated status for response
+                    $currentStatus = DB::table('project_endorsement_statuses')
+                        ->where('project_id', $projectId)
+                        ->where('endorser_id', $user->google_id)
+                        ->first();
                 }
-        
-                // Get the current status (either newly created or existing)
-                $currentStatus = DB::table('project_endorsement_statuses')
-                    ->where('project_id', $projectId)
-                    ->where('endorser_id', $user->google_id)
-                    ->first();
                     
                 // Get the status name for the response
                 $statusName = DB::table('endorsement_statuses')
@@ -907,32 +1113,36 @@ public function viewProjectDetail($projectId, Request $request)
                         'id' => $currentStatus ? $currentStatus->endorsement_status_id : $endorsementStatusId,
                         'name' => $statusName
                     ],
-                    // 'is_new' => $isNewEndorser
+                    'previously_rejected' => $wasRejected
                 ];
                 
                 if ($isNewEndorser) {
-                    // Log::info('Endorser successfully added', ['email' => $email]);
+                    Log::info('Endorser successfully added', ['email' => $email]);
+                } else if ($wasRejected) {
+                    Log::info('Rejected endorsement request renewed', ['email' => $email]);
                 } else {
-                    // Log::info('Existing endorser returned', ['email' => $email]);
+                    Log::info('Existing endorser returned', ['email' => $email]);
                 }
             }
             
-            // Log::info('addEndorserToProject completed', [
-            //     'endorser_count' => count($endorser),
-            //     'not_found_count' => count($notFoundUsers),
-            //     'not_endorser_role_count' => count($notEndorserRoleUsers)
-            // ]);
+            Log::info('addEndorserToProject completed', [
+                'endorser_count' => count($endorser),
+                'not_found_count' => count($notFoundUsers),
+                'not_endorser_role_count' => count($notEndorserRoleUsers)
+            ]);
         
             return response()->json([
                 'message' => 'Endorsers processed successfully',
                 'endorser' => $endorser,
+                'not_found' => $notFoundUsers,
+                'not_endorser_role' => $notEndorserRoleUsers
             ], 200);
         } catch (\Exception $e) {
-            // Log::error('Exception in addEndorserToProject', [
-            //     'error' => $e->getMessage(),
-            //     'trace' => $e->getTraceAsString(),
-            //     'project_id' => $projectId
-            // ]);
+            Log::error('Exception in addEndorserToProject', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'project_id' => $projectId
+            ]);
             
             return response()->json([
                 'error' => 'An error occurred while adding endorsers.',
@@ -940,7 +1150,6 @@ public function viewProjectDetail($projectId, Request $request)
             ], 500);
         }
     }
-
     
     public function addCollaboratorToProject(Request $request, $projectId)
     {
@@ -1048,7 +1257,6 @@ public function viewProjectDetail($projectId, Request $request)
             return response()->json([
                 'message' => 'Collaborators processed successfully',
                 'collaborator' => $collaborator,
-                'not_found' => $notFoundUsers
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
