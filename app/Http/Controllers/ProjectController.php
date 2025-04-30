@@ -1229,6 +1229,81 @@ public function viewProjectDetail($projectId, Request $request)
             ], 500);
         }
     }
+
+    public function deleteCollaboratorRequest(Request $request, $projectId)
+    {
+        try {
+            // Validate the request to ensure user_google_id is provided
+            $request->validate([
+                'user_google_id' => 'required|string',
+            ]);
+    
+            $userGoogleId = $request->input('user_google_id');
+            
+            // Check if the project exists
+            $project = DB::table('projects')->where('id', $projectId)->first();
+            
+            if (!$project) {
+                return response()->json(['error' => 'Project not found.'], 404);
+            }
+            
+            // Check if the authenticated user is the project owner
+            $portfolio = DB::table('portfolios')->where('id', $project->portfolio_id)->first();
+            
+            if (!$portfolio) {
+                return response()->json(['error' => 'Portfolio not found.'], 404);
+            }
+            
+            // Verify user has permission to delete this collaborator
+            if ($portfolio->user_id !== auth()->user()->google_id) {
+                return response()->json(['error' => 'You are not authorized to delete this collaborator request.'], 403);
+            }
+            
+            // Get the collaborator record using project_id and user_google_id
+            $collaborator = DB::table('project_collaborators')
+                ->where('project_id', $projectId)
+                ->where('user_id', $userGoogleId)
+                ->first();
+    
+            if (!$collaborator) {
+                return response()->json(['error' => 'Collaborator request not found for this project.'], 404);
+            }
+    
+            // Begin database transaction
+            DB::beginTransaction();
+            
+            try {
+                // Delete collaboration status record
+                $statusDeleted = DB::table('project_collaborator_invitation_statuses')
+                    ->where('project_id', $projectId)
+                    ->where('collaborator_id', $userGoogleId)
+                    ->delete();
+                    
+                // Delete collaborator record
+                $collaboratorDeleted = DB::table('project_collaborators')
+                    ->where('project_id', $projectId)
+                    ->where('user_id', $userGoogleId)
+                    ->delete();
+                    
+                // Commit the transaction
+                DB::commit();
+                
+                return response()->json([
+                    'message' => 'Collaborator request deleted successfully.',
+                    
+                ], 200);
+            } catch (\Exception $e) {
+                // If any part fails, roll back the entire transaction
+                DB::rollBack();
+                throw $e;
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'An error occurred while deleting the collaborator request.',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
     
     public function addCollaboratorToProject(Request $request, $projectId)
     {
