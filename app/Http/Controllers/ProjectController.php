@@ -943,45 +943,128 @@ public function viewProjectDetail($projectId, Request $request)
 
     public function addCollaboratorToProject(Request $request, $projectId)
     {
-        // Validate the request data
-        $request->validate([
-            'collaborator_id' => 'required|string|max:255',
-            'collaboration_status_id' => 'required|integer',
-        ]);
-
-        // Check if the project exists
-        $project = DB::table('projects')->where('id', $projectId)->first();
-        if (!$project) {
-            return response()->json(['error' => 'Project not found.'], 404);
+        try {
+            // Validate the request data - only emails are required now
+            $request->validate([
+                'emails' => 'required|array',
+                'emails.*' => 'email|max:255',
+            ]);
+        
+            // Check if the project exists
+            $project = DB::table('projects')->where('id', $projectId)->first();
+            if (!$project) {
+                return response()->json(['error' => 'Project not found.'], 404);
+            }
+        
+            // Check if the authenticated user is the project owner
+            $portfolio = DB::table('portfolios')->where('id', $project->portfolio_id)->first();
+            if (!$portfolio) {
+                return response()->json(['error' => 'Portfolio not found.'], 404);
+            }
+            
+            if ($portfolio->user_id !== $request->user()->google_id) {
+                return response()->json(['error' => 'You are not authorized to add collaborators to this project.'], 403);
+            }
+        
+            $collaborator = [];
+            $notFoundUsers = [];
+            $notStudentRoleUsers = []; // Array to track users without student role
+        
+            // Set the default collaboration status to 1 (pending)
+            $collaborationStatusId = 1; // Pending status
+        
+            foreach ($request->input('emails') as $email) {
+                // Find user by email
+                $user = DB::table('users')->where('email', $email)->first();
+        
+                if (!$user) {
+                    $notFoundUsers[] = $email;
+                    continue;
+                }
+        
+                // Check if user has role_id = 3 (student role)
+                $hasStudentRole = $user->role_id === 3;
+                
+                if (!$hasStudentRole) {
+                    $notStudentRoleUsers[] = [
+                        'email' => $email,
+                        'name' => $user->name
+                    ];
+                    continue;
+                }
+        
+                // Check if the collaborator already exists for this project
+                $existingCollaborator = DB::table('project_collaborators')
+                    ->where('project_id', $projectId)
+                    ->where('user_id', $user->google_id)
+                    ->first();
+        
+                $isNewCollaborator = !$existingCollaborator;
+                
+                if (!$isNewCollaborator) {
+                    // Collaborator already exists, do nothing and continue adding to response
+                } else {
+                    // Insert the new collaborator into the database using google_id
+                    DB::table('project_collaborators')->insert([
+                        'project_id' => $projectId,
+                        'user_id' => $user->google_id,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+        
+                // Check if a collaboration status already exists
+                $existingStatus = DB::table('project_collaborator_invitation_statuses')
+                    ->where('project_id', $projectId)
+                    ->where('collaborator_id', $user->google_id)
+                    ->first();
+                    
+                // Only create a new status if one doesn't exist
+                if (!$existingStatus && $isNewCollaborator) {
+                    // Insert the collaboration status into the database with default status pending (1)
+                    DB::table('project_collaborator_invitation_statuses')->insert([
+                        'project_id' => $projectId,
+                        'collaborator_id' => $user->google_id,
+                        'collaboration_status_id' => $collaborationStatusId, // Always set to pending (1)
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+        
+                // Get the current status (either newly created or existing)
+                $currentStatus = DB::table('project_collaborator_invitation_statuses')
+                    ->where('project_id', $projectId)
+                    ->where('collaborator_id', $user->google_id)
+                    ->first();
+                    
+                // Get the status name for the response (assuming you have a table for collaboration status names)
+                $statusName = DB::table('project_collaboration_statuses')
+                    ->where('id', $currentStatus ? $currentStatus->collaboration_status_id : $collaborationStatusId)
+                    ->value('status') ?? 'Pending';
+        
+                $collaborator[] = [
+                    'id' => $user->id,
+                    'email' => $email,
+                    'name' => $user->name,
+                    'google_id' => $user->google_id,
+                    'collaboration_status' => [
+                        'id' => $currentStatus ? $currentStatus->collaboration_status_id : $collaborationStatusId,
+                        'name' => $statusName
+                    ]
+                ];
+            }
+        
+            return response()->json([
+                'message' => 'Collaborators processed successfully',
+                'collaborator' => $collaborator,
+                'not_found' => $notFoundUsers,
+                'not_student_role' => $notStudentRoleUsers
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'An error occurred while adding collaborators.',
+                'message' => $e->getMessage()
+            ], 500);
         }
-
-        // Check if the collaborator already exists for this project
-        $existingCollaborator = DB::table('project_collaborators')
-            ->where('project_id', $projectId)
-            ->where('user_id', $request->input('collaborator_id'))
-            ->first();
-
-        if ($existingCollaborator) {
-            return response()->json(['error' => 'Collaborator already exists for this project.'], 409);
-        }
-
-        // Insert the new collaborator into the database
-        DB::table('project_collaborators')->insert([
-            'project_id' => $projectId,
-            'user_id' => $request->input('collaborator_id'),
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        // Insert the collaboration status into the database
-        DB::table('project_collaborator_invitation_statuses')->insert([
-            'project_id' => $projectId,
-            'collaborator_id' => $request->input('collaborator_id'),
-            'collaboration_status_id' => $request->input('collaboration_status_id'),
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        return response()->json(['message' => 'Collaborator added successfully.']);
     }
 }
