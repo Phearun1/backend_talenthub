@@ -83,6 +83,7 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
 
 
     Route::post('/add_endorser_to_project/{projectId}', [ProjectController::class, 'addEndorserToProject']);
+    Route::delete('/delete_endorser_request/{projectId}', [ProjectController::class, 'deleteEndorserRequest']);
     Route::post('/add_collaborator_to_project/{projectId}', [ProjectController::class, 'addCollaboratorToProject']);
 
 

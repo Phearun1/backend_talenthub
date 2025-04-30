@@ -1148,6 +1148,75 @@ public function viewProjectDetail($projectId, Request $request)
             ], 500);
         }
     }
+
+    public function deleteEndorserRequest($projectId)
+    {
+        try {
+            // Get the endorser record to verify project ownership
+            $endorser = DB::table('project_endorsers')->where('id', $projectId)->first();
+    
+            if (!$endorser) {
+                return response()->json(['error' => 'Endorser request not found.'], 404);
+            }
+    
+            // Get the project information
+            $project = DB::table('projects')->where('id', $endorser->project_id)->first();
+            
+            if (!$project) {
+                return response()->json(['error' => 'Project not found.'], 404);
+            }
+            
+            // Check if the authenticated user is the project owner
+            $portfolio = DB::table('portfolios')->where('id', $project->portfolio_id)->first();
+            
+            if (!$portfolio) {
+                return response()->json(['error' => 'Portfolio not found.'], 404);
+            }
+            
+            // Verify user has permission to delete this endorser
+            if ($portfolio->user_id !== auth()->user()->google_id) {
+                return response()->json(['error' => 'You are not authorized to delete this endorser request.'], 403);
+            }
+    
+            // Begin database transaction
+            DB::beginTransaction();
+            
+            try {
+                // Delete endorsement status record
+                DB::table('project_endorsement_statuses')
+                    ->where('project_id', $endorser->project_id)
+                    ->where('endorser_id', $endorser->user_id)
+                    ->delete();
+                    
+                // Delete endorser record
+                DB::table('project_endorsers')
+                    ->where('id', $projectId)
+                    ->delete();
+                    
+                // Delete any collaboration invitation statuses (if they exist)
+                DB::table('project_collaborator_invitation_statuses')
+                    ->where('project_id', $endorser->project_id)
+                    ->where('collaborator_id', $endorser->user_id)
+                    ->delete();
+                    
+                // Commit the transaction
+                DB::commit();
+                
+                return response()->json([
+                    'message' => 'Endorser request deleted successfully.',
+                ], 200);
+            } catch (\Exception $e) {
+                // If any part fails, roll back the entire transaction
+                DB::rollBack();
+                throw $e;
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'An error occurred while deleting the endorser request.',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
     
     public function addCollaboratorToProject(Request $request, $projectId)
     {
