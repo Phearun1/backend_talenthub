@@ -322,7 +322,7 @@ public function viewProjectDetail($projectId, Request $request)
         $imagePaths = [];
         if ($request->hasFile('image')) {
             $images = $request->file('image');
-            Log::info('Multiple images detected: ' . count($images));
+            // Log::info('Multiple images detected: ' . count($images));
 
             foreach ($images as $image) {
                 try {
@@ -699,10 +699,10 @@ public function viewProjectDetail($projectId, Request $request)
         $portfolioId = $request->query('portfolio_id');
 
         // Log the input parameters for debugging
-        Log::info('downloadProject request:', [
-            'project_id' => $id,
-            'portfolio_id' => $portfolioId
-        ]);
+        // Log::info('downloadProject request:', [
+        //     'project_id' => $id,
+        //     'portfolio_id' => $portfolioId
+        // ]);
 
         // First verify the project exists independently
         $projectExists = DB::table('projects')
@@ -710,7 +710,7 @@ public function viewProjectDetail($projectId, Request $request)
             ->exists();
 
         if (!$projectExists) {
-            Log::error('Project not found with ID: ' . $id);
+            // Log::error('Project not found with ID: ' . $id);
             return response()->json(['error' => 'Project not found.'], 404);
         }
 
@@ -720,7 +720,7 @@ public function viewProjectDetail($projectId, Request $request)
             ->exists();
 
         if (!$portfolioExists) {
-            Log::error('Portfolio not found with ID: ' . $portfolioId);
+            // Log::error('Portfolio not found with ID: ' . $portfolioId);
             return response()->json(['error' => 'Portfolio not found.'], 404);
         }
 
@@ -739,13 +739,13 @@ public function viewProjectDetail($projectId, Request $request)
 
         // Verify the project belongs to the specified portfolio
         if ($project->portfolio_id != $portfolioId) {
-            Log::error('Project ' . $id . ' does not belong to portfolio ' . $portfolioId);
+            // Log::error('Project ' . $id . ' does not belong to portfolio ' . $portfolioId);
             return response()->json(['error' => 'Project does not belong to the specified portfolio.'], 404);
         }
 
         // Check if project is public (project_visibility_status = 0)
         if ($project->project_visibility_status != 0) {
-            Log::error('Project ' . $id . ' is not public. Visibility status: ' . $project->project_visibility_status);
+            // Log::error('Project ' . $id . ' is not public. Visibility status: ' . $project->project_visibility_status);
             return response()->json(['error' => 'Project is not available for download.'], 403);
         }
 
@@ -757,7 +757,7 @@ public function viewProjectDetail($projectId, Request $request)
         // Return the file URL in the requested format
         $fileUrl = 'https://talenthub.newlinkmarketing.com/storage/' . $project->file;
 
-        Log::info('Project download response prepared with file URL: ' . $fileUrl);
+        // Log::info('Project download response prepared with file URL: ' . $fileUrl);
         return response()->json([
             'file' => $fileUrl
         ]);
@@ -766,10 +766,10 @@ public function viewProjectDetail($projectId, Request $request)
     public function addEndorserToProject(Request $request, $projectId)
     {
         try {
-            Log::info('addEndorserToProject called', [
-                'project_id' => $projectId, 
-                'emails' => $request->input('emails')
-            ]);
+            // Log::info('addEndorserToProject called', [
+            //     'project_id' => $projectId, 
+            //     'emails' => $request->input('emails')
+            // ]);
             
             // Validate the request data - only emails are required now
             $request->validate([
@@ -780,22 +780,22 @@ public function viewProjectDetail($projectId, Request $request)
             // Check if the project exists
             $project = DB::table('projects')->where('id', $projectId)->first();
             if (!$project) {
-                Log::error('Project not found', ['project_id' => $projectId]);
+                // Log::error('Project not found', ['project_id' => $projectId]);
                 return response()->json(['error' => 'Project not found.'], 404);
             }
         
             // Check if the authenticated user is the project owner
             $portfolio = DB::table('portfolios')->where('id', $project->portfolio_id)->first();
             if (!$portfolio) {
-                Log::error('Portfolio not found', ['portfolio_id' => $project->portfolio_id]);
+                // Log::error('Portfolio not found', ['portfolio_id' => $project->portfolio_id]);
                 return response()->json(['error' => 'Portfolio not found.'], 404);
             }
             
             if ($portfolio->user_id !== $request->user()->google_id) {
-                Log::error('Unauthorized access attempt', [
-                    'user_id' => $request->user()->google_id,
-                    'portfolio_user_id' => $portfolio->user_id
-                ]);
+                // Log::error('Unauthorized access attempt', [
+                //     'user_id' => $request->user()->google_id,
+                //     'portfolio_user_id' => $portfolio->user_id
+                // ]);
                 return response()->json(['error' => 'You are not authorized to add endorsers to this project.'], 403);
             }
         
@@ -807,31 +807,31 @@ public function viewProjectDetail($projectId, Request $request)
             $endorsementStatusId = 1; // Pending status
         
             foreach ($request->input('emails') as $email) {
-                Log::info('Processing email', ['email' => $email]);
+                // Log::info('Processing email', ['email' => $email]);
                 
                 // Find user by email
                 $user = DB::table('users')->where('email', $email)->first();
         
                 if (!$user) {
-                    Log::info('User not found', ['email' => $email]);
+                    // Log::info('User not found', ['email' => $email]);
                     $notFoundUsers[] = $email;
                     continue;
                 }
                 
-                Log::info('User found', [
-                    'email' => $email,
-                    'user_id' => $user->id,
-                    'google_id' => $user->google_id
-                ]);
+                // Log::info('User found', [
+                //     'email' => $email,
+                //     'user_id' => $user->id,
+                //     'google_id' => $user->google_id
+                // ]);
         
                 // Check if user has role_id = 2 (endorser role)
                 $hasEndorserRole = $user->role_id === 2;
                 
                 if (!$hasEndorserRole) {
-                    Log::info('User does not have endorser role', [
-                        'email' => $email,
-                        'role_id' => $user->role_id
-                    ]);
+                    // Log::info('User does not have endorser role', [
+                    //     'email' => $email,
+                    //     'role_id' => $user->role_id
+                    // ]);
                     
                     $notEndorserRoleUsers[] = [
                         'email' => $email,
@@ -849,16 +849,16 @@ public function viewProjectDetail($projectId, Request $request)
                 $isNewEndorser = !$existingEndorser;
                 
                 if (!$isNewEndorser) {
-                    Log::info('Endorser already exists', [
-                        'email' => $email,
-                        'project_id' => $projectId
-                    ]);
+                    // Log::info('Endorser already exists', [
+                    //     'email' => $email,
+                    //     'project_id' => $projectId
+                    // ]);
                 } else {
-                    Log::info('Adding new endorser', [
-                        'email' => $email,
-                        'project_id' => $projectId,
-                        'user_id' => $user->google_id
-                    ]);
+                    // Log::info('Adding new endorser', [
+                    //     'email' => $email,
+                    //     'project_id' => $projectId,
+                    //     'user_id' => $user->google_id
+                    // ]);
             
                     // Insert the new endorser into the database using google_id
                     DB::table('project_endorsers')->insert([
@@ -911,30 +911,28 @@ public function viewProjectDetail($projectId, Request $request)
                 ];
                 
                 if ($isNewEndorser) {
-                    Log::info('Endorser successfully added', ['email' => $email]);
+                    // Log::info('Endorser successfully added', ['email' => $email]);
                 } else {
-                    Log::info('Existing endorser returned', ['email' => $email]);
+                    // Log::info('Existing endorser returned', ['email' => $email]);
                 }
             }
             
-            Log::info('addEndorserToProject completed', [
-                'endorser_count' => count($endorser),
-                'not_found_count' => count($notFoundUsers),
-                'not_endorser_role_count' => count($notEndorserRoleUsers)
-            ]);
+            // Log::info('addEndorserToProject completed', [
+            //     'endorser_count' => count($endorser),
+            //     'not_found_count' => count($notFoundUsers),
+            //     'not_endorser_role_count' => count($notEndorserRoleUsers)
+            // ]);
         
             return response()->json([
                 'message' => 'Endorsers processed successfully',
                 'endorser' => $endorser,
-                'not_found' => $notFoundUsers,
-                'not_endorser_role' => $notEndorserRoleUsers
-            ]);
+            ], 200);
         } catch (\Exception $e) {
-            Log::error('Exception in addEndorserToProject', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'project_id' => $projectId
-            ]);
+            // Log::error('Exception in addEndorserToProject', [
+            //     'error' => $e->getMessage(),
+            //     'trace' => $e->getTraceAsString(),
+            //     'project_id' => $projectId
+            // ]);
             
             return response()->json([
                 'error' => 'An error occurred while adding endorsers.',
