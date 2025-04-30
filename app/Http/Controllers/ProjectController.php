@@ -874,18 +874,33 @@ public function viewProjectDetail($projectId, Request $request)
                     'updated_at' => now(),
                 ]);
         
-                // Insert the endorsement status into the database with default status pending (1)
-                DB::table('project_endorsement_statuses')->insert([
-                    'project_id' => $projectId,
-                    'endorser_id' => $user->google_id,
-                    'endorsement_status_id' => $endorsementStatusId, // Always set to pending (1)
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
+                // Check if an endorsement status already exists
+                $existingStatus = DB::table('project_endorsement_statuses')
+                    ->where('project_id', $projectId)
+                    ->where('endorser_id', $user->google_id)
+                    ->first();
+                    
+                // Only create a new status if one doesn't exist
+                if (!$existingStatus) {
+                    // Insert the endorsement status into the database with default status pending (1)
+                    DB::table('project_endorsement_statuses')->insert([
+                        'project_id' => $projectId,
+                        'endorser_id' => $user->google_id,
+                        'endorsement_status_id' => $endorsementStatusId, // Always set to pending (1)
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
         
+                // Get the current status (either newly created or existing)
+                $currentStatus = DB::table('project_endorsement_statuses')
+                    ->where('project_id', $projectId)
+                    ->where('endorser_id', $user->google_id)
+                    ->first();
+                    
                 // Get the status name for the response
                 $statusName = DB::table('endorsement_statuses')
-                    ->where('id', $endorsementStatusId)
+                    ->where('id', $currentStatus ? $currentStatus->endorsement_status_id : $endorsementStatusId)
                     ->value('status') ?? 'Pending';
         
                 $addedEndorsers[] = [
@@ -894,7 +909,7 @@ public function viewProjectDetail($projectId, Request $request)
                     'name' => $user->name,
                     'google_id' => $user->google_id,
                     'endorsement_status' => [
-                        'id' => $endorsementStatusId,
+                        'id' => $currentStatus ? $currentStatus->endorsement_status_id : $endorsementStatusId,
                         'name' => $statusName
                     ]
                 ];
@@ -914,7 +929,7 @@ public function viewProjectDetail($projectId, Request $request)
                 'added' => $addedEndorsers,
                 'existing' => $existingEndorsers,
                 'not_found' => $notFoundUsers,
-                'not_endorser_role' => $notEndorserRoleUsers // Include users without endorser role
+                'not_endorser_role' => $notEndorserRoleUsers
             ]);
         } catch (\Exception $e) {
             Log::error('Exception in addEndorserToProject', [
