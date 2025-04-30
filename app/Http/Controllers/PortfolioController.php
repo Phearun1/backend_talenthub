@@ -193,7 +193,6 @@ class PortfolioController extends Controller
             'phone_number' => $request->input('phone_number', $portfolio->phone_number),
             'about' => $request->input('about', $portfolio->about),
             'working_status' => $request->input('working_status', $portfolio->working_status),
-            'status' => 1, // Setting status to '1' (active)
             'updated_at' => now(),
         ];
 
@@ -275,7 +274,7 @@ class PortfolioController extends Controller
             'phone_number' => $updatedPortfolio->phone_number,
             'about' => $updatedPortfolio->about,
             'working_status' => $updatedPortfolio->working_status,
-            'status' => $updatedPortfolio->status,
+            'status' => $updatedUser->status, // Changed from portfolio status to user status
             'photo' => $photoUrl ? $photoUrl : $updatedUser->photo // Return updated photo URL
         ], 200);
     }
