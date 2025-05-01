@@ -46,11 +46,8 @@ public function viewNotification(Request $request)
                 'p.description as project_description',
                 'requestor.id as requestor_id',
                 'requestor.name as requestor_name',
-                'requestor.email as requestor_email',
                 'requestor.google_id as requestor_google_id',
                 'pes.created_at',
-                'pes.updated_at',
-                DB::raw("'project' as type")
             )
             ->where('pes.endorser_id', '=', $userGoogleId)
             ->where('pes.endorsement_status_id', '=', 1) // 1 = Pending
@@ -74,11 +71,8 @@ public function viewNotification(Request $request)
                 'e.company_id',
                 'requestor.id as requestor_id',
                 'requestor.name as requestor_name',
-                'requestor.email as requestor_email',
                 'requestor.google_id as requestor_google_id',
                 'ees.created_at',
-                'ees.updated_at',
-                DB::raw("'experience' as type")
             )
             ->where('ees.endorser_id', '=', $userGoogleId)
             ->where('ees.experience_status_id', '=', 1) // 1 = Pending
@@ -101,11 +95,8 @@ public function viewNotification(Request $request)
                 's.description as skill_description',
                 'requestor.id as requestor_id',
                 'requestor.name as requestor_name',
-                'requestor.email as requestor_email',
                 'requestor.google_id as requestor_google_id',
                 'ses.created_at',
-                'ses.updated_at',
-                DB::raw("'skill' as type")
             )
             ->where('ses.endorser_id', '=', $userGoogleId)
             ->where('ses.endorsement_status_id', '=', 1) // 1 = Pending
@@ -131,11 +122,8 @@ public function viewNotification(Request $request)
                 'a.issue_year',
                 'requestor.id as requestor_id',
                 'requestor.name as requestor_name',
-                'requestor.email as requestor_email',
                 'requestor.google_id as requestor_google_id',
                 'aes.created_at',
-                'aes.updated_at',
-                DB::raw("'achievement' as type")
             )
             ->where('aes.endorser_id', '=', $userGoogleId)
             ->where('aes.endorsement_status_id', '=', 1) // 1 = Pending
@@ -158,11 +146,8 @@ public function viewNotification(Request $request)
                 'p.description as project_description',
                 'requestor.id as requestor_id',
                 'requestor.name as requestor_name',
-                'requestor.email as requestor_email',
                 'requestor.google_id as requestor_google_id',
                 'pcis.created_at',
-                'pcis.updated_at',
-                DB::raw("'collaboration' as type")
             )
             ->where('pcis.collaborator_id', '=', $userGoogleId)
             ->where('pcis.project_collab_status_id', '=', 1) // 1 = Pending
