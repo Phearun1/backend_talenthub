@@ -936,33 +936,75 @@ public function viewProjectDetail($projectId, Request $request)
     }
 
 
+    // public function removeProjectImage(Request $request, $imageId)
+    // {
+    //     $image = DB::table('project_images')->where('id', $imageId)->first();
+
+    //     if (!$image) {
+    //         return response()->json(['error' => 'Image not found.'], 404);
+    //     }
+
+    //     // Authorization: Ensure user owns the project
+    //     $project = DB::table('projects')->where('id', $image->project_id)->first();
+    //     $portfolio = DB::table('portfolios')->where('id', $project->portfolio_id)->first();
+
+    //     if (!$portfolio || $portfolio->user_id !== $request->user()->google_id) {
+    //         return response()->json(['error' => 'Unauthorized.'], 403);
+    //     }
+
+    //     // Delete image from storage
+    //     $imagePath = storage_path('app/public/' . $image->image);
+    //     if (file_exists($imagePath)) {
+    //         unlink($imagePath);
+    //         // Log::info('Deleted image from storage: ' . $imagePath);
+    //     }
+
+    //     // Remove DB record
+    //     DB::table('project_images')->where('id', $imageId)->delete();
+
+    //     return response()->json(['message' => 'Project image deleted successfully.']);
+    // }
+
     public function removeProjectImage(Request $request, $imageId)
     {
         $image = DB::table('project_images')->where('id', $imageId)->first();
-
+    
         if (!$image) {
             return response()->json(['error' => 'Image not found.'], 404);
         }
-
+    
         // Authorization: Ensure user owns the project
         $project = DB::table('projects')->where('id', $image->project_id)->first();
         $portfolio = DB::table('portfolios')->where('id', $project->portfolio_id)->first();
-
+    
         if (!$portfolio || $portfolio->user_id !== $request->user()->google_id) {
             return response()->json(['error' => 'Unauthorized.'], 403);
         }
-
+    
+        // Check if this is the only remaining image for the project
+        $imageCount = DB::table('project_images')
+            ->where('project_id', $image->project_id)
+            ->count();
+    
+        if ($imageCount <= 1) {
+            return response()->json([
+                'error' => 'Cannot delete the last image. Projects must have at least one image.',
+            ], 422);
+        }
+    
         // Delete image from storage
         $imagePath = storage_path('app/public/' . $image->image);
         if (file_exists($imagePath)) {
             unlink($imagePath);
-            // Log::info('Deleted image from storage: ' . $imagePath);
         }
-
+    
         // Remove DB record
         DB::table('project_images')->where('id', $imageId)->delete();
-
-        return response()->json(['message' => 'Project image deleted successfully.']);
+    
+        return response()->json([
+            'message' => 'Project image deleted successfully.',
+            'remaining_count' => $imageCount - 1
+        ]);
     }
     public function removeProjectFile(Request $request, $projectId)
     {
