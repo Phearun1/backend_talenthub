@@ -24,30 +24,14 @@ class NotificationController extends Controller
             ]);
     
             $userGoogleId = $request->input('user_google_id');
-
+    
             if (!$userGoogleId) {
                 return response()->json([
                     'error' => 'User not authenticated or Google ID not found'
                 ], 400);
             }
             
-            // Let's check your database schema first to see what columns are available
-            try {
-                $projectColumns = DB::getSchemaBuilder()->getColumnListing('projects');
-                $portfolioColumns = DB::getSchemaBuilder()->getColumnListing('portfolios');
-                $userColumns = DB::getSchemaBuilder()->getColumnListing('users');
-                
-                Log::info('Database schema check', [
-                    'project_columns' => $projectColumns,
-                    'portfolio_columns' => $portfolioColumns,
-                    'user_columns' => $userColumns
-                ]);
-            } catch (\Exception $e) {
-                Log::warning('Could not check schema: ' . $e->getMessage());
-            }
-            
-            // Get pending endorsement requests where this user is the endorser
-            // Make sure to only select fields that actually exist in your tables
+            // Get latest 10 pending endorsement requests where this user is the endorser
             $endorsementRequests = DB::table('project_endorsement_statuses as pes')
                 ->join('projects as p', 'p.id', '=', 'pes.project_id')
                 ->join('portfolios as port', 'port.id', '=', 'p.portfolio_id')
@@ -58,18 +42,22 @@ class NotificationController extends Controller
                     'pes.project_id',
                     'pes.endorsement_status_id',
                     'es.status as status_name',
-                    'p.title as project_name',         // Changed from 'p.name' to 'p.title' 
+                    'p.title as project_name',
                     'p.description as project_description',
                     'requestor.id as requestor_id',
                     'requestor.name as requestor_name',
                     'requestor.email as requestor_email',
-                    'requestor.google_id as requestor_google_id'
+                    'requestor.google_id as requestor_google_id',
+                    'pes.created_at',
+                    'pes.updated_at'
                 )
                 ->where('pes.endorser_id', '=', $userGoogleId)
                 ->where('pes.endorsement_status_id', '=', 1) // 1 = Pending
+                ->orderBy('pes.created_at', 'desc') // Order by newest first
+                ->limit(10) // Limit to 10 results
                 ->get();
                 
-            // Get pending collaboration requests where this user is the collaborator
+            // Get latest 10 pending collaboration requests where this user is the collaborator
             $collaborationRequests = DB::table('project_collaborator_invitation_statuses as pcis')
                 ->join('projects as p', 'p.id', '=', 'pcis.project_id')
                 ->join('portfolios as port', 'port.id', '=', 'p.portfolio_id')
@@ -78,24 +66,40 @@ class NotificationController extends Controller
                 ->select(
                     'pcis.id as status_id',
                     'pcis.project_id',
-                    'pcis.project_collab_status_id',  // Corrected duplicate 'status_id' alias
+                    'pcis.project_collab_status_id',
                     'pcs.status as status_name',
-                    'p.title as project_name',         // Changed from 'p.name' to 'p.title' 
+                    'p.title as project_name',
                     'p.description as project_description',
                     'requestor.id as requestor_id',
                     'requestor.name as requestor_name',
                     'requestor.email as requestor_email',
-                    'requestor.google_id as requestor_google_id'
+                    'requestor.google_id as requestor_google_id',
+                    'pcis.created_at',
+                    'pcis.updated_at'
                 )
                 ->where('pcis.collaborator_id', '=', $userGoogleId)
                 ->where('pcis.project_collab_status_id', '=', 1) // 1 = Pending
+                ->orderBy('pcis.created_at', 'desc') // Order by newest first
+                ->limit(10) // Limit to 10 results
                 ->get();
                 
-            // Count total pending notifications
-            $totalPending = $endorsementRequests->count() + $collaborationRequests->count();
+            // Count total pending notifications (not limited to 10)
+            $totalEndorsementRequests = DB::table('project_endorsement_statuses')
+                ->where('endorser_id', $userGoogleId)
+                ->where('endorsement_status_id', 1)
+                ->count();
+                
+            $totalCollaborationRequests = DB::table('project_collaborator_invitation_statuses')
+                ->where('collaborator_id', $userGoogleId)
+                ->where('project_collab_status_id', 1)
+                ->count();
+                
+            $totalPending = $totalEndorsementRequests + $totalCollaborationRequests;
             
             return response()->json([
                 'total_pending' => $totalPending,
+                'total_endorsement_requests' => $totalEndorsementRequests,
+                'total_collaboration_requests' => $totalCollaborationRequests,
                 'endorsement_requests' => $endorsementRequests,
                 'collaboration_requests' => $collaborationRequests,
             ]);
