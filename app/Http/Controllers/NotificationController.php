@@ -61,6 +61,7 @@ public function viewNotification(Request $request)
             ->join('portfolios as port', 'port.id', '=', 'e.portfolio_id')
             ->join('users as requestor', 'requestor.google_id', '=', 'port.user_id')
             ->join('endorsement_statuses as es', 'es.id', '=', 'ees.experience_status_id')
+            ->join('companies as c', 'c.id', '=', 'e.company_id')  // Add join with companies table
             ->select(
                 'ees.id as status_id',
                 'ees.experience_id',
@@ -68,7 +69,7 @@ public function viewNotification(Request $request)
                 'es.status as status_name',
                 'e.work_title as experience_title',
                 'e.description as experience_description',
-                'e.company_id',
+                'c.company_name',
                 'requestor.id as requestor_id',
                 'requestor.name as requestor_name',
                 'requestor.google_id as requestor_google_id',
@@ -79,7 +80,6 @@ public function viewNotification(Request $request)
             ->orderBy('ees.created_at', 'desc')
             ->limit(10)
             ->get();
-            
         // Get latest 10 pending SKILL endorsement requests where this user is the endorser
         $skillEndorsementRequests = DB::table('skill_endorsement_statuses as ses')
             ->join('skills as s', 's.id', '=', 'ses.skill_id')
