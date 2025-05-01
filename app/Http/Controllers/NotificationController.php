@@ -18,7 +18,7 @@ class NotificationController extends Controller
     public function viewNotification(Request $request)
     {
         try {
-            // Get the authenticated user's Google ID
+            // Get the user's Google ID from the request
             $request->validate([
                 'user_google_id' => 'required|string',
             ]);
@@ -31,8 +31,8 @@ class NotificationController extends Controller
                 ], 400);
             }
             
-            // Get latest 10 pending endorsement requests where this user is the endorser
-            $endorsementRequests = DB::table('project_endorsement_statuses as pes')
+            // Get latest 10 pending PROJECT endorsement requests where this user is the endorser
+            $projectEndorsementRequests = DB::table('project_endorsement_statuses as pes')
                 ->join('projects as p', 'p.id', '=', 'pes.project_id')
                 ->join('portfolios as port', 'port.id', '=', 'p.portfolio_id')
                 ->join('users as requestor', 'requestor.google_id', '=', 'port.user_id')
@@ -49,12 +49,41 @@ class NotificationController extends Controller
                     'requestor.email as requestor_email',
                     'requestor.google_id as requestor_google_id',
                     'pes.created_at',
-                    'pes.updated_at'
+                    'pes.updated_at',
+                    DB::raw("'project' as type")
                 )
                 ->where('pes.endorser_id', '=', $userGoogleId)
                 ->where('pes.endorsement_status_id', '=', 1) // 1 = Pending
-                ->orderBy('pes.created_at', 'desc') // Order by newest first
-                ->limit(10) // Limit to 10 results
+                ->orderBy('pes.created_at', 'desc')
+                ->limit(10)
+                ->get();
+                
+            // Get latest 10 pending EXPERIENCE endorsement requests where this user is the endorser
+            $experienceEndorsementRequests = DB::table('experience_endorsement_statuses as ees')
+                ->join('experiences as e', 'e.id', '=', 'ees.experience_id')
+                ->join('portfolios as port', 'port.id', '=', 'e.portfolio_id')
+                ->join('users as requestor', 'requestor.google_id', '=', 'port.user_id')
+                ->join('endorsement_statuses as es', 'es.id', '=', 'ees.experience_status_id')
+                ->select(
+                    'ees.id as status_id',
+                    'ees.experience_id',
+                    'ees.experience_status_id',
+                    'es.status as status_name',
+                    'e.work_title as experience_title',
+                    'e.description as experience_description',
+                    'e.company_id',
+                    'requestor.id as requestor_id',
+                    'requestor.name as requestor_name',
+                    'requestor.email as requestor_email',
+                    'requestor.google_id as requestor_google_id',
+                    'ees.created_at',
+                    'ees.updated_at',
+                    DB::raw("'experience' as type")
+                )
+                ->where('ees.endorser_id', '=', $userGoogleId)
+                ->where('ees.experience_status_id', '=', 1) // 1 = Pending
+                ->orderBy('ees.created_at', 'desc')
+                ->limit(10)
                 ->get();
                 
             // Get latest 10 pending collaboration requests where this user is the collaborator
@@ -75,18 +104,24 @@ class NotificationController extends Controller
                     'requestor.email as requestor_email',
                     'requestor.google_id as requestor_google_id',
                     'pcis.created_at',
-                    'pcis.updated_at'
+                    'pcis.updated_at',
+                    DB::raw("'collaboration' as type")
                 )
                 ->where('pcis.collaborator_id', '=', $userGoogleId)
                 ->where('pcis.project_collab_status_id', '=', 1) // 1 = Pending
-                ->orderBy('pcis.created_at', 'desc') // Order by newest first
-                ->limit(10) // Limit to 10 results
+                ->orderBy('pcis.created_at', 'desc')
+                ->limit(10)
                 ->get();
                 
             // Count total pending notifications (not limited to 10)
-            $totalEndorsementRequests = DB::table('project_endorsement_statuses')
+            $totalProjectEndorsementRequests = DB::table('project_endorsement_statuses')
                 ->where('endorser_id', $userGoogleId)
                 ->where('endorsement_status_id', 1)
+                ->count();
+                
+            $totalExperienceEndorsementRequests = DB::table('experience_endorsement_statuses')
+                ->where('endorser_id', $userGoogleId)
+                ->where('experience_status_id', 1)
                 ->count();
                 
             $totalCollaborationRequests = DB::table('project_collaborator_invitation_statuses')
@@ -94,13 +129,15 @@ class NotificationController extends Controller
                 ->where('project_collab_status_id', 1)
                 ->count();
                 
-            $totalPending = $totalEndorsementRequests + $totalCollaborationRequests;
+            $totalPending = $totalProjectEndorsementRequests + $totalExperienceEndorsementRequests + $totalCollaborationRequests;
             
             return response()->json([
                 'total_pending' => $totalPending,
-                'total_endorsement_requests' => $totalEndorsementRequests,
+                'total_project_endorsement_requests' => $totalProjectEndorsementRequests,
+                'total_experience_endorsement_requests' => $totalExperienceEndorsementRequests,
                 'total_collaboration_requests' => $totalCollaborationRequests,
-                'endorsement_requests' => $endorsementRequests,
+                'project_endorsement_requests' => $projectEndorsementRequests,
+                'experience_endorsement_requests' => $experienceEndorsementRequests,
                 'collaboration_requests' => $collaborationRequests,
             ]);
             
