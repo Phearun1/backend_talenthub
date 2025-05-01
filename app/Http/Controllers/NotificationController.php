@@ -202,11 +202,6 @@ public function viewNotification(Request $request)
         
         return response()->json([
             'total_pending' => $totalPending,
-            'total_project_endorsement_requests' => $totalProjectEndorsementRequests,
-            'total_experience_endorsement_requests' => $totalExperienceEndorsementRequests,
-            'total_skill_endorsement_requests' => $totalSkillEndorsementRequests,
-            'total_achievement_endorsement_requests' => $totalAchievementEndorsementRequests,
-            'total_collaboration_requests' => $totalCollaborationRequests,
             'project_endorsement_requests' => $projectEndorsementRequests,
             'experience_endorsement_requests' => $experienceEndorsementRequests,
             'skill_endorsement_requests' => $skillEndorsementRequests,
