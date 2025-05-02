@@ -131,5 +131,6 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
     Route::middleware('role:3')->get('/users', [AdminController::class, 'viewAllUser']);
     Route::middleware('role:3')->post('/update_user_role/{id}', [AdminController::class, 'updateUserRole']);
     Route::middleware('role:3')->post('/admin_change_password', [AdminController::class, 'adminChangePassword']);
+    Route::middleware('role:3')->put('/ban_user/{id}', [AdminController::class, 'banUser']);
     Route::middleware('role:3')->post('/admin/logout', [AuthController::class, 'adminLogout']);
 });
