@@ -86,8 +86,7 @@ class AdminController extends Controller
 
         return response()->json(['message' => 'Password changed successfully']);
     }
-    
-    // Method to view all users with specific fields
+
     public function viewAllUser(Request $request)
     {
         // Check if the authenticated user is an admin (role_id = 3)
@@ -95,12 +94,28 @@ class AdminController extends Controller
             return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
         }
 
-        // Fetch all users from the 'users' table with only specific fields
+        // Validate and get the limit from query parameters, default is 10, max 100
+        $validated = $request->validate([
+            'limit' => 'nullable|integer|min:1|max:100',
+        ]);
+
+        $limit = $request->query('limit', 18); // Default to 10 if not specified
+
+        // Fetch users with only specific fields and apply the limit
         $users = DB::table('users')
-            ->select('id', 'email', 'name', 'photo', 'google_id', 'role_id')
+            ->leftJoin('portfolios', 'users.id', '=', 'portfolios.user_id')
+            ->select(
+                'users.id',
+                'users.email',
+                'users.name',
+                'users.photo',
+                'users.google_id',
+                'users.role_id',
+                'portfolios.phone_number'
+            )
+            ->limit($limit)
             ->get();
 
-        // Return the list of users as a JSON response
         return response()->json($users);
     }
 
