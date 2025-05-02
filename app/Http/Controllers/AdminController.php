@@ -32,7 +32,7 @@ class AdminController extends Controller
             'role_id' => 2, // Endorser role
         ]);
 
-        return response()->json(['message' => 'Success', 'user' => $user]);
+        return response()->json(['message' => 'Success',$user]);
     }
 
     /**
@@ -60,7 +60,7 @@ class AdminController extends Controller
             'photo' => null, // Default photo is set to null
         ]);
 
-        return response()->json(['message' => 'Success', 'admin' => $admin]);
+        return response()->json(['message' => 'Success',$admin]);
     }
 
 
