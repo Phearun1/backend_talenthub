@@ -93,17 +93,17 @@ class AdminController extends Controller
         if ($request->user() && $request->user()->role_id !== 3) {
             return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
         }
-
-        // Validate and get the limit from query parameters, default is 10, max 100
+    
+        // Validate and get the limit from query parameters, default is 18, max 100
         $validated = $request->validate([
-            'limit' => 'nullable|integer|min:1|max:100',
+            'limit' => 'nullable|integer|min:1',
         ]);
-
-        $limit = $request->query('limit', 18); // Default to 10 if not specified
-
+    
+        $limit = $request->query('limit', 18);
+    
         // Fetch users with only specific fields and apply the limit
         $users = DB::table('users')
-            ->leftJoin('portfolios', 'users.id', '=', 'portfolios.user_id')
+            ->leftJoin('portfolios', 'users.google_id', '=', 'portfolios.user_id') // Changed join condition
             ->select(
                 'users.id',
                 'users.email',
@@ -115,7 +115,7 @@ class AdminController extends Controller
             )
             ->limit($limit)
             ->get();
-
+    
         return response()->json($users);
     }
 
