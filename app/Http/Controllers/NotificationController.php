@@ -207,7 +207,6 @@ class NotificationController extends Controller
 // }
 
 
-<?php
 public function viewNotification(Request $request)
 {
     try {
