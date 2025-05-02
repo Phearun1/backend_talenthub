@@ -239,20 +239,21 @@ public function viewNotification(Request $request)
             ->where('pes.endorser_id', '=', $userGoogleId)
             ->where('pes.endorsement_status_id', '=', 1)
             ->orderBy('pes.created_at', 'desc')
-            ->select('pes.id', 'pes.created_at', 'requestor.google_id as requestor_google_id')
+            ->select('pes.id', 'pes.created_at', 'requestor.google_id as requestor_google_id', 'p.title as project_title')
             ->get();
 
         foreach ($projects as $row) {
             $requestor = $getUserInfo($row->requestor_google_id);
             $notifications[] = [
                 'id' => $row->id,
-                'ownderId' => $endorser->google_id, // Changed to google_id
-                'receiverId' => $requestor->google_id, // Changed to google_id
+                'ownderId' => $endorser->google_id,
+                'receiverId' => $requestor->google_id,
                 'ownerName' => $endorser->name,
                 'receiverName' => $requestor->name,
                 'type' => 2,
                 'endorsementType' => 2,
                 'status' => 1,
+                'title' => $row->project_title,
                 'createdAt' => $row->created_at,
             ];
         }
@@ -262,23 +263,27 @@ public function viewNotification(Request $request)
             ->join('experiences as e', 'e.id', '=', 'ees.experience_id')
             ->join('portfolios as port', 'port.id', '=', 'e.portfolio_id')
             ->join('users as requestor', 'requestor.google_id', '=', 'port.user_id')
+            ->join('companies as c', 'c.id', '=', 'e.company_id')
             ->where('ees.endorser_id', '=', $userGoogleId)
             ->where('ees.experience_status_id', '=', 1)
             ->orderBy('ees.created_at', 'desc')
-            ->select('ees.id', 'ees.created_at', 'requestor.google_id as requestor_google_id')
+            ->select('ees.id', 'ees.created_at', 'requestor.google_id as requestor_google_id', 
+                    'e.work_title', 'c.company_name')
             ->get();
 
         foreach ($experiences as $row) {
             $requestor = $getUserInfo($row->requestor_google_id);
             $notifications[] = [
                 'id' => $row->id,
-                'ownderId' => $endorser->google_id, // Changed to google_id
-                'receiverId' => $requestor->google_id, // Changed to google_id
+                'ownderId' => $endorser->google_id,
+                'receiverId' => $requestor->google_id,
                 'ownerName' => $endorser->name,
                 'receiverName' => $requestor->name,
                 'type' => 2,
                 'endorsementType' => 3,
                 'status' => 1,
+                'title' => $row->work_title,
+                'company_name' => $row->company_name,
                 'createdAt' => $row->created_at,
             ];
         }
@@ -291,20 +296,21 @@ public function viewNotification(Request $request)
             ->where('ses.endorser_id', '=', $userGoogleId)
             ->where('ses.endorsement_status_id', '=', 1)
             ->orderBy('ses.created_at', 'desc')
-            ->select('ses.id', 'ses.created_at', 'requestor.google_id as requestor_google_id')
+            ->select('ses.id', 'ses.created_at', 'requestor.google_id as requestor_google_id', 's.title as skill_title')
             ->get();
 
         foreach ($skills as $row) {
             $requestor = $getUserInfo($row->requestor_google_id);
             $notifications[] = [
                 'id' => $row->id,
-                'ownderId' => $endorser->google_id, // Changed to google_id
-                'receiverId' => $requestor->google_id, // Changed to google_id
+                'ownderId' => $endorser->google_id,
+                'receiverId' => $requestor->google_id,
                 'ownerName' => $endorser->name,
                 'receiverName' => $requestor->name,
                 'type' => 2,
                 'endorsementType' => 1,
                 'status' => 1,
+                'title' => $row->skill_title,
                 'createdAt' => $row->created_at,
             ];
         }
@@ -317,20 +323,22 @@ public function viewNotification(Request $request)
             ->where('aes.endorser_id', '=', $userGoogleId)
             ->where('aes.endorsement_status_id', '=', 1)
             ->orderBy('aes.created_at', 'desc')
-            ->select('aes.id', 'aes.created_at', 'requestor.google_id as requestor_google_id')
+            ->select('aes.id', 'aes.created_at', 'requestor.google_id as requestor_google_id', 
+                    'a.title as achievement_title', 'a.issued_by')
             ->get();
 
         foreach ($achievements as $row) {
             $requestor = $getUserInfo($row->requestor_google_id);
             $notifications[] = [
                 'id' => $row->id,
-                'ownderId' => $endorser->google_id, // Changed to google_id
-                'receiverId' => $requestor->google_id, // Changed to google_id
+                'ownderId' => $endorser->google_id,
+                'receiverId' => $requestor->google_id,
                 'ownerName' => $endorser->name,
                 'receiverName' => $requestor->name,
                 'type' => 2,
                 'endorsementType' => 4,
                 'status' => 1,
+                'title' => $row->achievement_title,
                 'createdAt' => $row->created_at,
             ];
         }
@@ -343,20 +351,21 @@ public function viewNotification(Request $request)
             ->where('pcis.collaborator_id', '=', $userGoogleId)
             ->where('pcis.project_collab_status_id', '=', 1)
             ->orderBy('pcis.created_at', 'desc')
-            ->select('pcis.id', 'pcis.created_at', 'requestor.google_id as requestor_google_id')
+            ->select('pcis.id', 'pcis.created_at', 'requestor.google_id as requestor_google_id', 'p.title as project_title')
             ->get();
 
         foreach ($collaborations as $row) {
             $requestor = $getUserInfo($row->requestor_google_id);
             $notifications[] = [
                 'id' => $row->id,
-                'ownderId' => $requestor->google_id, // Changed to google_id
-                'receiverId' => $endorser->google_id, // Changed to google_id
+                'ownderId' => $requestor->google_id,
+                'receiverId' => $endorser->google_id,
                 'ownerName' => $requestor->name,
                 'receiverName' => $endorser->name,
                 'type' => 1,
                 'endorsementType' => null,
                 'status' => 1,
+                'title' => $row->project_title,
                 'createdAt' => $row->created_at,
             ];
         }
