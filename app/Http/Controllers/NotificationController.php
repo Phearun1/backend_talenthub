@@ -391,6 +391,7 @@ class NotificationController extends Controller
 //     }
 // }
 
+
 public function viewNotification(Request $request)
 {
     try {

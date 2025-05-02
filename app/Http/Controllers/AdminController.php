@@ -99,7 +99,7 @@ class AdminController extends Controller
             'limit' => 'nullable|integer|min:1',
         ]);
     
-        $limit = $request->query('limit', 18);
+        $limit = $request->query('limit', 20);
     
         // Fetch users with only specific fields and apply the limit
         $users = DB::table('users')
@@ -167,24 +167,24 @@ class AdminController extends Controller
     }
 
 
-    public function banPortfolio(Request $request, $id)
+    public function banUser(Request $request, $id)
     {
         // Check if the authenticated user is an admin (role_id = 3)
         if ($request->user() && $request->user()->role_id !== 3) {
             return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
         }
-
+    
         // Find the user by ID
         $user = User::find($id);
-
+    
         if (!$user) {
             return response()->json(['error' => 'User not found'], 404);
         }
-
-        // Ban the user by setting their role to null
-        $user->role_id = null;
+    
+        // Ban the user by setting their status to 0 (banned)
+        $user->status = 0;
         $user->save();
-
+    
         return response()->json(['message' => 'User banned successfully']);
     }
 }
