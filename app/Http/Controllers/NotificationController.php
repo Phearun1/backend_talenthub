@@ -235,10 +235,11 @@ public function viewNotification(Request $request)
         $projects = DB::table('project_endorsement_statuses as pes')
             ->join('projects as p', 'p.id', '=', 'pes.project_id')
             ->join('portfolios as port', 'port.id', '=', 'p.portfolio_id')
-            ->join('users as requestor', 'requestor.google_id as requestor_google_id', '=', 'port.user_id')
+            ->join('users as requestor', 'requestor.google_id', '=', 'port.user_id')
             ->where('pes.endorser_id', '=', $userGoogleId)
             ->where('pes.endorsement_status_id', '=', 1)
             ->orderBy('pes.created_at', 'desc')
+            ->select('pes.status_id', 'pes.created_at', 'requestor.google_id as requestor_google_id')
             ->get();
 
         foreach ($projects as $row) {
@@ -261,10 +262,11 @@ public function viewNotification(Request $request)
         $experiences = DB::table('experience_endorsement_statuses as ees')
             ->join('experiences as e', 'e.id', '=', 'ees.experience_id')
             ->join('portfolios as port', 'port.id', '=', 'e.portfolio_id')
-            ->join('users as requestor', 'requestor.google_id as requestor_google_id', '=', 'port.user_id')
+            ->join('users as requestor', 'requestor.google_id', '=', 'port.user_id')
             ->where('ees.endorser_id', '=', $userGoogleId)
             ->where('ees.experience_status_id', '=', 1)
             ->orderBy('ees.created_at', 'desc')
+            ->select('ees.status_id', 'ees.created_at', 'requestor.google_id as requestor_google_id')
             ->get();
 
         foreach ($experiences as $row) {
@@ -287,10 +289,11 @@ public function viewNotification(Request $request)
         $skills = DB::table('skill_endorsement_statuses as ses')
             ->join('skills as s', 's.id', '=', 'ses.skill_id')
             ->join('portfolios as port', 'port.id', '=', 's.portfolio_id')
-            ->join('users as requestor', 'requestor.google_id as requestor_google_id', '=', 'port.user_id')
+            ->join('users as requestor', 'requestor.google_id', '=', 'port.user_id')
             ->where('ses.endorser_id', '=', $userGoogleId)
             ->where('ses.endorsement_status_id', '=', 1)
             ->orderBy('ses.created_at', 'desc')
+            ->select('ses.status_id', 'ses.created_at', 'requestor.google_id as requestor_google_id')
             ->get();
 
         foreach ($skills as $row) {
@@ -313,10 +316,11 @@ public function viewNotification(Request $request)
         $achievements = DB::table('achievement_endorsement_statuses as aes')
             ->join('achievements as a', 'a.id', '=', 'aes.achievement_id')
             ->join('portfolios as port', 'port.id', '=', 'a.portfolio_id')
-            ->join('users as requestor', 'requestor.google_id as requestor_google_id', '=', 'port.user_id')
+            ->join('users as requestor', 'requestor.google_id', '=', 'port.user_id')
             ->where('aes.endorser_id', '=', $userGoogleId)
             ->where('aes.endorsement_status_id', '=', 1)
             ->orderBy('aes.created_at', 'desc')
+            ->select('aes.status_id', 'aes.created_at', 'requestor.google_id as requestor_google_id')
             ->get();
 
         foreach ($achievements as $row) {
@@ -339,10 +343,11 @@ public function viewNotification(Request $request)
         $collaborations = DB::table('project_collaborator_invitation_statuses as pcis')
             ->join('projects as p', 'p.id', '=', 'pcis.project_id')
             ->join('portfolios as port', 'port.id', '=', 'p.portfolio_id')
-            ->join('users as requestor', 'requestor.google_id as requestor_google_id', '=', 'port.user_id')
+            ->join('users as requestor', 'requestor.google_id', '=', 'port.user_id')
             ->where('pcis.collaborator_id', '=', $userGoogleId)
             ->where('pcis.project_collab_status_id', '=', 1)
             ->orderBy('pcis.created_at', 'desc')
+            ->select('pcis.status_id', 'pcis.created_at', 'requestor.google_id as requestor_google_id')
             ->get();
 
         foreach ($collaborations as $row) {
@@ -381,6 +386,7 @@ public function viewNotification(Request $request)
         ], 500);
     }
 }
+
 
 
     public function sendWelcomeEmail(Request $request)
