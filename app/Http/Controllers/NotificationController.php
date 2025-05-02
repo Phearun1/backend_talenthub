@@ -207,6 +207,7 @@ class NotificationController extends Controller
 // }
 
 
+<?php
 public function viewNotification(Request $request)
 {
     try {
@@ -226,12 +227,12 @@ public function viewNotification(Request $request)
 
         // Helper to fetch user info
         $getUserInfo = function ($googleId) {
-            return DB::table('users')->where('google_id', $googleId)->first(['id', 'name']);
+            return DB::table('users')->where('google_id', $googleId)->first(['id', 'name', 'google_id']);
         };
 
         $endorser = $getUserInfo($userGoogleId);
 
-        // PROJECT ENDORSEMENTS - Using 'id' instead of 'status_id'
+        // PROJECT ENDORSEMENTS
         $projects = DB::table('project_endorsement_statuses as pes')
             ->join('projects as p', 'p.id', '=', 'pes.project_id')
             ->join('portfolios as port', 'port.id', '=', 'p.portfolio_id')
@@ -246,19 +247,18 @@ public function viewNotification(Request $request)
             $requestor = $getUserInfo($row->requestor_google_id);
             $notifications[] = [
                 'id' => $row->id,
-                'ownderId' => $endorser->id,
-                'receiverId' => $requestor->id,
+                'ownderId' => $endorser->google_id, // Changed to google_id
+                'receiverId' => $requestor->google_id, // Changed to google_id
                 'ownerName' => $endorser->name,
                 'receiverName' => $requestor->name,
                 'type' => 2,
                 'endorsementType' => 2,
-                'endorsementId_or_collaborationId' => $row->id,
                 'status' => 1,
                 'createdAt' => $row->created_at,
             ];
         }
 
-        // EXPERIENCE ENDORSEMENTS - Using 'id' instead of 'status_id'
+        // EXPERIENCE ENDORSEMENTS
         $experiences = DB::table('experience_endorsement_statuses as ees')
             ->join('experiences as e', 'e.id', '=', 'ees.experience_id')
             ->join('portfolios as port', 'port.id', '=', 'e.portfolio_id')
@@ -273,19 +273,18 @@ public function viewNotification(Request $request)
             $requestor = $getUserInfo($row->requestor_google_id);
             $notifications[] = [
                 'id' => $row->id,
-                'ownderId' => $endorser->id,
-                'receiverId' => $requestor->id,
+                'ownderId' => $endorser->google_id, // Changed to google_id
+                'receiverId' => $requestor->google_id, // Changed to google_id
                 'ownerName' => $endorser->name,
                 'receiverName' => $requestor->name,
                 'type' => 2,
                 'endorsementType' => 3,
-                'endorsementId_or_collaborationId' => $row->id,
                 'status' => 1,
                 'createdAt' => $row->created_at,
             ];
         }
 
-        // SKILL ENDORSEMENTS - Using 'id' instead of 'status_id'
+        // SKILL ENDORSEMENTS
         $skills = DB::table('skill_endorsement_statuses as ses')
             ->join('skills as s', 's.id', '=', 'ses.skill_id')
             ->join('portfolios as port', 'port.id', '=', 's.portfolio_id')
@@ -300,19 +299,18 @@ public function viewNotification(Request $request)
             $requestor = $getUserInfo($row->requestor_google_id);
             $notifications[] = [
                 'id' => $row->id,
-                'ownderId' => $endorser->id,
-                'receiverId' => $requestor->id,
+                'ownderId' => $endorser->google_id, // Changed to google_id
+                'receiverId' => $requestor->google_id, // Changed to google_id
                 'ownerName' => $endorser->name,
                 'receiverName' => $requestor->name,
                 'type' => 2,
                 'endorsementType' => 1,
-                'endorsementId_or_collaborationId' => $row->id,
                 'status' => 1,
                 'createdAt' => $row->created_at,
             ];
         }
 
-        // ACHIEVEMENT ENDORSEMENTS - Using 'id' instead of 'status_id'
+        // ACHIEVEMENT ENDORSEMENTS
         $achievements = DB::table('achievement_endorsement_statuses as aes')
             ->join('achievements as a', 'a.id', '=', 'aes.achievement_id')
             ->join('portfolios as port', 'port.id', '=', 'a.portfolio_id')
@@ -327,19 +325,18 @@ public function viewNotification(Request $request)
             $requestor = $getUserInfo($row->requestor_google_id);
             $notifications[] = [
                 'id' => $row->id,
-                'ownderId' => $endorser->id,
-                'receiverId' => $requestor->id,
+                'ownderId' => $endorser->google_id, // Changed to google_id
+                'receiverId' => $requestor->google_id, // Changed to google_id
                 'ownerName' => $endorser->name,
                 'receiverName' => $requestor->name,
                 'type' => 2,
                 'endorsementType' => 4,
-                'endorsementId_or_collaborationId' => $row->id,
                 'status' => 1,
                 'createdAt' => $row->created_at,
             ];
         }
 
-        // COLLABORATIONS - Using 'id' instead of 'status_id'
+        // COLLABORATIONS
         $collaborations = DB::table('project_collaborator_invitation_statuses as pcis')
             ->join('projects as p', 'p.id', '=', 'pcis.project_id')
             ->join('portfolios as port', 'port.id', '=', 'p.portfolio_id')
@@ -354,13 +351,12 @@ public function viewNotification(Request $request)
             $requestor = $getUserInfo($row->requestor_google_id);
             $notifications[] = [
                 'id' => $row->id,
-                'ownderId' => $requestor->id,
-                'receiverId' => $endorser->id,
+                'ownderId' => $requestor->google_id, // Changed to google_id
+                'receiverId' => $endorser->google_id, // Changed to google_id
                 'ownerName' => $requestor->name,
                 'receiverName' => $endorser->name,
                 'type' => 1,
                 'endorsementType' => null,
-                'endorsementId_or_collaborationId' => $row->id,
                 'status' => 1,
                 'createdAt' => $row->created_at,
             ];
