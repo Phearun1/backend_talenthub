@@ -16,6 +16,7 @@ class User extends Authenticatable  // Extend Authenticatable
         'name',
         'photo', // optional, can be null if no photo provided
         'role_id', // role assignment (default is 1)
+        'status'
     ];
 
     // Optionally, if you are using timestamps manually, you can set:

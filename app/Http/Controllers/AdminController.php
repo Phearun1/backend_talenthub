@@ -119,47 +119,49 @@ class AdminController extends Controller
         return response()->json($users);
     }
 
-    public function updateUserRole(Request $request, $id)
+      
+    public function updateUserRole(Request $request, $google_id)
     {
         // Check if the authenticated user is an admin (role_id = 3)
         if ($request->user() && $request->user()->role_id !== 3) {
             return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
         }
-
+    
         // Validate request
         $validator = Validator::make($request->all(), [
             'role_id' => 'required|integer|in:1,2,3', // Only allow valid role IDs (1=Student, 2=Endorser, 3=Admin)
         ]);
-
+    
         if ($validator->fails()) {
             return response()->json(['error' => $validator->errors()], 400);
         }
-
-        // Get the user
-        $user = User::find($id);
-
+    
+        // Get the user by Google ID instead of internal ID
+        $user = User::where('google_id', $google_id)->first();
+    
         if (!$user) {
             return response()->json(['error' => 'User not found'], 404);
         }
-
+    
         // Get the original role for the response
         $originalRole = $user->role_id;
-
+    
         // Map role IDs to role names for the response
         $roleNames = [
             1 => 'Student',
             2 => 'Endorser',
             3 => 'Admin'
         ];
-
+    
         // Update the role
         $user->role_id = $request->role_id;
         $user->save();
-
+    
         // Return success response with before/after details
         return response()->json([
             'message' => 'User role updated successfully',
             'id' => $user->id,
+            'google_id' => $user->google_id,
             'name' => $user->name,
             'email' => $user->email,
             'role_id' => $user->role_id,
@@ -167,15 +169,15 @@ class AdminController extends Controller
     }
 
 
-    public function banUser(Request $request, $id)
+    public function banUser(Request $request, $google_id)
     {
         // Check if the authenticated user is an admin (role_id = 3)
         if ($request->user() && $request->user()->role_id !== 3) {
             return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
         }
     
-        // Find the user by ID
-        $user = User::find($id);
+        // Find the user by Google ID instead of internal ID
+        $user = User::where('google_id', $google_id)->first();
     
         if (!$user) {
             return response()->json(['error' => 'User not found'], 404);
@@ -185,6 +187,13 @@ class AdminController extends Controller
         $user->status = 0;
         $user->save();
     
-        return response()->json(['message' => 'User banned successfully']);
+        return response()->json([
+            'message' => 'User banned successfully',
+            'id' => $user->id,
+            'google_id' => $user->google_id,
+            'email' => $user->email,
+            'name' => $user->name,
+            'status' => $user->status
+        ]);
     }
 }
