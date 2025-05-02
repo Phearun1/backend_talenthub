@@ -231,7 +231,7 @@ public function viewNotification(Request $request)
 
         $endorser = $getUserInfo($userGoogleId);
 
-        // PROJECT ENDORSEMENTS
+        // PROJECT ENDORSEMENTS - Using 'id' instead of 'status_id'
         $projects = DB::table('project_endorsement_statuses as pes')
             ->join('projects as p', 'p.id', '=', 'pes.project_id')
             ->join('portfolios as port', 'port.id', '=', 'p.portfolio_id')
@@ -239,26 +239,26 @@ public function viewNotification(Request $request)
             ->where('pes.endorser_id', '=', $userGoogleId)
             ->where('pes.endorsement_status_id', '=', 1)
             ->orderBy('pes.created_at', 'desc')
-            ->select('pes.status_id', 'pes.created_at', 'requestor.google_id as requestor_google_id')
+            ->select('pes.id', 'pes.created_at', 'requestor.google_id as requestor_google_id')
             ->get();
 
         foreach ($projects as $row) {
             $requestor = $getUserInfo($row->requestor_google_id);
             $notifications[] = [
-                'id' => $row->status_id,
+                'id' => $row->id,
                 'ownderId' => $endorser->id,
                 'receiverId' => $requestor->id,
                 'ownerName' => $endorser->name,
                 'receiverName' => $requestor->name,
                 'type' => 2,
                 'endorsementType' => 2,
-                'endorsementId_or_collaborationId' => $row->status_id,
+                'endorsementId_or_collaborationId' => $row->id,
                 'status' => 1,
                 'createdAt' => $row->created_at,
             ];
         }
 
-        // EXPERIENCE ENDORSEMENTS
+        // EXPERIENCE ENDORSEMENTS - Using 'id' instead of 'status_id'
         $experiences = DB::table('experience_endorsement_statuses as ees')
             ->join('experiences as e', 'e.id', '=', 'ees.experience_id')
             ->join('portfolios as port', 'port.id', '=', 'e.portfolio_id')
@@ -266,26 +266,26 @@ public function viewNotification(Request $request)
             ->where('ees.endorser_id', '=', $userGoogleId)
             ->where('ees.experience_status_id', '=', 1)
             ->orderBy('ees.created_at', 'desc')
-            ->select('ees.status_id', 'ees.created_at', 'requestor.google_id as requestor_google_id')
+            ->select('ees.id', 'ees.created_at', 'requestor.google_id as requestor_google_id')
             ->get();
 
         foreach ($experiences as $row) {
             $requestor = $getUserInfo($row->requestor_google_id);
             $notifications[] = [
-                'id' => $row->status_id,
+                'id' => $row->id,
                 'ownderId' => $endorser->id,
                 'receiverId' => $requestor->id,
                 'ownerName' => $endorser->name,
                 'receiverName' => $requestor->name,
                 'type' => 2,
                 'endorsementType' => 3,
-                'endorsementId_or_collaborationId' => $row->status_id,
+                'endorsementId_or_collaborationId' => $row->id,
                 'status' => 1,
                 'createdAt' => $row->created_at,
             ];
         }
 
-        // SKILL ENDORSEMENTS
+        // SKILL ENDORSEMENTS - Using 'id' instead of 'status_id'
         $skills = DB::table('skill_endorsement_statuses as ses')
             ->join('skills as s', 's.id', '=', 'ses.skill_id')
             ->join('portfolios as port', 'port.id', '=', 's.portfolio_id')
@@ -293,26 +293,26 @@ public function viewNotification(Request $request)
             ->where('ses.endorser_id', '=', $userGoogleId)
             ->where('ses.endorsement_status_id', '=', 1)
             ->orderBy('ses.created_at', 'desc')
-            ->select('ses.status_id', 'ses.created_at', 'requestor.google_id as requestor_google_id')
+            ->select('ses.id', 'ses.created_at', 'requestor.google_id as requestor_google_id')
             ->get();
 
         foreach ($skills as $row) {
             $requestor = $getUserInfo($row->requestor_google_id);
             $notifications[] = [
-                'id' => $row->status_id,
+                'id' => $row->id,
                 'ownderId' => $endorser->id,
                 'receiverId' => $requestor->id,
                 'ownerName' => $endorser->name,
                 'receiverName' => $requestor->name,
                 'type' => 2,
                 'endorsementType' => 1,
-                'endorsementId_or_collaborationId' => $row->status_id,
+                'endorsementId_or_collaborationId' => $row->id,
                 'status' => 1,
                 'createdAt' => $row->created_at,
             ];
         }
 
-        // ACHIEVEMENT ENDORSEMENTS
+        // ACHIEVEMENT ENDORSEMENTS - Using 'id' instead of 'status_id'
         $achievements = DB::table('achievement_endorsement_statuses as aes')
             ->join('achievements as a', 'a.id', '=', 'aes.achievement_id')
             ->join('portfolios as port', 'port.id', '=', 'a.portfolio_id')
@@ -320,26 +320,26 @@ public function viewNotification(Request $request)
             ->where('aes.endorser_id', '=', $userGoogleId)
             ->where('aes.endorsement_status_id', '=', 1)
             ->orderBy('aes.created_at', 'desc')
-            ->select('aes.status_id', 'aes.created_at', 'requestor.google_id as requestor_google_id')
+            ->select('aes.id', 'aes.created_at', 'requestor.google_id as requestor_google_id')
             ->get();
 
         foreach ($achievements as $row) {
             $requestor = $getUserInfo($row->requestor_google_id);
             $notifications[] = [
-                'id' => $row->status_id,
+                'id' => $row->id,
                 'ownderId' => $endorser->id,
                 'receiverId' => $requestor->id,
                 'ownerName' => $endorser->name,
                 'receiverName' => $requestor->name,
                 'type' => 2,
                 'endorsementType' => 4,
-                'endorsementId_or_collaborationId' => $row->status_id,
+                'endorsementId_or_collaborationId' => $row->id,
                 'status' => 1,
                 'createdAt' => $row->created_at,
             ];
         }
 
-        // COLLABORATIONS
+        // COLLABORATIONS - Using 'id' instead of 'status_id'
         $collaborations = DB::table('project_collaborator_invitation_statuses as pcis')
             ->join('projects as p', 'p.id', '=', 'pcis.project_id')
             ->join('portfolios as port', 'port.id', '=', 'p.portfolio_id')
@@ -347,20 +347,20 @@ public function viewNotification(Request $request)
             ->where('pcis.collaborator_id', '=', $userGoogleId)
             ->where('pcis.project_collab_status_id', '=', 1)
             ->orderBy('pcis.created_at', 'desc')
-            ->select('pcis.status_id', 'pcis.created_at', 'requestor.google_id as requestor_google_id')
+            ->select('pcis.id', 'pcis.created_at', 'requestor.google_id as requestor_google_id')
             ->get();
 
         foreach ($collaborations as $row) {
             $requestor = $getUserInfo($row->requestor_google_id);
             $notifications[] = [
-                'id' => $row->status_id,
+                'id' => $row->id,
                 'ownderId' => $requestor->id,
                 'receiverId' => $endorser->id,
                 'ownerName' => $requestor->name,
                 'receiverName' => $endorser->name,
                 'type' => 1,
                 'endorsementType' => null,
-                'endorsementId_or_collaborationId' => $row->status_id,
+                'endorsementId_or_collaborationId' => $row->id,
                 'status' => 1,
                 'createdAt' => $row->created_at,
             ];
