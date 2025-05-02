@@ -254,7 +254,7 @@ class NotificationController extends Controller
 //                 'endorsement_type' => 2,
 //                 'status' => 1,
 //                 'title' => $row->project_title,
-//                 'createdAt' => $row->created_at,
+//                 'created_at' => $row->created_at,
 //             ];
 //         }
 
@@ -284,7 +284,7 @@ class NotificationController extends Controller
 //                 'status' => 1,
 //                 'title' => $row->work_title,
 //                 'company_name' => $row->company_name,
-//                 'createdAt' => $row->created_at,
+//                 'created_at' => $row->created_at,
 //             ];
 //         }
 
@@ -311,7 +311,7 @@ class NotificationController extends Controller
 //                 'endorsement_type' => 1,
 //                 'status' => 1,
 //                 'title' => $row->skill_title,
-//                 'createdAt' => $row->created_at,
+//                 'created_at' => $row->created_at,
 //             ];
 //         }
 
@@ -339,7 +339,7 @@ class NotificationController extends Controller
 //                 'endorsement_type' => 4,
 //                 'status' => 1,
 //                 'title' => $row->achievement_title,
-//                 'createdAt' => $row->created_at,
+//                 'created_at' => $row->created_at,
 //             ];
 //         }
 
@@ -366,13 +366,13 @@ class NotificationController extends Controller
 //                 'endorsement_type' => null,
 //                 'status' => 1,
 //                 'title' => $row->project_title,
-//                 'createdAt' => $row->created_at,
+//                 'created_at' => $row->created_at,
 //             ];
 //         }
 
-//         // Sort all notifications by createdAt (most recent first)
+//         // Sort all notifications by created_at (most recent first)
 //         usort($notifications, function ($a, $b) {
-//             return strtotime($b['createdAt']) <=> strtotime($a['createdAt']);
+//             return strtotime($b['created_at']) <=> strtotime($a['created_at']);
 //         });
 
 //         // Return only the latest 10
@@ -439,7 +439,7 @@ public function viewNotification(Request $request)
                 'endorsement_type' => 2,
                 'status' => 1,
                 'title' => $row->project_title,
-                'createdAt' => $row->created_at,
+                'created_at' => $row->created_at,
             ];
         }
 
@@ -468,7 +468,7 @@ public function viewNotification(Request $request)
                 'status' => 1,
                 'title' => $row->work_title,
                 'company_name' => $row->company_name,
-                'createdAt' => $row->created_at,
+                'created_at' => $row->created_at,
             ];
         }
 
@@ -495,7 +495,7 @@ public function viewNotification(Request $request)
                 'endorsement_type' => 1,
                 'status' => 1,
                 'title' => $row->skill_title,
-                'createdAt' => $row->created_at,
+                'created_at' => $row->created_at,
             ];
         }
 
@@ -522,7 +522,7 @@ public function viewNotification(Request $request)
                 'endorsement_type' => 4,
                 'status' => 1,
                 'title' => $row->achievement_title,
-                'createdAt' => $row->created_at,
+                'created_at' => $row->created_at,
             ];
         }
 
@@ -549,12 +549,12 @@ public function viewNotification(Request $request)
                 'endorsement_type' => null,
                 'status' => 1,
                 'title' => $row->project_title,
-                'createdAt' => $row->created_at,
+                'created_at' => $row->created_at,
             ];
         }
 
         // --- Final sorting and limiting ---
-        usort($notifications, fn($a, $b) => strtotime($b['createdAt']) <=> strtotime($a['createdAt']));
+        usort($notifications, fn($a, $b) => strtotime($b['created_at']) <=> strtotime($a['created_at']));
         $notifications = array_slice($notifications, 0, $limit);
 
         return response()->json($notifications);
