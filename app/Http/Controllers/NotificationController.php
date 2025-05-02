@@ -246,8 +246,8 @@ public function viewNotification(Request $request)
             $requestor = $getUserInfo($row->requestor_google_id);
             $notifications[] = [
                 'id' => $row->id,
-                'ownderId' => $endorser->google_id,
-                'receiverId' => $requestor->google_id,
+                'owner_google_id' => $endorser->google_id,
+                'receiver_google_id' => $requestor->google_id,
                 'ownerName' => $endorser->name,
                 'receiverName' => $requestor->name,
                 'type' => 2,
@@ -275,8 +275,8 @@ public function viewNotification(Request $request)
             $requestor = $getUserInfo($row->requestor_google_id);
             $notifications[] = [
                 'id' => $row->id,
-                'ownderId' => $endorser->google_id,
-                'receiverId' => $requestor->google_id,
+                'owner_google_id' => $endorser->google_id,
+                'receiver_google_id' => $requestor->google_id,
                 'ownerName' => $endorser->name,
                 'receiverName' => $requestor->name,
                 'type' => 2,
@@ -303,8 +303,8 @@ public function viewNotification(Request $request)
             $requestor = $getUserInfo($row->requestor_google_id);
             $notifications[] = [
                 'id' => $row->id,
-                'ownderId' => $endorser->google_id,
-                'receiverId' => $requestor->google_id,
+                'owner_google_id' => $endorser->google_id,
+                'receiver_google_id' => $requestor->google_id,
                 'ownerName' => $endorser->name,
                 'receiverName' => $requestor->name,
                 'type' => 2,
@@ -331,8 +331,8 @@ public function viewNotification(Request $request)
             $requestor = $getUserInfo($row->requestor_google_id);
             $notifications[] = [
                 'id' => $row->id,
-                'ownderId' => $endorser->google_id,
-                'receiverId' => $requestor->google_id,
+                'owner_google_id' => $endorser->google_id,
+                'receiver_google_id' => $requestor->google_id,
                 'ownerName' => $endorser->name,
                 'receiverName' => $requestor->name,
                 'type' => 2,
@@ -358,8 +358,8 @@ public function viewNotification(Request $request)
             $requestor = $getUserInfo($row->requestor_google_id);
             $notifications[] = [
                 'id' => $row->id,
-                'ownderId' => $requestor->google_id,
-                'receiverId' => $endorser->google_id,
+                'owner_google_id' => $requestor->google_id,
+                'receiver_google_id' => $endorser->google_id,
                 'ownerName' => $requestor->name,
                 'receiverName' => $endorser->name,
                 'type' => 1,
