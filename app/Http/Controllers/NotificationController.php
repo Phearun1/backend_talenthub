@@ -207,201 +207,14 @@ class NotificationController extends Controller
 // }
 
 
-// public function viewNotification(Request $request)
-// {
-//     try {
-//         $request->validate([
-//             'user_google_id' => 'required|string',
-//         ]);
-
-//         $userGoogleId = $request->input('user_google_id');
-
-//         if (!$userGoogleId) {
-//             return response()->json([
-//                 'error' => 'User not authenticated or Google ID not found'
-//             ], 400);
-//         }
-
-//         $notifications = [];
-
-//         // Helper to fetch user info
-//         $getUserInfo = function ($googleId) {
-//             return DB::table('users')->where('google_id', $googleId)->first(['id', 'name', 'google_id']);
-//         };
-
-//         $endorser = $getUserInfo($userGoogleId);
-
-//         // PROJECT ENDORSEMENTS
-//         $projects = DB::table('project_endorsement_statuses as pes')
-//             ->join('projects as p', 'p.id', '=', 'pes.project_id')
-//             ->join('portfolios as port', 'port.id', '=', 'p.portfolio_id')
-//             ->join('users as requestor', 'requestor.google_id', '=', 'port.user_id')
-//             ->where('pes.endorser_id', '=', $userGoogleId)
-//             ->where('pes.endorsement_status_id', '=', 1)
-//             ->orderBy('pes.created_at', 'desc')
-//             ->select('pes.id', 'pes.created_at', 'requestor.google_id as requestor_google_id', 'p.title as project_title')
-//             ->get();
-
-//         foreach ($projects as $row) {
-//             $requestor = $getUserInfo($row->requestor_google_id);
-//             $notifications[] = [
-//                 'id' => $row->id,
-//                 'owner_google_id' => $endorser->google_id,
-//                 'receiver_google_id' => $requestor->google_id,
-//                 'owner_name' => $endorser->name,
-//                 'receiver_name' => $requestor->name,
-//                 'type' => 2,
-//                 'endorsement_type' => 2,
-//                 'status' => 1,
-//                 'title' => $row->project_title,
-//                 'created_at' => $row->created_at,
-//             ];
-//         }
-
-//         // EXPERIENCE ENDORSEMENTS
-//         $experiences = DB::table('experience_endorsement_statuses as ees')
-//             ->join('experiences as e', 'e.id', '=', 'ees.experience_id')
-//             ->join('portfolios as port', 'port.id', '=', 'e.portfolio_id')
-//             ->join('users as requestor', 'requestor.google_id', '=', 'port.user_id')
-//             ->join('companies as c', 'c.id', '=', 'e.company_id')
-//             ->where('ees.endorser_id', '=', $userGoogleId)
-//             ->where('ees.experience_status_id', '=', 1)
-//             ->orderBy('ees.created_at', 'desc')
-//             ->select('ees.id', 'ees.created_at', 'requestor.google_id as requestor_google_id', 
-//                     'e.work_title', 'c.company_name')
-//             ->get();
-
-//         foreach ($experiences as $row) {
-//             $requestor = $getUserInfo($row->requestor_google_id);
-//             $notifications[] = [
-//                 'id' => $row->id,
-//                 'owner_google_id' => $endorser->google_id,
-//                 'receiver_google_id' => $requestor->google_id,
-//                 'owner_name' => $endorser->name,
-//                 'receiver_name' => $requestor->name,
-//                 'type' => 2,
-//                 'endorsement_type' => 3,
-//                 'status' => 1,
-//                 'title' => $row->work_title,
-//                 'company_name' => $row->company_name,
-//                 'created_at' => $row->created_at,
-//             ];
-//         }
-
-//         // SKILL ENDORSEMENTS
-//         $skills = DB::table('skill_endorsement_statuses as ses')
-//             ->join('skills as s', 's.id', '=', 'ses.skill_id')
-//             ->join('portfolios as port', 'port.id', '=', 's.portfolio_id')
-//             ->join('users as requestor', 'requestor.google_id', '=', 'port.user_id')
-//             ->where('ses.endorser_id', '=', $userGoogleId)
-//             ->where('ses.endorsement_status_id', '=', 1)
-//             ->orderBy('ses.created_at', 'desc')
-//             ->select('ses.id', 'ses.created_at', 'requestor.google_id as requestor_google_id', 's.title as skill_title')
-//             ->get();
-
-//         foreach ($skills as $row) {
-//             $requestor = $getUserInfo($row->requestor_google_id);
-//             $notifications[] = [
-//                 'id' => $row->id,
-//                 'owner_google_id' => $endorser->google_id,
-//                 'receiver_google_id' => $requestor->google_id,
-//                 'owner_name' => $endorser->name,
-//                 'receiver_name' => $requestor->name,
-//                 'type' => 2,
-//                 'endorsement_type' => 1,
-//                 'status' => 1,
-//                 'title' => $row->skill_title,
-//                 'created_at' => $row->created_at,
-//             ];
-//         }
-
-//         // ACHIEVEMENT ENDORSEMENTS
-//         $achievements = DB::table('achievement_endorsement_statuses as aes')
-//             ->join('achievements as a', 'a.id', '=', 'aes.achievement_id')
-//             ->join('portfolios as port', 'port.id', '=', 'a.portfolio_id')
-//             ->join('users as requestor', 'requestor.google_id', '=', 'port.user_id')
-//             ->where('aes.endorser_id', '=', $userGoogleId)
-//             ->where('aes.endorsement_status_id', '=', 1)
-//             ->orderBy('aes.created_at', 'desc')
-//             ->select('aes.id', 'aes.created_at', 'requestor.google_id as requestor_google_id', 
-//                     'a.title as achievement_title', 'a.issued_by')
-//             ->get();
-
-//         foreach ($achievements as $row) {
-//             $requestor = $getUserInfo($row->requestor_google_id);
-//             $notifications[] = [
-//                 'id' => $row->id,
-//                 'owner_google_id' => $endorser->google_id,
-//                 'receiver_google_id' => $requestor->google_id,
-//                 'owner_name' => $endorser->name,
-//                 'receiver_name' => $requestor->name,
-//                 'type' => 2,
-//                 'endorsement_type' => 4,
-//                 'status' => 1,
-//                 'title' => $row->achievement_title,
-//                 'created_at' => $row->created_at,
-//             ];
-//         }
-
-//         // COLLABORATIONS
-//         $collaborations = DB::table('project_collaborator_invitation_statuses as pcis')
-//             ->join('projects as p', 'p.id', '=', 'pcis.project_id')
-//             ->join('portfolios as port', 'port.id', '=', 'p.portfolio_id')
-//             ->join('users as requestor', 'requestor.google_id', '=', 'port.user_id')
-//             ->where('pcis.collaborator_id', '=', $userGoogleId)
-//             ->where('pcis.project_collab_status_id', '=', 1)
-//             ->orderBy('pcis.created_at', 'desc')
-//             ->select('pcis.id', 'pcis.created_at', 'requestor.google_id as requestor_google_id', 'p.title as project_title')
-//             ->get();
-
-//         foreach ($collaborations as $row) {
-//             $requestor = $getUserInfo($row->requestor_google_id);
-//             $notifications[] = [
-//                 'id' => $row->id,
-//                 'owner_google_id' => $requestor->google_id,
-//                 'receiver_google_id' => $endorser->google_id,
-//                 'owner_name' => $requestor->name,
-//                 'receiver_name' => $endorser->name,
-//                 'type' => 1,
-//                 'endorsement_type' => null,
-//                 'status' => 1,
-//                 'title' => $row->project_title,
-//                 'created_at' => $row->created_at,
-//             ];
-//         }
-
-//         // Sort all notifications by created_at (most recent first)
-//         usort($notifications, function ($a, $b) {
-//             return strtotime($b['created_at']) <=> strtotime($a['created_at']);
-//         });
-
-//         // Return only the latest 10
-//         $notifications = array_slice($notifications, 0, 10);
-
-//         return response()->json($notifications);
-//     } catch (\Exception $e) {
-//         Log::error('Error fetching notifications: ' . $e->getMessage(), [
-//             'trace' => $e->getTraceAsString()
-//         ]);
-
-//         return response()->json([
-//             'error' => 'An error occurred while fetching notifications.',
-//             'message' => $e->getMessage()
-//         ], 500);
-//     }
-// }
-
-
 public function viewNotification(Request $request)
 {
     try {
         $request->validate([
             'user_google_id' => 'required|string',
-            'limit' => 'nullable|integer|min:1|max:100',
         ]);
 
-        $userGoogleId = $request->query('user_google_id');
-        $limit = $request->query('limit', 10); // default to 10 if not specified
+        $userGoogleId = $request->input('user_google_id');
 
         if (!$userGoogleId) {
             return response()->json([
@@ -411,13 +224,14 @@ public function viewNotification(Request $request)
 
         $notifications = [];
 
+        // Helper to fetch user info
         $getUserInfo = function ($googleId) {
             return DB::table('users')->where('google_id', $googleId)->first(['id', 'name', 'google_id']);
         };
 
         $endorser = $getUserInfo($userGoogleId);
 
-        // --- Collect project endorsements ---
+        // PROJECT ENDORSEMENTS
         $projects = DB::table('project_endorsement_statuses as pes')
             ->join('projects as p', 'p.id', '=', 'pes.project_id')
             ->join('portfolios as port', 'port.id', '=', 'p.portfolio_id')
@@ -444,7 +258,7 @@ public function viewNotification(Request $request)
             ];
         }
 
-        // --- Experience Endorsements ---
+        // EXPERIENCE ENDORSEMENTS
         $experiences = DB::table('experience_endorsement_statuses as ees')
             ->join('experiences as e', 'e.id', '=', 'ees.experience_id')
             ->join('portfolios as port', 'port.id', '=', 'e.portfolio_id')
@@ -453,7 +267,8 @@ public function viewNotification(Request $request)
             ->where('ees.endorser_id', '=', $userGoogleId)
             ->where('ees.experience_status_id', '=', 1)
             ->orderBy('ees.created_at', 'desc')
-            ->select('ees.id', 'ees.created_at', 'requestor.google_id as requestor_google_id', 'e.work_title', 'c.company_name')
+            ->select('ees.id', 'ees.created_at', 'requestor.google_id as requestor_google_id', 
+                    'e.work_title', 'c.company_name')
             ->get();
 
         foreach ($experiences as $row) {
@@ -473,7 +288,7 @@ public function viewNotification(Request $request)
             ];
         }
 
-        // --- Skill Endorsements ---
+        // SKILL ENDORSEMENTS
         $skills = DB::table('skill_endorsement_statuses as ses')
             ->join('skills as s', 's.id', '=', 'ses.skill_id')
             ->join('portfolios as port', 'port.id', '=', 's.portfolio_id')
@@ -500,7 +315,7 @@ public function viewNotification(Request $request)
             ];
         }
 
-        // --- Achievement Endorsements ---
+        // ACHIEVEMENT ENDORSEMENTS
         $achievements = DB::table('achievement_endorsement_statuses as aes')
             ->join('achievements as a', 'a.id', '=', 'aes.achievement_id')
             ->join('portfolios as port', 'port.id', '=', 'a.portfolio_id')
@@ -508,7 +323,8 @@ public function viewNotification(Request $request)
             ->where('aes.endorser_id', '=', $userGoogleId)
             ->where('aes.endorsement_status_id', '=', 1)
             ->orderBy('aes.created_at', 'desc')
-            ->select('aes.id', 'aes.created_at', 'requestor.google_id as requestor_google_id', 'a.title as achievement_title', 'a.issued_by')
+            ->select('aes.id', 'aes.created_at', 'requestor.google_id as requestor_google_id', 
+                    'a.title as achievement_title', 'a.issued_by')
             ->get();
 
         foreach ($achievements as $row) {
@@ -527,7 +343,7 @@ public function viewNotification(Request $request)
             ];
         }
 
-        // --- Collaborations ---
+        // COLLABORATIONS
         $collaborations = DB::table('project_collaborator_invitation_statuses as pcis')
             ->join('projects as p', 'p.id', '=', 'pcis.project_id')
             ->join('portfolios as port', 'port.id', '=', 'p.portfolio_id')
@@ -554,9 +370,13 @@ public function viewNotification(Request $request)
             ];
         }
 
-        // --- Final sorting and limiting ---
-        usort($notifications, fn($a, $b) => strtotime($b['created_at']) <=> strtotime($a['created_at']));
-        $notifications = array_slice($notifications, 0, $limit);
+        // Sort all notifications by created_at (most recent first)
+        usort($notifications, function ($a, $b) {
+            return strtotime($b['created_at']) <=> strtotime($a['created_at']);
+        });
+
+        // Return only the latest 10
+        $notifications = array_slice($notifications, 0, 10);
 
         return response()->json($notifications);
     } catch (\Exception $e) {
@@ -570,6 +390,186 @@ public function viewNotification(Request $request)
         ], 500);
     }
 }
+
+
+// public function viewNotification(Request $request)
+// {
+//     try {
+//         $request->validate([
+//             'user_google_id' => 'required|string',
+//             'limit' => 'nullable|integer|min:1|max:100',
+//         ]);
+
+//         $userGoogleId = $request->query('user_google_id');
+//         $limit = $request->query('limit', 10); // default to 10 if not specified
+
+//         if (!$userGoogleId) {
+//             return response()->json([
+//                 'error' => 'User not authenticated or Google ID not found'
+//             ], 400);
+//         }
+
+//         $notifications = [];
+
+//         $getUserInfo = function ($googleId) {
+//             return DB::table('users')->where('google_id', $googleId)->first(['id', 'name', 'google_id']);
+//         };
+
+//         $endorser = $getUserInfo($userGoogleId);
+
+//         // --- Collect project endorsements ---
+//         $projects = DB::table('project_endorsement_statuses as pes')
+//             ->join('projects as p', 'p.id', '=', 'pes.project_id')
+//             ->join('portfolios as port', 'port.id', '=', 'p.portfolio_id')
+//             ->join('users as requestor', 'requestor.google_id', '=', 'port.user_id')
+//             ->where('pes.endorser_id', '=', $userGoogleId)
+//             ->where('pes.endorsement_status_id', '=', 1)
+//             ->orderBy('pes.created_at', 'desc')
+//             ->select('pes.id', 'pes.created_at', 'requestor.google_id as requestor_google_id', 'p.title as project_title')
+//             ->get();
+
+//         foreach ($projects as $row) {
+//             $requestor = $getUserInfo($row->requestor_google_id);
+//             $notifications[] = [
+//                 'id' => $row->id,
+//                 'owner_google_id' => $endorser->google_id,
+//                 'receiver_google_id' => $requestor->google_id,
+//                 'owner_name' => $endorser->name,
+//                 'receiver_name' => $requestor->name,
+//                 'type' => 2,
+//                 'endorsement_type' => 2,
+//                 'status' => 1,
+//                 'title' => $row->project_title,
+//                 'created_at' => $row->created_at,
+//             ];
+//         }
+
+//         // --- Experience Endorsements ---
+//         $experiences = DB::table('experience_endorsement_statuses as ees')
+//             ->join('experiences as e', 'e.id', '=', 'ees.experience_id')
+//             ->join('portfolios as port', 'port.id', '=', 'e.portfolio_id')
+//             ->join('users as requestor', 'requestor.google_id', '=', 'port.user_id')
+//             ->join('companies as c', 'c.id', '=', 'e.company_id')
+//             ->where('ees.endorser_id', '=', $userGoogleId)
+//             ->where('ees.experience_status_id', '=', 1)
+//             ->orderBy('ees.created_at', 'desc')
+//             ->select('ees.id', 'ees.created_at', 'requestor.google_id as requestor_google_id', 'e.work_title', 'c.company_name')
+//             ->get();
+
+//         foreach ($experiences as $row) {
+//             $requestor = $getUserInfo($row->requestor_google_id);
+//             $notifications[] = [
+//                 'id' => $row->id,
+//                 'owner_google_id' => $endorser->google_id,
+//                 'receiver_google_id' => $requestor->google_id,
+//                 'owner_name' => $endorser->name,
+//                 'receiver_name' => $requestor->name,
+//                 'type' => 2,
+//                 'endorsement_type' => 3,
+//                 'status' => 1,
+//                 'title' => $row->work_title,
+//                 'company_name' => $row->company_name,
+//                 'created_at' => $row->created_at,
+//             ];
+//         }
+
+//         // --- Skill Endorsements ---
+//         $skills = DB::table('skill_endorsement_statuses as ses')
+//             ->join('skills as s', 's.id', '=', 'ses.skill_id')
+//             ->join('portfolios as port', 'port.id', '=', 's.portfolio_id')
+//             ->join('users as requestor', 'requestor.google_id', '=', 'port.user_id')
+//             ->where('ses.endorser_id', '=', $userGoogleId)
+//             ->where('ses.endorsement_status_id', '=', 1)
+//             ->orderBy('ses.created_at', 'desc')
+//             ->select('ses.id', 'ses.created_at', 'requestor.google_id as requestor_google_id', 's.title as skill_title')
+//             ->get();
+
+//         foreach ($skills as $row) {
+//             $requestor = $getUserInfo($row->requestor_google_id);
+//             $notifications[] = [
+//                 'id' => $row->id,
+//                 'owner_google_id' => $endorser->google_id,
+//                 'receiver_google_id' => $requestor->google_id,
+//                 'owner_name' => $endorser->name,
+//                 'receiver_name' => $requestor->name,
+//                 'type' => 2,
+//                 'endorsement_type' => 1,
+//                 'status' => 1,
+//                 'title' => $row->skill_title,
+//                 'created_at' => $row->created_at,
+//             ];
+//         }
+
+//         // --- Achievement Endorsements ---
+//         $achievements = DB::table('achievement_endorsement_statuses as aes')
+//             ->join('achievements as a', 'a.id', '=', 'aes.achievement_id')
+//             ->join('portfolios as port', 'port.id', '=', 'a.portfolio_id')
+//             ->join('users as requestor', 'requestor.google_id', '=', 'port.user_id')
+//             ->where('aes.endorser_id', '=', $userGoogleId)
+//             ->where('aes.endorsement_status_id', '=', 1)
+//             ->orderBy('aes.created_at', 'desc')
+//             ->select('aes.id', 'aes.created_at', 'requestor.google_id as requestor_google_id', 'a.title as achievement_title', 'a.issued_by')
+//             ->get();
+
+//         foreach ($achievements as $row) {
+//             $requestor = $getUserInfo($row->requestor_google_id);
+//             $notifications[] = [
+//                 'id' => $row->id,
+//                 'owner_google_id' => $endorser->google_id,
+//                 'receiver_google_id' => $requestor->google_id,
+//                 'owner_name' => $endorser->name,
+//                 'receiver_name' => $requestor->name,
+//                 'type' => 2,
+//                 'endorsement_type' => 4,
+//                 'status' => 1,
+//                 'title' => $row->achievement_title,
+//                 'created_at' => $row->created_at,
+//             ];
+//         }
+
+//         // --- Collaborations ---
+//         $collaborations = DB::table('project_collaborator_invitation_statuses as pcis')
+//             ->join('projects as p', 'p.id', '=', 'pcis.project_id')
+//             ->join('portfolios as port', 'port.id', '=', 'p.portfolio_id')
+//             ->join('users as requestor', 'requestor.google_id', '=', 'port.user_id')
+//             ->where('pcis.collaborator_id', '=', $userGoogleId)
+//             ->where('pcis.project_collab_status_id', '=', 1)
+//             ->orderBy('pcis.created_at', 'desc')
+//             ->select('pcis.id', 'pcis.created_at', 'requestor.google_id as requestor_google_id', 'p.title as project_title')
+//             ->get();
+
+//         foreach ($collaborations as $row) {
+//             $requestor = $getUserInfo($row->requestor_google_id);
+//             $notifications[] = [
+//                 'id' => $row->id,
+//                 'owner_google_id' => $requestor->google_id,
+//                 'receiver_google_id' => $endorser->google_id,
+//                 'owner_name' => $requestor->name,
+//                 'receiver_name' => $endorser->name,
+//                 'type' => 1,
+//                 'endorsement_type' => null,
+//                 'status' => 1,
+//                 'title' => $row->project_title,
+//                 'created_at' => $row->created_at,
+//             ];
+//         }
+
+//         // --- Final sorting and limiting ---
+//         usort($notifications, fn($a, $b) => strtotime($b['created_at']) <=> strtotime($a['created_at']));
+//         $notifications = array_slice($notifications, 0, $limit);
+
+//         return response()->json($notifications);
+//     } catch (\Exception $e) {
+//         Log::error('Error fetching notifications: ' . $e->getMessage(), [
+//             'trace' => $e->getTraceAsString()
+//         ]);
+
+//         return response()->json([
+//             'error' => 'An error occurred while fetching notifications.',
+//             'message' => $e->getMessage()
+//         ], 500);
+//     }
+// }
 
 
     public function sendWelcomeEmail(Request $request)
