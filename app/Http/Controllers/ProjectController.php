@@ -772,7 +772,6 @@ public function viewProjectDetail($projectId, Request $request)
             'image.*' => 'image|mimes:jpeg,png,jpg,gif,svg',
             'programming_languages' => 'required|array',
             'programming_languages.*' => 'string|max:255',
-            'project_visibility_status' => 'required|integer',
         ]);
     
         $project = DB::table('projects')->where('id', $id)->first();
@@ -874,7 +873,6 @@ public function viewProjectDetail($projectId, Request $request)
             'link' => $request->input('link'),
             'file' => $filePath,
             'programming_language_id' => $primaryLanguageId,
-            'project_visibility_status' => $request->input('project_visibility_status'),
             'updated_at' => now(),
         ]);
     
