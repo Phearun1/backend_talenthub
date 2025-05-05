@@ -16,14 +16,19 @@ class AdminController extends Controller
      */
     public function adminCreateEndorserAccount(Request $request)
     {
+        // Check if the authenticated user is an admin (role_id = 3)
+        if ($request->user() && $request->user()->role_id !== 3) {
+            return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
+        }
+    
         $validator = Validator::make($request->all(), [
             'email' => 'required|email|unique:users,email',
         ]);
-
+    
         if ($validator->fails()) {
             return response()->json(['error' => 'Invalid or existing email'], 400);
         }
-
+    
         $user = User::create([
             'email' => $request->email,
             'name' => null, // No name initially
@@ -31,27 +36,32 @@ class AdminController extends Controller
             'google_id' => null,
             'role_id' => 2, // Endorser role
         ]);
-
-        return response()->json(['message' => 'Success',$user]);
+    
+        return response()->json(['message' => 'Success', 'user' => $user]);
     }
-
+    
     /**
      * Admin creates a new admin account (with email and password)
      */
     public function adminCreateAdminAccount(Request $request)
     {
+        // Check if the authenticated user is an admin (role_id = 3)
+        if ($request->user() && $request->user()->role_id !== 3) {
+            return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
+        }
+    
         // Validate the admin input for the admin email
         $validator = Validator::make($request->all(), [
             'email' => 'required|email|unique:admins,email',
         ]);
-
+    
         if ($validator->fails()) {
             return response()->json(['error' => 'Invalid or existing email'], 400);
         }
-
+    
         // Set a default password
         $defaultPassword = '12345678';
-
+    
         // Create the admin with email and default password
         $admin = Admin::create([
             'email' => $request->email,
@@ -59,10 +69,9 @@ class AdminController extends Controller
             'role_id' => 3, // Admin role
             'photo' => null, // Default photo is set to null
         ]);
-
-        return response()->json(['message' => 'Success',$admin]);
+    
+        return response()->json(['message' => 'Success', 'admin' => $admin]);
     }
-
 
 
     public function adminChangePassword(Request $request)
@@ -119,7 +128,6 @@ class AdminController extends Controller
         return response()->json($users);
     }
 
-      
     public function updateUserRole(Request $request, $google_id)
     {
         // Check if the authenticated user is an admin (role_id = 3)
