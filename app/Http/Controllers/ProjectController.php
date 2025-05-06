@@ -1907,77 +1907,89 @@ class ProjectController extends Controller
 
 
     public function changeEndorsementCollaborationRequest(Request $request)
-    {
-        try {
-            $receiverGoogleId = $request->input('reciever_google_id');
-            $recordId = $request->input('id'); // ID of the row to update
-            $type = $request->input('type'); // 1 = Collaboration, 2 = Endorsement
-            $endorsementType = $request->input('endorsement_type'); // Only if type is 2
-            $status = $request->input('status'); // 2 = Approved, 3 = Declined
+{
+    try {
+        $receiverGoogleId = $request->input('reciever_google_id');
+        $recordId = $request->input('id'); // ID of the row to update
+        $type = $request->input('type'); // 1 = Collaboration, 2 = Endorsement
+        $endorsementType = $request->input('endorsement_type'); // Only if type is 2
+        $status = $request->input('status'); // 2 = Approved, 3 = Declined
 
-            // Determine the correct table based on type and endorsement_type
-            $table = match (true) {
-                $type === 1 => 'project_collaborator_invitation_statuses',
-                $type === 2 && $endorsementType === 1 => 'skill_endorsement_statuses',
-                $type === 2 && $endorsementType === 2 => 'project_endorsement_statuses',
-                $type === 2 && $endorsementType === 3 => 'experience_endorsement_statuses',
-                $type === 2 && $endorsementType === 4 => 'achievement_endorsement_statuses',
-                default => null,
-            };
+        // Check portfolio existence and ownership
+        $portfolio = DB::table('portfolios')->where('id', $recordId)->first();
+        if (!$portfolio) {
+            return response()->json(['error' => 'Portfolio not found.'], 404);
+        }
 
-            if (!$table) {
-                return response()->json(['error' => 'Invalid type or endorsement type provided.'], 400);
-            }
+        if ($portfolio->user_id !== auth()->user()->google_id) {
+            return response()->json(['error' => 'You are not authorized to change this request.'], 403);
+        }
 
-            // Check if the appropriate record exists in the table
-            $recordExists = DB::table($table)->where('id', $recordId)->where(function ($query) use ($type, $receiverGoogleId) {
+        // Determine the correct table based on type and endorsement_type
+        $table = match (true) {
+            $type === 1 => 'project_collaborator_invitation_statuses',
+            $type === 2 && $endorsementType === 1 => 'skill_endorsement_statuses',
+            $type === 2 && $endorsementType === 2 => 'project_endorsement_statuses',
+            $type === 2 && $endorsementType === 3 => 'experience_endorsement_statuses',
+            $type === 2 && $endorsementType === 4 => 'achievement_endorsement_statuses',
+            default => null,
+        };
+
+        if (!$table) {
+            return response()->json(['error' => 'Invalid type or endorsement type provided.'], 400);
+        }
+
+        // Begin transaction
+        DB::beginTransaction();
+
+        // Determine the correct column to update based on table and type
+        $column = match ($table) {
+            'project_collaborator_invitation_statuses' => 'project_collab_status_id',
+            'skill_endorsement_statuses' => 'endorsement_status_id',
+            'project_endorsement_statuses' => 'endorsement_status_id',
+            'experience_endorsement_statuses' => 'experience_status_id',
+            'achievement_endorsement_statuses' => 'endorsement_status_id',
+            default => null,
+        };
+
+        if (!$column) {
+            DB::rollBack();
+            return response()->json(['error' => 'Invalid table or column mapping.'], 400);
+        }
+
+        // Perform the update
+        $updated = DB::table($table)
+            ->where('id', $recordId)
+            ->where(function ($query) use ($type, $receiverGoogleId) {
                 if ($type === 1) {
                     $query->where('collaborator_id', $receiverGoogleId);
                 } else {
                     $query->where('endorser_id', $receiverGoogleId);
                 }
-            })->exists();
+            })
+            ->update([
+                $column => $status,
+                'updated_at' => now(),
+            ]);
 
-            if (!$recordExists) {
-                return response()->json(['error' => 'Record not found.'], 404);
-            }
+        DB::commit();
 
-            // Begin transaction
-            DB::beginTransaction();
-
-            // Perform the update
-            $updated = DB::table($table)
-                ->where('id', $recordId)
-                ->where(function ($query) use ($type, $receiverGoogleId) {
-                    if ($type === 1) {
-                        $query->where('collaborator_id', $receiverGoogleId);
-                    } else {
-                        $query->where('endorser_id', $receiverGoogleId);
-                    }
-                })
-                ->update([
-                    $type === 1 ? 'collaboration_status_id' : 'endorsement_status_id' => $status,
-                    'updated_at' => now(),
-                ]);
-
-            // Commit transaction
-            DB::commit();
-
-            if ($updated) {
-                return response()->json([
-                    'message' => 'Request status updated successfully.',
-                ], 200);
-            } else {
-                return response()->json([
-                    'error' => 'No matching record found to update.'
-                ], 404);
-            }
-        } catch (\Exception $e) {
-            DB::rollBack();
+        if ($updated) {
             return response()->json([
-                'error' => 'An error occurred while processing the request.',
-                'message' => $e->getMessage(),
-            ], 500);
+                'message' => 'Request status updated successfully.',
+            ], 200);
+        } else {
+            return response()->json([
+                'error' => 'No matching record found to update.'
+            ], 404);
         }
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return response()->json([
+            'error' => 'An error occurred while processing the request.',
+            'message' => $e->getMessage(),
+        ], 500);
     }
+}
+
 }
