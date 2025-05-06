@@ -297,10 +297,8 @@ class PortfolioController extends Controller
     }
 
 
-    public function searchPortfolio(Request $request)
+    public function searchPortfolio($searchTerm)
     {
-        $searchTerm = $request->input('name');
-
         $portfolios = DB::table('portfolios')
             ->join('users', 'portfolios.user_id', '=', 'users.google_id')
             ->select(
