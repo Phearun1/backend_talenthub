@@ -1959,7 +1959,7 @@ class ProjectController extends Controller
                     default => null,
                 };
         
-                if (!$table) {
+            if (!$table) {
                     return response()->json(['error' => 'Invalid type or endorsement type provided.'], 400);
                 }
         

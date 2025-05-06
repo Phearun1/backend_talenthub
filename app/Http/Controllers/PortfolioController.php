@@ -288,4 +288,35 @@ class PortfolioController extends Controller
         $portfolio = DB::table('portfolios')->where('id', $id)->delete();
         return response()->json($portfolio);
     }
+
+
+    public function searchPortfolio(Request $request)
+    {
+        $searchTerm = $request->input('name');
+
+        $portfolios = DB::table('portfolios')
+            ->join('users', 'portfolios.user_id', '=', 'users.google_id')
+            ->select(
+                'portfolios.id',
+                'portfolios.user_id',
+                'portfolios.major_id as major',
+                'portfolios.phone_number',
+                'portfolios.about',
+                'portfolios.working_status',
+                'users.status as status',
+                'portfolios.created_at',
+                'portfolios.updated_at',
+                'users.name as name',
+                'users.email',
+                'users.photo'
+            )
+            ->where('users.name', 'LIKE', '%' . $searchTerm . '%')
+            ->where('users.status', '=', 1) // Only show active users
+            ->get();
+
+        return response()->json($portfolios);
+    }
+
+
+
 }
