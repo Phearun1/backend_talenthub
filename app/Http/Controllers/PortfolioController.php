@@ -297,7 +297,7 @@ class PortfolioController extends Controller
     }
 
 
-    public function searchPortfolio($searchTerm)
+    public function searchPortfolio($name)
     {
         $portfolios = DB::table('portfolios')
             ->join('users', 'portfolios.user_id', '=', 'users.google_id')
@@ -315,7 +315,7 @@ class PortfolioController extends Controller
                 'users.email',
                 'users.photo'
             )
-            ->where('users.name', 'LIKE', '%' . $searchTerm . '%')
+            ->where('users.name', 'LIKE', '%' . $name . '%')
             ->where('users.status', '=', 1) // Only show active users
             ->get();
 
