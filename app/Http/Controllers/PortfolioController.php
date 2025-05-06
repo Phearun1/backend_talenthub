@@ -9,8 +9,9 @@ use Illuminate\Support\Facades\Log;
 class PortfolioController extends Controller
 {
 
-    public function viewAllPortfolio()
+    public function viewAllPortfolio(Request $request)
     {
+        $limit = $request->input('limit', 18); // Default limit to 18 if not provided
         $portfolios = DB::table('portfolios')
             ->join('users', 'portfolios.user_id', '=', 'users.google_id')
             ->select(
@@ -29,6 +30,7 @@ class PortfolioController extends Controller
                 'users.role_id as role'
             )
             ->where('users.status', '=', 1) // Only show active users (status = 1)
+            ->limit($limit)
             ->get();
 
         return response()->json($portfolios);
