@@ -10,34 +10,36 @@ class PortfolioController extends Controller
 {
 
     public function viewAllPortfolio(Request $request)
-    {
-        $page = $request->input('page', 1); // Default page to 1 if not provided
-        $perPage = 2 * $page; // Number of portfolios to fetch per page
-        
+{
+    $page = $request->input('page', 1); // Default page to 1 if not provided
+    $perPage = 8; // Fixed number of portfolios per page
+    
+    $portfolios = DB::table('portfolios')
+        ->join('users', 'portfolios.user_id', '=', 'users.google_id')
+        ->select(
+            'portfolios.id',
+            'portfolios.user_id',
+            'portfolios.major_id as major', 
+            'portfolios.phone_number',
+            'portfolios.about',
+            'portfolios.working_status',
+            'users.status as status',
+            'portfolios.created_at',
+            'portfolios.updated_at',
+            'users.name as name',
+            'users.email',
+            'users.photo',
+            'users.role_id as role'
+        )
+        ->where('users.status', '=', 1) // Only show active users (status = 1)
+        ->orderBy('portfolios.updated_at', 'desc') // Order by most recently updated
+        ->skip(($page - 1) * $perPage) // Skip previous pages
+        ->take($perPage) // Take only perPage number of records
+        ->get();
+    
+    return response()->json($portfolios);
+}
 
-        $portfolios = DB::table('portfolios')
-            ->join('users', 'portfolios.user_id', '=', 'users.google_id')
-            ->select(
-                'portfolios.id',
-                'portfolios.user_id',
-                'portfolios.major_id as major', // ✅ rename column label
-                'portfolios.phone_number',
-                'portfolios.about',
-                'portfolios.working_status',
-                'users.status as status', // Changed from status to user_status
-                'portfolios.created_at',
-                'portfolios.updated_at',
-                'users.name as name',
-                'users.email',
-                'users.photo',
-                'users.role_id as role'
-            )
-            ->where('users.status', '=', 1) // Only show active users (status = 1)
-            ->limit($perPage)
-            ->get();
-
-        return response()->json($portfolios);
-    }
 
     public function viewPortfolioDetails($userID)
     {
