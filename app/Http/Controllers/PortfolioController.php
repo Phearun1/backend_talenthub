@@ -12,7 +12,7 @@ class PortfolioController extends Controller
     public function viewAllPortfolio(Request $request)
     {
         $page = $request->input('page', 1); // Default page to 1 if not provided
-        $perPage = 1; // Items per page
+        $perPage = 16; // Items per page
         $offset = ($page - 1) * $perPage; // Calculate the offset
 
         $portfolios = DB::table('portfolios')
