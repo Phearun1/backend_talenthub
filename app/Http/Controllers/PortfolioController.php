@@ -12,8 +12,8 @@ class PortfolioController extends Controller
     public function viewAllPortfolio(Request $request)
     {
         $page = $request->input('page', 1); // Default page to 1 if not provided
-        $perPage = 2; // Items per page
-        $offset = ($page - 1) * $perPage; // Calculate the offset
+        $perPage = 2 * $page; // Number of portfolios to fetch per page
+        
 
         $portfolios = DB::table('portfolios')
             ->join('users', 'portfolios.user_id', '=', 'users.google_id')
@@ -33,8 +33,7 @@ class PortfolioController extends Controller
                 'users.role_id as role'
             )
             ->where('users.status', '=', 1) // Only show active users (status = 1)
-            ->skip($offset)
-            ->take($perPage)
+            ->limit($perPage)
             ->get();
 
         return response()->json($portfolios);
