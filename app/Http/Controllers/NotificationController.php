@@ -901,7 +901,9 @@ public function viewNotification(Request $request)
         ], 500);
     }
 }
-    public function sendWelcomeEmail(Request $request)
+    
+
+public function sendWelcomeEmail(Request $request)
     {
         // Validate the request data
         $request->validate([
