@@ -1910,7 +1910,7 @@ class ProjectController extends Controller
         {
             try {
                 // Get request data
-                $receiverGoogleId = $request->input('reciever_google_id');
+                $receiverGoogleId = $request->input('receiver_google_id');
                 $recordId = $request->input('id'); // ID from status tables, not portfolio ID
                 $type = $request->input('type'); // 1 = Collaboration, 2 = Endorsement
                 $endorsementType = $request->input('endorsement_type'); // Only if type is 2
