@@ -297,64 +297,31 @@ class PortfolioController extends Controller
     }
 
 
-    public function searchPortfolio($name = null)
+    public function searchPortfolio(Request $request)
     {
-        try {
-            // Build the query
-            $query = DB::table('portfolios')
-                ->join('users', 'portfolios.user_id', '=', 'users.google_id')
-                ->select(
-                    'portfolios.id',
-                    'portfolios.user_id',
-                    'portfolios.major_id as major',
-                    'portfolios.phone_number',
-                    'portfolios.about',
-                    'portfolios.working_status',
-                    'users.status as status',
-                    'portfolios.created_at',
-                    'portfolios.updated_at',
-                    'users.name as name',
-                    'users.email',
-                    'users.photo'
-                )
-                ->where('users.status', '=', 1); // Only show active users
-            
-            // Only apply name filter if a name was provided
-            if ($name) {
-                $query->where('users.name', 'LIKE', '%' . $name . '%');
-            }
-            
-            // Execute the query
-            $portfolios = $query->get();
-            
-            // Add additional information for each portfolio
-            foreach ($portfolios as $portfolio) {
-                // Get skills count
-                $portfolio->skills_count = DB::table('skills')
-                    ->where('portfolio_id', $portfolio->id)
-                    ->count();
-    
-                // Get projects count (only visible projects)
-                $portfolio->projects_count = DB::table('projects')
-                    ->where('portfolio_id', $portfolio->id)
-                    ->where('project_visibility_status', 1)
-                    ->count();
-            }
-    
-            return response()->json($portfolios);
-        } catch (\Exception $e) {
-            // Log the error
-            Log::error('Error searching portfolios: ' . $e->getMessage(), [
-                'search_term' => $name,
-                'trace' => $e->getTraceAsString()
-            ]);
-            
-            // Return a helpful error message
-            return response()->json([
-                'error' => 'An error occurred while searching portfolios.',
-                'message' => $e->getMessage()
-            ], 500);
-        }
+        $searchTerm = $request->input('name');
+
+        $portfolios = DB::table('portfolios')
+            ->join('users', 'portfolios.user_id', '=', 'users.google_id')
+            ->select(
+                'portfolios.id',
+                'portfolios.user_id',
+                'portfolios.major_id as major',
+                'portfolios.phone_number',
+                'portfolios.about',
+                'portfolios.working_status',
+                'users.status as status',
+                'portfolios.created_at',
+                'portfolios.updated_at',
+                'users.name as name',
+                'users.email',
+                'users.photo'
+            )
+            ->where('users.name', 'LIKE', '%' . $searchTerm . '%')
+            ->where('users.status', '=', 1) // Only show active users
+            ->get();
+
+        return response()->json($portfolios);
     }
 
 
