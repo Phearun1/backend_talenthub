@@ -25,7 +25,7 @@ Route::post('/send-email', [NotificationController::class, 'sendTestEmail']);
 Route::post('/send-welcome-email', [NotificationController::class, 'sendWelcomeEmail']);
 Route::get('/download_project/{id}', [ProjectController::class, 'downloadProject']);
 
-Route::get('/search_portfolio/{name}', [PortfolioController::class, 'searchPortfolio']); // search portfolio
+Route::get('/search_portfolio/{name?}', [PortfolioController::class, 'searchPortfolio']); // search portfolio
 
 // view all projects
 
