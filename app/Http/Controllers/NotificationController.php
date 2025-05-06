@@ -578,28 +578,30 @@ class NotificationController extends Controller
         try {
             $request->validate([
                 'user_google_id' => 'required|string',
-                'limit' => 'nullable|integer|min:1|max:100',
+                'page' => 'nullable|integer|min:1',
             ]);
-
+    
             $userGoogleId = $request->query('user_google_id');
-            $limit = $request->query('limit', 10); // default to 10 if not specified
-
+            $page = $request->query('page', 1); // Default to page 1 if not specified
+            $perPage = 15; // 15 notifications per page
+            $limit = $page * $perPage; // Calculate total limit based on page number
+    
             if (!$userGoogleId) {
                 return response()->json([
                     'error' => 'User not authenticated or Google ID not found'
                 ], 400);
             }
-
+    
             $notifications = [];
-
+    
             $getUserInfo = function ($googleId) {
                 return DB::table('users')->where('google_id', $googleId)->first(['id', 'name', 'google_id']);
             };
-
+    
             $currentUser = $getUserInfo($userGoogleId);
-
+    
             // --- NOTIFICATIONS AS RECEIVER (PENDING REQUESTS) ---
-
+    
             // Project endorsement requests (where user is the endorser)
             $projectRequests = DB::table('project_endorsement_statuses as pes')
                 ->join('projects as p', 'p.id', '=', 'pes.project_id')
@@ -616,7 +618,7 @@ class NotificationController extends Controller
                     'p.title as project_title'
                 )
                 ->get();
-
+    
             foreach ($projectRequests as $row) {
                 $notifications[] = [
                     'id' => $row->id,
@@ -631,7 +633,7 @@ class NotificationController extends Controller
                     'created_at' => $row->created_at,
                 ];
             }
-
+    
             // Experience endorsement requests
             $experienceRequests = DB::table('experience_endorsement_statuses as ees')
                 ->join('experiences as e', 'e.id', '=', 'ees.experience_id')
@@ -650,7 +652,7 @@ class NotificationController extends Controller
                     'c.company_name'
                 )
                 ->get();
-
+    
             foreach ($experienceRequests as $row) {
                 $notifications[] = [
                     'id' => $row->id,
@@ -665,7 +667,7 @@ class NotificationController extends Controller
                     'created_at' => $row->created_at,
                 ];
             }
-
+    
             // Skill endorsement requests
             $skillRequests = DB::table('skill_endorsement_statuses as ses')
                 ->join('skills as s', 's.id', '=', 'ses.skill_id')
@@ -682,7 +684,7 @@ class NotificationController extends Controller
                     's.title as skill_title'
                 )
                 ->get();
-
+    
             foreach ($skillRequests as $row) {
                 $notifications[] = [
                     'id' => $row->id,
@@ -697,7 +699,7 @@ class NotificationController extends Controller
                     'created_at' => $row->created_at,
                 ];
             }
-
+    
             // Achievement endorsement requests
             $achievementRequests = DB::table('achievement_endorsement_statuses as aes')
                 ->join('achievements as a', 'a.id', '=', 'aes.achievement_id')
@@ -715,13 +717,13 @@ class NotificationController extends Controller
                     'a.issued_by'
                 )
                 ->get();
-
+    
             foreach ($achievementRequests as $row) {
                 $title = $row->achievement_title;
                 if ($row->issued_by) {
                     $title .= ' from ' . $row->issued_by;
                 }
-
+    
                 $notifications[] = [
                     'id' => $row->id,
                     'owner_google_id' => $row->requestor_google_id, // Owner is the requester
@@ -735,7 +737,7 @@ class NotificationController extends Controller
                     'created_at' => $row->created_at,
                 ];
             }
-
+    
             // Collaboration requests
             $collaborationRequests = DB::table('project_collaborator_invitation_statuses as pcis')
                 ->join('projects as p', 'p.id', '=', 'pcis.project_id')
@@ -752,7 +754,7 @@ class NotificationController extends Controller
                     'p.title as project_title'
                 )
                 ->get();
-
+    
             foreach ($collaborationRequests as $row) {
                 $notifications[] = [
                     'id' => $row->id,
@@ -767,9 +769,9 @@ class NotificationController extends Controller
                     'created_at' => $row->created_at,
                 ];
             }
-
+    
             // --- NOTIFICATIONS AS OWNER (ACCEPTED/REJECTED REQUESTS) ---
-
+    
             // Project endorsement responses (where user is the requestor)
             $projectResponses = DB::table('project_endorsement_statuses as pes')
                 ->join('projects as p', 'p.id', '=', 'pes.project_id')
@@ -787,7 +789,7 @@ class NotificationController extends Controller
                     'pes.endorsement_status_id'
                 )
                 ->get();
-
+    
             foreach ($projectResponses as $row) {
                 $notifications[] = [
                     'id' => $row->id,
@@ -802,7 +804,7 @@ class NotificationController extends Controller
                     'created_at' => $row->created_at,
                 ];
             }
-
+    
             // Experience endorsement responses
             $experienceResponses = DB::table('experience_endorsement_statuses as ees')
                 ->join('experiences as e', 'e.id', '=', 'ees.experience_id')
@@ -822,7 +824,7 @@ class NotificationController extends Controller
                     'ees.experience_status_id as endorsement_status_id'
                 )
                 ->get();
-
+    
             foreach ($experienceResponses as $row) {
                 $notifications[] = [
                     'id' => $row->id,
@@ -837,7 +839,7 @@ class NotificationController extends Controller
                     'created_at' => $row->created_at,
                 ];
             }
-
+    
             // Skill endorsement responses
             $skillResponses = DB::table('skill_endorsement_statuses as ses')
                 ->join('skills as s', 's.id', '=', 'ses.skill_id')
@@ -855,7 +857,7 @@ class NotificationController extends Controller
                     'ses.endorsement_status_id'
                 )
                 ->get();
-
+    
             foreach ($skillResponses as $row) {
                 $notifications[] = [
                     'id' => $row->id,
@@ -870,7 +872,7 @@ class NotificationController extends Controller
                     'created_at' => $row->created_at,
                 ];
             }
-
+    
             // Achievement endorsement responses
             $achievementResponses = DB::table('achievement_endorsement_statuses as aes')
                 ->join('achievements as a', 'a.id', '=', 'aes.achievement_id')
@@ -889,13 +891,13 @@ class NotificationController extends Controller
                     'aes.endorsement_status_id'
                 )
                 ->get();
-
+    
             foreach ($achievementResponses as $row) {
                 $title = $row->achievement_title;
                 if ($row->issued_by) {
                     $title .= ' from ' . $row->issued_by;
                 }
-
+    
                 $notifications[] = [
                     'id' => $row->id,
                     'owner_google_id' => $userGoogleId, // User is the owner
@@ -909,7 +911,7 @@ class NotificationController extends Controller
                     'created_at' => $row->created_at,
                 ];
             }
-
+    
             // Collaboration responses
             $collaborationResponses = DB::table('project_collaborator_invitation_statuses as pcis')
                 ->join('projects as p', 'p.id', '=', 'pcis.project_id')
@@ -927,7 +929,7 @@ class NotificationController extends Controller
                     'pcis.project_collab_status_id'
                 )
                 ->get();
-
+    
             foreach ($collaborationResponses as $row) {
                 $notifications[] = [
                     'id' => $row->id,
@@ -942,19 +944,25 @@ class NotificationController extends Controller
                     'created_at' => $row->created_at,
                 ];
             }
-
+    
             // Sort all notifications by created_at (most recent first)
             usort($notifications, fn($a, $b) => strtotime($b['created_at']) <=> strtotime($a['created_at']));
-
-            // Return only the requested number
+    
+            // Get the total count of notifications for pagination info
+            $totalCount = count($notifications);
+            
+            // Return only the requested number based on page
             $notifications = array_slice($notifications, 0, $limit);
-
-            return response()->json($notifications);
+    
+            return response()->json([
+                'notifications' => $notifications,
+                
+            ]);
         } catch (\Exception $e) {
             Log::error('Error fetching notifications: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString()
             ]);
-
+    
             return response()->json([
                 'error' => 'An error occurred while fetching notifications.',
                 'message' => $e->getMessage()
