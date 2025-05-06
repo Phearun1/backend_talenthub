@@ -1906,7 +1906,7 @@ class ProjectController extends Controller
 
 
 
-    public function changeEndorsementCollaborationRequest(Request $request, $projectId)
+    public function changeEndorsementCollaborationRequest(Request $request)
     {
         try {
             $receiverGoogleId = $request->input('reciever_google_id');
@@ -1914,22 +1914,6 @@ class ProjectController extends Controller
             $type = $request->input('type'); // 1 = Collaboration, 2 = Endorsement
             $endorsementType = $request->input('endorsement_type'); // Only if type is 2
             $status = $request->input('status'); // 2 = Approved, 3 = Declined
-
-            // Check project existence
-            $project = DB::table('projects')->where('id', $projectId)->first();
-            if (!$project) {
-                return response()->json(['error' => 'Project not found.'], 404);
-            }
-
-            // Check portfolio existence and ownership
-            $portfolio = DB::table('portfolios')->where('id', $project->portfolio_id)->first();
-            if (!$portfolio) {
-                return response()->json(['error' => 'Portfolio not found.'], 404);
-            }
-
-            if ($portfolio->user_id !== auth()->user()->google_id) {
-                return response()->json(['error' => 'You are not authorized to change this request.'], 403);
-            }
 
             // Determine the correct table based on type and endorsement_type
             $table = match (true) {
@@ -1945,17 +1929,30 @@ class ProjectController extends Controller
                 return response()->json(['error' => 'Invalid type or endorsement type provided.'], 400);
             }
 
+            // Check if the appropriate record exists in the table
+            $recordExists = DB::table($table)->where('id', $recordId)->where(function ($query) use ($type, $receiverGoogleId) {
+                if ($type === 1) {
+                    $query->where('collaborator_id', $receiverGoogleId);
+                } else {
+                    $query->where('endorser_id', $receiverGoogleId);
+                }
+            })->exists();
+
+            if (!$recordExists) {
+                return response()->json(['error' => 'Record not found.'], 404);
+            }
+
             // Begin transaction
             DB::beginTransaction();
 
             // Perform the update
             $updated = DB::table($table)
                 ->where('id', $recordId)
-                ->where(function ($query) use ($type, $projectId, $receiverGoogleId) {
+                ->where(function ($query) use ($type, $receiverGoogleId) {
                     if ($type === 1) {
-                        $query->where('project_id', $projectId)->where('collaborator_id', $receiverGoogleId);
+                        $query->where('collaborator_id', $receiverGoogleId);
                     } else {
-                        $query->where('project_id', $projectId)->where('endorser_id', $receiverGoogleId);
+                        $query->where('endorser_id', $receiverGoogleId);
                     }
                 })
                 ->update([
@@ -1963,6 +1960,7 @@ class ProjectController extends Controller
                     'updated_at' => now(),
                 ]);
 
+            // Commit transaction
             DB::commit();
 
             if ($updated) {
