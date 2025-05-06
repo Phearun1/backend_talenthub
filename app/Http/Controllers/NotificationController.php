@@ -954,9 +954,7 @@ class NotificationController extends Controller
             // Return only the requested number based on page
             $notifications = array_slice($notifications, 0, $limit);
     
-            return response()->json([
-                $notifications,
-            ]);
+            return response()->json($notifications);
         } catch (\Exception $e) {
             Log::error('Error fetching notifications: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString()
