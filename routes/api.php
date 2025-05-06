@@ -112,7 +112,7 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
     Route::delete('/delete_experience/{id}', [ExperienceController::class, 'deleteExperience']);
 
 
-
+    Route::post('/changeEndorsementCollaborationRequest/{projectId}', [ProjectController::class, 'changeEndorsementCollaborationRequest']);
 
     // notification
 

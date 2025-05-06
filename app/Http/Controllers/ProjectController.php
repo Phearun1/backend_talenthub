@@ -17,27 +17,27 @@ class ProjectController extends Controller
         $request->validate([
             'portfolio_id' => 'required|integer',
         ]);
-    
+
         $portfolioId = $request->input('portfolio_id');
-    
+
         // Verify the portfolio exists and user is active
         $portfolio = DB::table('portfolios')
             ->join('users', 'portfolios.user_id', '=', 'users.google_id')
             ->select('portfolios.*', 'users.status as user_status')
             ->where('portfolios.id', $portfolioId)
             ->first();
-    
+
         if (!$portfolio) {
             return response()->json(['error' => 'Portfolio not found.'], 404);
         }
-    
+
         // Only continue if user is active (status = 1)
         if ($portfolio->user_status !== 1) {
             return response()->json(['error' => 'Portfolio not available.'], 200);
         }
-    
+
         $user = $request->user();
-    
+
         // Retrieve all projects for the specified portfolio
         $projectsQuery = DB::table('projects')
             ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
@@ -50,14 +50,14 @@ class ProjectController extends Controller
             )
             ->where('projects.portfolio_id', $portfolioId)
             ->where('users.status', 1); // Only include projects where user_status = 1
-    
+
         // If user is not the owner, only show public projects
         if (!$user || $user->google_id !== $portfolio->user_id) {
             $projectsQuery->where('projects.project_visibility_status', 0); // Only public
         }
-    
+
         $projects = $projectsQuery->get();
-    
+
         // Return the projects data
         return response()->json([
             'projects' => $projects->map(function ($project) {
@@ -72,63 +72,63 @@ class ProjectController extends Controller
     }
 
 
-public function viewProjectDetail($projectId, Request $request)
-{
-    // Retrieve the project details with user's authentication token
-    $project = DB::table('projects')
-        ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
-        ->join('users', 'portfolios.user_id', '=', 'users.google_id') // Use users.google_id for authentication
-        ->select(
-            'portfolios.id as portfolio_id',
-            'projects.id as project_id',
-            'projects.title',
-            'users.google_id as user_id',
-            'projects.project_visibility_status',
-            'users.status as user_status' // Added user_status field
-        )
-        ->where('projects.id', $projectId)
-        ->first();
+    public function viewProjectDetail($projectId, Request $request)
+    {
+        // Retrieve the project details with user's authentication token
+        $project = DB::table('projects')
+            ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
+            ->join('users', 'portfolios.user_id', '=', 'users.google_id') // Use users.google_id for authentication
+            ->select(
+                'portfolios.id as portfolio_id',
+                'projects.id as project_id',
+                'projects.title',
+                'users.google_id as user_id',
+                'projects.project_visibility_status',
+                'users.status as user_status' // Added user_status field
+            )
+            ->where('projects.id', $projectId)
+            ->first();
 
-    // Check if the project exists
-    if (!$project) {
-        return response()->json(['error' => 'Project not found.'], 404);
-    }
+        // Check if the project exists
+        if (!$project) {
+            return response()->json(['error' => 'Project not found.'], 404);
+        }
 
-    // Check if user has been banned (status = 0)
-    if ($project->user_status === 0) {
-        return response()->json([
-            'error' => 'The user portfolio has been banned.',
-            'user_status' => 0
-        ], 200);
-    }
+        // Check if user has been banned (status = 0)
+        if ($project->user_status === 0) {
+            return response()->json([
+                'error' => 'The user portfolio has been banned.',
+                'user_status' => 0
+            ], 200);
+        }
 
-    // Check if the project is public
-    if ($project->project_visibility_status == 0) {
+        // Check if the project is public
+        if ($project->project_visibility_status == 0) {
+            return $this->getFullProjectDetails($projectId);
+        }
+
+        // Instead of using $request->user(), we get token from body
+        $token = $request->input('token'); // <-- Get token from body
+
+        if (!$token) {
+            return response()->json(['error' => 'Authentication token required.'], 401);
+        }
+
+        // Manually authenticate user using the token
+        $user = \Laravel\Sanctum\PersonalAccessToken::findToken($token)?->tokenable;
+
+        if (!$user) {
+            return response()->json(['error' => 'Invalid token.'], 401);
+        }
+
+        // Check if the authenticated user matches the project owner (compare user_id)
+        if ($user->google_id != $project->user_id) {
+            return response()->json(['error' => 'This project is private.'], 403);
+        }
+
+        // If the user is the owner, return full project details
         return $this->getFullProjectDetails($projectId);
     }
-
-    // Instead of using $request->user(), we get token from body
-    $token = $request->input('token'); // <-- Get token from body
-
-    if (!$token) {
-        return response()->json(['error' => 'Authentication token required.'], 401);
-    }
-
-    // Manually authenticate user using the token
-    $user = \Laravel\Sanctum\PersonalAccessToken::findToken($token)?->tokenable;
-
-    if (!$user) {
-        return response()->json(['error' => 'Invalid token.'], 401);
-    }
-
-    // Check if the authenticated user matches the project owner (compare user_id)
-    if ($user->google_id != $project->user_id) {
-        return response()->json(['error' => 'This project is private.'], 403);
-    }
-
-    // If the user is the owner, return full project details
-    return $this->getFullProjectDetails($projectId);
-}
 
 
     // Method to return full project details
@@ -152,7 +152,7 @@ public function viewProjectDetail($projectId, Request $request)
             END as file"),
                 'projects.project_visibility_status',
                 'users.google_id as google_id',
-                'users.status as user_status' 
+                'users.status as user_status'
             )
             ->where('projects.id', $projectId)
             ->first();
@@ -443,27 +443,27 @@ public function viewProjectDetail($projectId, Request $request)
             'programming_languages' => 'required|array', // Changed to array of languages
             'programming_languages.*' => 'string|max:255', // Validate each language
         ]);
-    
+
         // Get the authenticated user's ID
         $userId = $request->user()->google_id;
-    
+
         // Check if the portfolio belongs to the authenticated user
         $portfolio = DB::table('portfolios')->where('id', $request->input('portfolio_id'))->first();
-    
+
         if (!$portfolio || $portfolio->user_id != $userId) {
             return response()->json(['error' => 'You are not authorized to create a project for this portfolio.'], 403);
         }
-    
+
         // Process languages - create any that don't exist and collect IDs
         $programmingLanguageIds = [];
         $programmingLanguageNames = $request->input('programming_languages');
-    
+
         foreach ($programmingLanguageNames as $languageName) {
             // Check if the language already exists
             $language = DB::table('programming_languages')
                 ->where('programming_language', $languageName)
                 ->first();
-    
+
             if (!$language) {
                 // Create a new programming language
                 $languageId = DB::table('programming_languages')->insertGetId([
@@ -476,21 +476,21 @@ public function viewProjectDetail($projectId, Request $request)
                 $programmingLanguageIds[] = $language->id;
             }
         }
-    
+
         // Use the first language as the primary language for the project
         $primaryLanguageId = !empty($programmingLanguageIds) ? $programmingLanguageIds[0] : null;
-    
+
         if (!$primaryLanguageId) {
             return response()->json(['error' => 'At least one programming language is required.'], 422);
         }
-    
+
         // Handle file upload (for project file)
         $filePath = null;
         if ($request->hasFile('file')) {
             $file = $request->file('file');
             $filePath = $file->store('projects', 'public'); // Store file in 'projects' folder, 'public' disk
         }
-    
+
         // Insert the project into the database and get the ID
         $projectId = DB::table('projects')->insertGetId([
             'portfolio_id' => $request->input('portfolio_id'),
@@ -504,7 +504,7 @@ public function viewProjectDetail($projectId, Request $request)
             'created_at' => now(),
             'updated_at' => now(),
         ]);
-    
+
         // Create relationships in project_languages table for all languages
         foreach ($programmingLanguageIds as $languageId) {
             DB::table('project_languages')->insert([
@@ -514,19 +514,19 @@ public function viewProjectDetail($projectId, Request $request)
                 'updated_at' => now(),
             ]);
         }
-    
+
         // Handle multiple image uploads with a maximum of 6 images
         $imagePaths = [];
         if ($request->hasFile('image')) {
             $images = $request->file('image');
-            
+
             // Check if the number of images exceeds the limit (6)
             if (count($images) > 6) {
                 return response()->json([
                     'error' => 'Maximum of 6 images allowed per project.',
                 ], 422);
             }
-    
+
             foreach ($images as $image) {
                 try {
                     if ($image->isValid()) {
@@ -540,7 +540,7 @@ public function viewProjectDetail($projectId, Request $request)
                 }
             }
         }
-    
+
         // Insert images into the project_images table
         $imageUrls = [];
         if (!empty($imagePaths)) {
@@ -552,7 +552,7 @@ public function viewProjectDetail($projectId, Request $request)
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);
-    
+
                     // Build image URL
                     $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
                     $imageUrls[] = $baseUrl . $imagePath;
@@ -561,18 +561,18 @@ public function viewProjectDetail($projectId, Request $request)
                 }
             }
         }
-    
+
         // Base URL for accessing the files
         $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
         $fileUrl = $filePath ? $baseUrl . $filePath : null;
-    
+
         // Get all languages for this project
         $projectLanguages = DB::table('project_languages')
             ->join('programming_languages', 'project_languages.programming_language_id', '=', 'programming_languages.id')
             ->where('project_id', $projectId)
             ->pluck('programming_languages.programming_language')
             ->toArray();
-    
+
         // Fetch the complete project details to return
         $projectDetails = DB::table('projects')
             ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
@@ -586,11 +586,11 @@ public function viewProjectDetail($projectId, Request $request)
             )
             ->where('projects.id', $projectId)
             ->first();
-    
+
         // Add the languages to the response
         $projectDetailsArray = (array)$projectDetails;
         $projectDetailsArray['programming_languages'] = $projectLanguages;
-    
+
         return response()->json([
             'message' => 'Project created successfully.',
             'project' => $projectDetailsArray,
@@ -764,7 +764,7 @@ public function viewProjectDetail($projectId, Request $request)
     public function updateProject(Request $request, $id)
     {
         // Log::info('updateProject method called', ['project_id' => $id, 'request' => $request->except(['file', 'image'])]);
-        
+
         try {
             // Validate request
             $request->validate([
@@ -778,9 +778,9 @@ public function viewProjectDetail($projectId, Request $request)
                 'programming_languages' => 'required|array',
                 'programming_languages.*' => 'string|max:255',
             ]);
-            
+
             // Log::info('Validation passed');
-            
+
             // Fetch project
             $project = DB::table('projects')->where('id', $id)->first();
             if (!$project) {
@@ -788,12 +788,12 @@ public function viewProjectDetail($projectId, Request $request)
                 return response()->json(['error' => 'Project not found.'], 404);
             }
             // Log::info('Project found', ['project' => $project]);
-            
+
             // Check authorization
             $portfolio = DB::table('portfolios')->where('id', $project->portfolio_id)->first();
             $userId = $request->user()->google_id;
             // Log::info('Checking authorization', ['portfolio_user_id' => $portfolio->user_id ?? 'null', 'current_user_id' => $userId]);
-            
+
             if (!$portfolio || $portfolio->user_id != $userId) {
                 // Log::error('Unauthorized access attempt', [
                 //     'user_id' => $userId, 
@@ -801,22 +801,22 @@ public function viewProjectDetail($projectId, Request $request)
                 // ]);
                 return response()->json(['error' => 'Unauthorized.'], 403);
             }
-            
+
             // Check image count
             if ($request->hasFile('image')) {
                 $newImageCount = count($request->file('image'));
-                
+
                 // Count existing images
                 $existingImageCount = DB::table('project_images')
                     ->where('project_id', $id)
                     ->count();
-                
+
                 // Log::info('Image count check', [
                 //     'existing_images' => $existingImageCount,
                 //     'new_images' => $newImageCount,
                 //     'total' => $existingImageCount + $newImageCount
                 // ]);
-                    
+
                 if ($existingImageCount + $newImageCount > 6) {
                     // Log::error('Too many images', ['total_count' => $existingImageCount + $newImageCount]);
                     // return response()->json([
@@ -824,16 +824,16 @@ public function viewProjectDetail($projectId, Request $request)
                     // ], 422);
                 }
             }
-            
+
             // Handle programming languages
             $programmingLanguageIds = [];
             // Log::info('Processing programming languages', ['languages' => $request->input('programming_languages')]);
-            
+
             foreach ($request->input('programming_languages') as $languageName) {
                 $language = DB::table('programming_languages')
                     ->where('programming_language', $languageName)
                     ->first();
-        
+
                 if (!$language) {
                     $languageId = DB::table('programming_languages')->insertGetId([
                         'programming_language' => $languageName,
@@ -847,26 +847,26 @@ public function viewProjectDetail($projectId, Request $request)
                     $programmingLanguageIds[] = $language->id;
                 }
             }
-        
+
             $primaryLanguageId = $programmingLanguageIds[0] ?? null;
             if (!$primaryLanguageId) {
                 // Log::error('No programming languages provided');
                 return response()->json(['error' => 'At least one programming language is required.'], 422);
             }
-        
+
             // Handle file upload
             $filePath = $project->file;
             if ($request->hasFile('file')) {
                 try {
                     // Log::info('Processing file upload', ['original_filename' => $request->file('file')->getClientOriginalName()]);
-                    
+
                     // Delete old file if it exists
                     $oldFilePath = public_path('storage/' . $project->file);
                     if ($project->file && file_exists($oldFilePath)) {
                         // Log::info('Deleting old file', ['path' => $oldFilePath]);
                         unlink($oldFilePath);
                     }
-        
+
                     // Store new file
                     $file = $request->file('file');
                     $filename = time() . '_' . $file->getClientOriginalName();
@@ -886,17 +886,17 @@ public function viewProjectDetail($projectId, Request $request)
                     return response()->json(['error' => 'File upload failed', 'message' => $e->getMessage()], 500);
                 }
             }
-        
+
             // Handle image upload
             if ($request->hasFile('image')) {
                 // Log::info('Processing image uploads', ['count' => count($request->file('image'))]);
-                
+
                 foreach ($request->file('image') as $index => $image) {
                     try {
                         if ($image->isValid()) {
                             $imagePath = $image->store('project_images', 'public');
                             // Log::info('Image uploaded', ['index' => $index, 'path' => $imagePath]);
-                            
+
                             DB::table('project_images')->insert([
                                 'project_id' => $id,
                                 'image' => $imagePath,
@@ -915,13 +915,13 @@ public function viewProjectDetail($projectId, Request $request)
                     }
                 }
             }
-        
+
             // Update project record
             // Log::info('Updating project record', [
             //     'title' => $request->input('title'),
             //     'project_id' => $id
             // ]);
-            
+
             DB::table('projects')->where('id', $id)->update([
                 'title' => $request->input('title'),
                 'description' => $request->input('description'),
@@ -931,7 +931,7 @@ public function viewProjectDetail($projectId, Request $request)
                 'programming_language_id' => $primaryLanguageId,
                 'updated_at' => now(),
             ]);
-        
+
             // Sync languages
             // Log::info('Syncing project languages');
             DB::table('project_languages')->where('project_id', $id)->delete();
@@ -943,7 +943,7 @@ public function viewProjectDetail($projectId, Request $request)
                     'updated_at' => now(),
                 ]);
             }
-        
+
             // Prepare response
             // Log::info('Preparing response');
             $fileUrl = $filePath ? asset('storage/' . $filePath) : null;
@@ -953,7 +953,7 @@ public function viewProjectDetail($projectId, Request $request)
                     'url' => asset('storage/' . $image->image),
                 ];
             });
-        
+
             $programmingLanguages = DB::table('project_languages')
                 ->join('programming_languages', 'project_languages.programming_language_id', '=', 'programming_languages.id')
                 ->where('project_languages.project_id', $id)
@@ -965,7 +965,7 @@ public function viewProjectDetail($projectId, Request $request)
                         'name' => $lang->programming_language,
                     ];
                 });
-        
+
             $projectDetails = DB::table('projects')
                 ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
                 ->select(
@@ -979,12 +979,12 @@ public function viewProjectDetail($projectId, Request $request)
                 )
                 ->where('projects.id', $id)
                 ->first();
-        
+
             $projectDetailsArray = (array) $projectDetails;
             $projectDetailsArray['programming_languages'] = $programmingLanguages;
-        
+
             // Log::info('Update project completed successfully', ['project_id' => $id]);
-            
+
             return response()->json([
                 'message' => 'Project updated successfully.',
                 'project' => $projectDetailsArray,
@@ -1043,39 +1043,39 @@ public function viewProjectDetail($projectId, Request $request)
     public function removeProjectImage(Request $request, $imageId)
     {
         $image = DB::table('project_images')->where('id', $imageId)->first();
-    
+
         if (!$image) {
             return response()->json(['error' => 'Image not found.'], 404);
         }
-    
+
         // Authorization: Ensure user owns the project
         $project = DB::table('projects')->where('id', $image->project_id)->first();
         $portfolio = DB::table('portfolios')->where('id', $project->portfolio_id)->first();
-    
+
         if (!$portfolio || $portfolio->user_id !== $request->user()->google_id) {
             return response()->json(['error' => 'Unauthorized.'], 403);
         }
-    
+
         // Check if this is the only remaining image for the project
         $imageCount = DB::table('project_images')
             ->where('project_id', $image->project_id)
             ->count();
-    
+
         if ($imageCount <= 1) {
             return response()->json([
                 'error' => 'Cannot delete the last image. Projects must have at least one image.',
             ], 422);
         }
-    
+
         // Delete image from storage
         $imagePath = storage_path('app/public/' . $image->image);
         if (file_exists($imagePath)) {
             unlink($imagePath);
         }
-    
+
         // Remove DB record
         DB::table('project_images')->where('id', $imageId)->delete();
-    
+
         return response()->json([
             'message' => 'Project image deleted successfully.',
             'remaining_count' => $imageCount - 1
@@ -1233,27 +1233,27 @@ public function viewProjectDetail($projectId, Request $request)
     //         //     'project_id' => $projectId, 
     //         //     'emails' => $request->input('emails')
     //         // ]);
-            
+
     //         // Validate the request data - only emails are required now
     //         $request->validate([
     //             'emails' => 'required|array',
     //             'emails.*' => 'email|max:255',
     //         ]);
-        
+
     //         // Check if the project exists
     //         $project = DB::table('projects')->where('id', $projectId)->first();
     //         if (!$project) {
     //             // Log::error('Project not found', ['project_id' => $projectId]);
     //             return response()->json(['error' => 'Project not found.'], 404);
     //         }
-        
+
     //         // Check if the authenticated user is the project owner
     //         $portfolio = DB::table('portfolios')->where('id', $project->portfolio_id)->first();
     //         if (!$portfolio) {
     //             // Log::error('Portfolio not found', ['portfolio_id' => $project->portfolio_id]);
     //             return response()->json(['error' => 'Portfolio not found.'], 404);
     //         }
-            
+
     //         if ($portfolio->user_id !== $request->user()->google_id) {
     //             // Log::error('Unauthorized access attempt', [
     //             //     'user_id' => $request->user()->google_id,
@@ -1261,56 +1261,56 @@ public function viewProjectDetail($projectId, Request $request)
     //             // ]);
     //             return response()->json(['error' => 'You are not authorized to add endorsers to this project.'], 403);
     //         }
-        
+
     //         $endorser = [];
     //         $notFoundUsers = [];
     //         $notEndorserRoleUsers = []; // New array to track users without endorser role
-        
+
     //         // Set the default endorsement status to 1 (pending)
     //         $endorsementStatusId = 1; // Pending status
-        
+
     //         foreach ($request->input('emails') as $email) {
     //             // Log::info('Processing email', ['email' => $email]);
-                
+
     //             // Find user by email
     //             $user = DB::table('users')->where('email', $email)->first();
-        
+
     //             if (!$user) {
     //                 // Log::info('User not found', ['email' => $email]);
     //                 $notFoundUsers[] = $email;
     //                 continue;
     //             }
-                
+
     //             // Log::info('User found', [
     //             //     'email' => $email,
     //             //     'user_id' => $user->id,
     //             //     'google_id' => $user->google_id
     //             // ]);
-        
+
     //             // Check if user has role_id = 2 (endorser role)
     //             $hasEndorserRole = $user->role_id === 2;
-                
+
     //             if (!$hasEndorserRole) {
     //                 // Log::info('User does not have endorser role', [
     //                 //     'email' => $email,
     //                 //     'role_id' => $user->role_id
     //                 // ]);
-                    
+
     //                 $notEndorserRoleUsers[] = [
     //                     'email' => $email,
     //                     'name' => $user->name
     //                 ];
     //                 continue;
     //             }
-        
+
     //             // Check if the endorser already exists for this project
     //             $existingEndorser = DB::table('project_endorsers')
     //                 ->where('project_id', $projectId)
     //                 ->where('user_id', $user->google_id)
     //                 ->first();
-        
+
     //             $isNewEndorser = !$existingEndorser;
-                
+
     //             if (!$isNewEndorser) {
     //                 // Log::info('Endorser already exists', [
     //                 //     'email' => $email,
@@ -1322,7 +1322,7 @@ public function viewProjectDetail($projectId, Request $request)
     //                 //     'project_id' => $projectId,
     //                 //     'user_id' => $user->google_id
     //                 // ]);
-            
+
     //                 // Insert the new endorser into the database using google_id
     //                 DB::table('project_endorsers')->insert([
     //                     'project_id' => $projectId,
@@ -1331,13 +1331,13 @@ public function viewProjectDetail($projectId, Request $request)
     //                     'updated_at' => now(),
     //                 ]);
     //             }
-        
+
     //             // Check if an endorsement status already exists
     //             $existingStatus = DB::table('project_endorsement_statuses')
     //                 ->where('project_id', $projectId)
     //                 ->where('endorser_id', $user->google_id)
     //                 ->first();
-                    
+
     //             // Only create a new status if one doesn't exist
     //             if (!$existingStatus && $isNewEndorser) {
     //                 // Insert the endorsement status into the database with default status pending (1)
@@ -1349,18 +1349,18 @@ public function viewProjectDetail($projectId, Request $request)
     //                     'updated_at' => now(),
     //                 ]);
     //             }
-        
+
     //             // Get the current status (either newly created or existing)
     //             $currentStatus = DB::table('project_endorsement_statuses')
     //                 ->where('project_id', $projectId)
     //                 ->where('endorser_id', $user->google_id)
     //                 ->first();
-                    
+
     //             // Get the status name for the response
     //             $statusName = DB::table('endorsement_statuses')
     //                 ->where('id', $currentStatus ? $currentStatus->endorsement_status_id : $endorsementStatusId)
     //                 ->value('status') ?? 'Pending';
-        
+
     //             $endorser[] = [
     //                 'id' => $user->id,
     //                 'email' => $email,
@@ -1372,20 +1372,20 @@ public function viewProjectDetail($projectId, Request $request)
     //                 ],
     //                 // 'is_new' => $isNewEndorser
     //             ];
-                
+
     //             if ($isNewEndorser) {
     //                 // Log::info('Endorser successfully added', ['email' => $email]);
     //             } else {
     //                 // Log::info('Existing endorser returned', ['email' => $email]);
     //             }
     //         }
-            
+
     //         // Log::info('addEndorserToProject completed', [
     //         //     'endorser_count' => count($endorser),
     //         //     'not_found_count' => count($notFoundUsers),
     //         //     'not_endorser_role_count' => count($notEndorserRoleUsers)
     //         // ]);
-        
+
     //         return response()->json([
     //             'message' => 'Endorsers processed successfully',
     //             'endorser' => $endorser,
@@ -1396,7 +1396,7 @@ public function viewProjectDetail($projectId, Request $request)
     //         //     'trace' => $e->getTraceAsString(),
     //         //     'project_id' => $projectId
     //         // ]);
-            
+
     //         return response()->json([
     //             'error' => 'An error occurred while adding endorsers.',
     //             'message' => $e->getMessage()
@@ -1411,27 +1411,27 @@ public function viewProjectDetail($projectId, Request $request)
             //     'project_id' => $projectId, 
             //     'emails' => $request->input('emails')
             // ]);
-            
+
             // Validate the request data - only emails are required now
             $request->validate([
                 'emails' => 'required|array',
                 'emails.*' => 'email|max:255',
             ]);
-        
+
             // Check if the project exists
             $project = DB::table('projects')->where('id', $projectId)->first();
             if (!$project) {
                 // Log::error('Project not found', ['project_id' => $projectId]);
                 return response()->json(['error' => 'Project not found.'], 404);
             }
-        
+
             // Check if the authenticated user is the project owner
             $portfolio = DB::table('portfolios')->where('id', $project->portfolio_id)->first();
             if (!$portfolio) {
                 // Log::error('Portfolio not found', ['portfolio_id' => $project->portfolio_id]);
                 return response()->json(['error' => 'Portfolio not found.'], 404);
             }
-            
+
             if ($portfolio->user_id !== $request->user()->google_id) {
                 // Log::error('Unauthorized access attempt', [
                 //     'user_id' => $request->user()->google_id,
@@ -1439,65 +1439,65 @@ public function viewProjectDetail($projectId, Request $request)
                 // ]);
                 return response()->json(['error' => 'You are not authorized to add endorsers to this project.'], 403);
             }
-        
+
             $endorser = [];
             $notFoundUsers = [];
             $notEndorserRoleUsers = []; // Array to track users without endorser role
-        
+
             // Set the default endorsement status to 1 (pending)
             $endorsementStatusId = 1; // Pending status
             $rejectedStatusId = 3;   // Rejected status
-        
+
             foreach ($request->input('emails') as $email) {
                 // Log::info('Processing email', ['email' => $email]);
-                
+
                 // Find user by email
                 $user = DB::table('users')->where('email', $email)->first();
-        
+
                 if (!$user) {
                     Log::info('User not found', ['email' => $email]);
                     $notFoundUsers[] = $email;
                     continue;
                 }
-                
+
                 // Log::info('User found', [
                 //     'email' => $email,
                 //     'user_id' => $user->id,
                 //     'google_id' => $user->google_id
                 // ]);
-        
+
                 // Check if user has role_id = 2 (endorser role)
                 $hasEndorserRole = $user->role_id === 2;
-                
+
                 if (!$hasEndorserRole) {
                     // Log::info('User does not have endorser role', [
                     //     'email' => $email,
                     //     'role_id' => $user->role_id
                     // ]);
-                    
+
                     $notEndorserRoleUsers[] = [
                         'email' => $email,
                         'name' => $user->name
                     ];
                     continue;
                 }
-        
+
                 // Check if the endorser already exists for this project
                 $existingEndorser = DB::table('project_endorsers')
                     ->where('project_id', $projectId)
                     ->where('user_id', $user->google_id)
                     ->first();
-        
+
                 $isNewEndorser = !$existingEndorser;
-                
+
                 // Check if this endorser previously rejected the request
                 $existingStatus = DB::table('project_endorsement_statuses')
                     ->where('project_id', $projectId)
                     ->where('endorser_id', $user->google_id)
                     ->first();
-                    
+
                 $wasRejected = $existingStatus && $existingStatus->endorsement_status_id === $rejectedStatusId;
-                
+
                 // If endorser already exists but previously rejected, allow a new request
                 if (!$isNewEndorser && !$wasRejected) {
                     // Log::info('Endorser already exists and did not reject', [
@@ -1505,12 +1505,12 @@ public function viewProjectDetail($projectId, Request $request)
                     //     'project_id' => $projectId,
                     //     'status' => $existingStatus ? $existingStatus->endorsement_status_id : 'none'
                     // ]);
-                    
+
                     // Get current status info for response
                     $currentStatus = $existingStatus;
                 } else {
                     // This is either a new endorser or one who previously rejected
-                    
+
                     if ($wasRejected) {
                         // Log::info('Endorser previously rejected, creating new request', [
                         //     'email' => $email,
@@ -1522,7 +1522,7 @@ public function viewProjectDetail($projectId, Request $request)
                         //     'project_id' => $projectId,
                         //     'user_id' => $user->google_id
                         // ]);
-                        
+
                         // Only add to project_endorsers if they don't exist already
                         if ($isNewEndorser) {
                             DB::table('project_endorsers')->insert([
@@ -1533,7 +1533,7 @@ public function viewProjectDetail($projectId, Request $request)
                             ]);
                         }
                     }
-                    
+
                     // Update or insert endorsement status
                     if ($wasRejected) {
                         // Update existing record if it was rejected
@@ -1554,19 +1554,19 @@ public function viewProjectDetail($projectId, Request $request)
                             'updated_at' => now(),
                         ]);
                     }
-                    
+
                     // Get updated status for response
                     $currentStatus = DB::table('project_endorsement_statuses')
                         ->where('project_id', $projectId)
                         ->where('endorser_id', $user->google_id)
                         ->first();
                 }
-                    
+
                 // Get the status name for the response
                 $statusName = DB::table('endorsement_statuses')
                     ->where('id', $currentStatus ? $currentStatus->endorsement_status_id : $endorsementStatusId)
                     ->value('status') ?? 'Pending';
-        
+
                 $endorser[] = [
                     'id' => $user->id,
                     'email' => $email,
@@ -1577,7 +1577,7 @@ public function viewProjectDetail($projectId, Request $request)
                         'name' => $statusName
                     ],
                 ];
-                
+
                 if ($isNewEndorser) {
                     // Log::info('Endorser successfully added', ['email' => $email]);
                 } else if ($wasRejected) {
@@ -1586,17 +1586,17 @@ public function viewProjectDetail($projectId, Request $request)
                     // Log::info('Existing endorser returned', ['email' => $email]);
                 }
             }
-            
+
             // Log::info('addEndorserToProject completed', [
             //     'endorser_count' => count($endorser),
             //     'not_found_count' => count($notFoundUsers),
             //     'not_endorser_role_count' => count($notEndorserRoleUsers)
             // ]);
-        
+
             return response()->json([
                 'message' => 'Endorsers processed successfully',
                 'endorser' => $endorser,
-                
+
             ], 200);
         } catch (\Exception $e) {
             // Log::error('Exception in addEndorserToProject', [
@@ -1604,7 +1604,7 @@ public function viewProjectDetail($projectId, Request $request)
             //     'trace' => $e->getTraceAsString(),
             //     'project_id' => $projectId
             // ]);
-            
+
             return response()->json([
                 'error' => 'An error occurred while adding endorsers.',
                 'message' => $e->getMessage()
@@ -1619,66 +1619,66 @@ public function viewProjectDetail($projectId, Request $request)
             $request->validate([
                 'user_google_id' => 'required|string',
             ]);
-    
+
             $userGoogleId = $request->input('user_google_id');
-            
+
             // Check if the project exists
             $project = DB::table('projects')->where('id', $projectId)->first();
-            
+
             if (!$project) {
                 return response()->json(['error' => 'Project not found.'], 404);
             }
-            
+
             // Check if the authenticated user is the project owner
             $portfolio = DB::table('portfolios')->where('id', $project->portfolio_id)->first();
-            
+
             if (!$portfolio) {
                 return response()->json(['error' => 'Portfolio not found.'], 404);
             }
-            
+
             // Verify user has permission to delete this endorser
             if ($portfolio->user_id !== auth()->user()->google_id) {
                 return response()->json(['error' => 'You are not authorized to delete this endorser request.'], 403);
             }
-            
+
             // Get the endorser record using project_id and user_google_id
             $endorser = DB::table('project_endorsers')
                 ->where('project_id', $projectId)
                 ->where('user_id', $userGoogleId)
                 ->first();
-    
+
             if (!$endorser) {
                 return response()->json(['error' => 'Endorser request not found for this project.'], 404);
             }
-    
+
             // Begin database transaction
             DB::beginTransaction();
-            
+
             try {
                 // Delete endorsement status record
                 $statusDeleted = DB::table('project_endorsement_statuses')
                     ->where('project_id', $projectId)
                     ->where('endorser_id', $userGoogleId)
                     ->delete();
-                    
+
                 // Delete endorser record
                 $endorserDeleted = DB::table('project_endorsers')
                     ->where('project_id', $projectId)
                     ->where('user_id', $userGoogleId)
                     ->delete();
-                    
+
                 // Delete any collaboration invitation statuses (if they exist)
                 $collabStatusDeleted = DB::table('project_collaborator_invitation_statuses')
                     ->where('project_id', $projectId)
                     ->where('collaborator_id', $userGoogleId)
                     ->delete();
-                    
+
                 // Commit the transaction
                 DB::commit();
-                
+
                 return response()->json([
                     'message' => 'Endorser request deleted successfully.',
-                    
+
                 ], 200);
             } catch (\Exception $e) {
                 // If any part fails, roll back the entire transaction
@@ -1700,60 +1700,60 @@ public function viewProjectDetail($projectId, Request $request)
             $request->validate([
                 'user_google_id' => 'required|string',
             ]);
-    
+
             $userGoogleId = $request->input('user_google_id');
-            
+
             // Check if the project exists
             $project = DB::table('projects')->where('id', $projectId)->first();
-            
+
             if (!$project) {
                 return response()->json(['error' => 'Project not found.'], 404);
             }
-            
+
             // Check if the authenticated user is the project owner
             $portfolio = DB::table('portfolios')->where('id', $project->portfolio_id)->first();
-            
+
             if (!$portfolio) {
                 return response()->json(['error' => 'Portfolio not found.'], 404);
             }
-            
+
             // Verify user has permission to delete this collaborator
             if ($portfolio->user_id !== auth()->user()->google_id) {
                 return response()->json(['error' => 'You are not authorized to delete this collaborator request.'], 403);
             }
-            
+
             // Get the collaborator record using project_id and user_google_id
             $collaborator = DB::table('project_collaborators')
                 ->where('project_id', $projectId)
                 ->where('user_id', $userGoogleId)
                 ->first();
-    
+
             if (!$collaborator) {
                 return response()->json(['error' => 'Collaborator request not found for this project.'], 404);
             }
-    
+
             // Begin database transaction
             DB::beginTransaction();
-            
+
             try {
                 // Delete collaboration status record
                 $statusDeleted = DB::table('project_collaborator_invitation_statuses')
                     ->where('project_id', $projectId)
                     ->where('collaborator_id', $userGoogleId)
                     ->delete();
-                    
+
                 // Delete collaborator record
                 $collaboratorDeleted = DB::table('project_collaborators')
                     ->where('project_id', $projectId)
                     ->where('user_id', $userGoogleId)
                     ->delete();
-                    
+
                 // Commit the transaction
                 DB::commit();
-                
+
                 return response()->json([
                     'message' => 'Collaborator request deleted successfully.',
-                    
+
                 ], 200);
             } catch (\Exception $e) {
                 // If any part fails, roll back the entire transaction
@@ -1767,7 +1767,7 @@ public function viewProjectDetail($projectId, Request $request)
             ], 500);
         }
     }
-    
+
     public function addCollaboratorToProject(Request $request, $projectId)
     {
         try {
@@ -1776,55 +1776,55 @@ public function viewProjectDetail($projectId, Request $request)
                 'emails' => 'required|array',
                 'emails.*' => 'email|max:255',
             ]);
-        
+
             // Check if the project exists
             $project = DB::table('projects')->where('id', $projectId)->first();
             if (!$project) {
                 return response()->json(['error' => 'Project not found.'], 404);
             }
-        
+
             // Check if the authenticated user is the project owner
             $portfolio = DB::table('portfolios')->where('id', $project->portfolio_id)->first();
             if (!$portfolio) {
                 return response()->json(['error' => 'Portfolio not found.'], 404);
             }
-            
+
             if ($portfolio->user_id !== $request->user()->google_id) {
                 return response()->json(['error' => 'You are not authorized to add collaborators to this project.'], 403);
             }
-        
+
             $collaborator = [];
             $notFoundUsers = [];
-        
+
             // Set the default collaboration status to 1 (pending)
             $collaborationStatusId = 1; // Pending status
             $rejectedStatusId = 3;     // Rejected status
-        
+
             foreach ($request->input('emails') as $email) {
                 // Find user by email
                 $user = DB::table('users')->where('email', $email)->first();
-        
+
                 if (!$user) {
                     $notFoundUsers[] = $email;
                     continue;
                 }
-                
+
                 // Check if the collaborator already exists for this project
                 $existingCollaborator = DB::table('project_collaborators')
                     ->where('project_id', $projectId)
                     ->where('user_id', $user->google_id)
                     ->first();
-        
+
                 $isNewCollaborator = !$existingCollaborator;
-                
+
                 // Check if this collaborator previously rejected the request
                 $existingStatus = DB::table('project_collaborator_invitation_statuses')
                     ->where('project_id', $projectId)
                     ->where('collaborator_id', $user->google_id)
                     ->first();
-                    
+
                 $wasRejected = $existingStatus && $existingStatus->project_collab_status_id === $rejectedStatusId;
-                
+
                 // If collaborator already exists but previously rejected, allow a new request
                 if (!$isNewCollaborator && !$wasRejected) {
                     // Collaborator already exists and did not reject
@@ -1832,7 +1832,7 @@ public function viewProjectDetail($projectId, Request $request)
                     $currentStatus = $existingStatus;
                 } else {
                     // This is either a new collaborator or one who previously rejected
-                    
+
                     if ($wasRejected) {
                         // Collaborator previously rejected, creating new request
                     } else {
@@ -1846,7 +1846,7 @@ public function viewProjectDetail($projectId, Request $request)
                             ]);
                         }
                     }
-                    
+
                     // Update or insert collaboration status
                     if ($wasRejected) {
                         // Update existing record if it was rejected
@@ -1867,19 +1867,19 @@ public function viewProjectDetail($projectId, Request $request)
                             'updated_at' => now(),
                         ]);
                     }
-                    
+
                     // Get updated status for response
                     $currentStatus = DB::table('project_collaborator_invitation_statuses')
                         ->where('project_id', $projectId)
                         ->where('collaborator_id', $user->google_id)
                         ->first();
                 }
-        
+
                 // Get the status name for the response using the correct field name
                 $statusName = DB::table('project_collaboration_statuses')
                     ->where('id', $currentStatus ? $currentStatus->project_collab_status_id : $collaborationStatusId)
                     ->value('status') ?? 'Pending';
-        
+
                 $collaborator[] = [
                     'id' => $user->id,
                     'email' => $email,
@@ -1891,7 +1891,7 @@ public function viewProjectDetail($projectId, Request $request)
                     ]
                 ];
             }
-        
+
             return response()->json([
                 'message' => 'Collaborators processed successfully',
                 'collaborator' => $collaborator,
@@ -1900,6 +1900,85 @@ public function viewProjectDetail($projectId, Request $request)
             return response()->json([
                 'error' => 'An error occurred while adding collaborators.',
                 'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+
+    public function changeEndorsementCollaborationRequest(Request $request, $projectId)
+    {
+        try {
+            $receiverGoogleId = $request->input('reciever_google_id');
+            $recordId = $request->input('id'); // ID of the row to update
+            $type = $request->input('type'); // 1 = Collaboration, 2 = Endorsement
+            $endorsementType = $request->input('endorsement_type'); // Only if type is 2
+            $status = $request->input('status'); // 2 = Approved, 3 = Declined
+
+            // Check project existence
+            $project = DB::table('projects')->where('id', $projectId)->first();
+            if (!$project) {
+                return response()->json(['error' => 'Project not found.'], 404);
+            }
+
+            // Check portfolio existence and ownership
+            $portfolio = DB::table('portfolios')->where('id', $project->portfolio_id)->first();
+            if (!$portfolio) {
+                return response()->json(['error' => 'Portfolio not found.'], 404);
+            }
+
+            if ($portfolio->user_id !== auth()->user()->google_id) {
+                return response()->json(['error' => 'You are not authorized to change this request.'], 403);
+            }
+
+            // Determine the correct table based on type and endorsement_type
+            $table = match (true) {
+                $type === 1 => 'project_collaborator_invitation_statuses',
+                $type === 2 && $endorsementType === 1 => 'skill_endorsement_statuses',
+                $type === 2 && $endorsementType === 2 => 'project_endorsement_statuses',
+                $type === 2 && $endorsementType === 3 => 'experience_endorsement_statuses',
+                $type === 2 && $endorsementType === 4 => 'achievement_endorsement_statuses',
+                default => null,
+            };
+
+            if (!$table) {
+                return response()->json(['error' => 'Invalid type or endorsement type provided.'], 400);
+            }
+
+            // Begin transaction
+            DB::beginTransaction();
+
+            // Perform the update
+            $updated = DB::table($table)
+                ->where('id', $recordId)
+                ->where(function ($query) use ($type, $projectId, $receiverGoogleId) {
+                    if ($type === 1) {
+                        $query->where('project_id', $projectId)->where('collaborator_id', $receiverGoogleId);
+                    } else {
+                        $query->where('project_id', $projectId)->where('endorser_id', $receiverGoogleId);
+                    }
+                })
+                ->update([
+                    $type === 1 ? 'collaboration_status_id' : 'endorsement_status_id' => $status,
+                    'updated_at' => now(),
+                ]);
+
+            DB::commit();
+
+            if ($updated) {
+                return response()->json([
+                    'message' => 'Request status updated successfully.',
+                ], 200);
+            } else {
+                return response()->json([
+                    'error' => 'No matching record found to update.'
+                ], 404);
+            }
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'error' => 'An error occurred while processing the request.',
+                'message' => $e->getMessage(),
             ], 500);
         }
     }
