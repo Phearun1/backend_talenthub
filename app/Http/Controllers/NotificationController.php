@@ -583,7 +583,7 @@ class NotificationController extends Controller
     
             $userGoogleId = $request->query('user_google_id');
             $page = $request->query('page', 1); // Default to page 1 if not specified
-            $perPage = 1; // 15 notifications per page
+            $perPage = 15; // 15 notifications per page
             $limit = $page * $perPage; // Calculate total limit based on page number
     
             if (!$userGoogleId) {
@@ -955,7 +955,7 @@ class NotificationController extends Controller
             $notifications = array_slice($notifications, 0, $limit);
     
             return response()->json([
-                'notifications' => $notifications,
+                $notifications,
             ]);
         } catch (\Exception $e) {
             Log::error('Error fetching notifications: ' . $e->getMessage(), [
