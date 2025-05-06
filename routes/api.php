@@ -11,7 +11,6 @@ use App\Http\Controllers\EducationController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\AdminController;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Mail;
 
 
 // Public route for Google login
@@ -41,10 +40,6 @@ Route::middleware([\Fruitcake\Cors\HandleCors::class])->group(function () {
 
 // portfolio
 Route::post('/view_project_detail/{projectId}', [ProjectController::class, 'viewProjectDetail']);
-
-
-
-
 
 
 

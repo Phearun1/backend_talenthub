@@ -962,16 +962,14 @@ class NotificationController extends Controller
         }
     }
 
+       
     public function sendWelcomeEmail(Request $request)
     {
         try {
-            // Validate incoming request
+            // Validate incoming request (only requires email and name)
             $request->validate([
-                'subject' => 'required|string|max:255',
                 'email' => 'required|email',
-                'name' => 'nullable|string',
-                'html_content' => 'required|string',
-                'plain_content' => 'nullable|string',
+                'name' => 'required|string'
             ]);
     
             $apikey = env('BREVO_API_KEY');
@@ -983,7 +981,20 @@ class NotificationController extends Controller
                 ], 500);
             }
     
-            // Prepare the transactional email data
+            // Get the recipient's name
+            $name = $request->input('name');
+            $firstName = explode(' ', $name)[0]; // Extract first name
+    
+            // Create predefined email content with the recipient's name
+            $htmlContent = "<h1>Welcome to TalentHub!</h1>
+                            <p>Hello {$firstName},</p>
+                            <p>Thank you for joining TalentHub! We are excited to have you on board. With TalentHub, you can showcase your portfolio, connect with other talented individuals, and get endorsed for your skills.</p>
+                            <p>Get started by completing your profile now.</p>
+                            <p>Best regards,<br>The TalentHub Team</p>";
+            
+            $plainContent = "Welcome to TalentHub!\n\nHello {$firstName},\n\nThank you for joining TalentHub! We are excited to have you on board. With TalentHub, you can showcase your portfolio, connect with other talented individuals, and get endorsed for your skills.\n\nGet started by completing your profile now.\n\nBest regards,\nThe TalentHub Team";
+    
+            // Prepare the transactional email data with predefined subject
             $emailData = [
                 'sender' => [
                     'name' => 'TalentHub',
@@ -992,17 +1003,13 @@ class NotificationController extends Controller
                 'to' => [
                     [
                         'email' => $request->input('email'),
-                        'name' => $request->input('name', '')
+                        'name' => $name
                     ]
                 ],
-                'subject' => $request->input('subject'),
-                'htmlContent' => $request->input('html_content'),
+                'subject' => 'Welcome to TalentHub!', // Fixed predefined subject
+                'htmlContent' => $htmlContent,
+                'textContent' => $plainContent
             ];
-    
-            // Add plain text content if provided
-            if ($request->has('plain_content')) {
-                $emailData['textContent'] = $request->input('plain_content');
-            }
     
             // Send the email immediately using Brevo's transactional email API
             $response = Http::withHeaders([
@@ -1015,38 +1022,38 @@ class NotificationController extends Controller
             if ($response->successful()) {
                 $messageId = $response->json('messageId');
                 
-                Log::info('Email sent successfully', [
+                Log::info('Welcome email sent successfully', [
                     'message_id' => $messageId,
-                    'recipient' => $request->input('email')
+                    'recipient' => $request->input('email'),
+                    'name' => $name
                 ]);
     
                 return response()->json([
-                    'message' => 'Email sent successfully',
+                    'message' => 'Welcome email sent successfully',
                     'message_id' => $messageId
                 ], 200);
             } else {
-                Log::error('Failed to send email', [
+                Log::error('Failed to send welcome email', [
                     'status' => $response->status(),
                     'response' => $response->body()
                 ]);
     
                 return response()->json([
-                    'error' => 'Failed to send email',
+                    'error' => 'Failed to send welcome email',
                     'details' => $response->json()
                 ], $response->status());
             }
         } catch (\Exception $e) {
-            Log::error('Exception while sending email: ' . $e->getMessage(), [
+            Log::error('Exception while sending welcome email: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString()
             ]);
     
             return response()->json([
-                'error' => 'An error occurred while sending email',
+                'error' => 'An error occurred while sending welcome email',
                 'message' => $e->getMessage()
             ], 500);
         }
     }
-
 
     // public function sendWelcomeEmail(Request $request)
     //     {
