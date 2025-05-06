@@ -974,16 +974,16 @@ class NotificationController extends Controller
                 'html_content' => 'required|string',
                 'plain_content' => 'nullable|string',
             ]);
-
+    
             $apikey = env('BREVO_API_KEY');
-
+    
             if (!$apikey) {
                 Log::error('Brevo API key not found in environment variables');
                 return response()->json([
                     'error' => 'Email service configuration missing'
                 ], 500);
             }
-
+    
             // Format recipients for Brevo API
             $recipients = [];
             foreach ($request->input('recipients') as $recipient) {
@@ -992,8 +992,58 @@ class NotificationController extends Controller
                     'name' => $recipient['name'] ?? null
                 ];
             }
-
-            // Prepare the campaign data
+    
+            // First, create a temporary contact list for this campaign
+            $createListResponse = Http::withHeaders([
+                'api-key' => $apikey,
+                'accept' => 'application/json',
+                'content-type' => 'application/json'
+            ])->post('https://api.brevo.com/v3/contacts/lists', [
+                'name' => 'TalentHub Email - ' . now()->format('Y-m-d H:i:s'),
+                'folderId' => 1 // Default folder ID
+            ]);
+    
+            if (!$createListResponse->successful()) {
+                Log::error('Failed to create contact list', [
+                    'status' => $createListResponse->status(),
+                    'response' => $createListResponse->body()
+                ]);
+                
+                return response()->json([
+                    'error' => 'Failed to create contact list',
+                    'details' => $createListResponse->json()
+                ], 500);
+            }
+    
+            // Get the list ID from the response
+            $listId = $createListResponse->json('id');
+    
+            // Add contacts to the list
+            foreach ($recipients as $recipient) {
+                $createContactResponse = Http::withHeaders([
+                    'api-key' => $apikey,
+                    'accept' => 'application/json',
+                    'content-type' => 'application/json'
+                ])->post('https://api.brevo.com/v3/contacts', [
+                    'email' => $recipient['email'],
+                    'attributes' => [
+                        'FIRSTNAME' => $recipient['name'] ?? '',
+                    ],
+                    'listIds' => [$listId],
+                    'updateEnabled' => true
+                ]);
+    
+                if (!$createContactResponse->successful()) {
+                    Log::warning('Failed to add contact to list', [
+                        'email' => $recipient['email'],
+                        'status' => $createContactResponse->status(),
+                        'response' => $createContactResponse->body()
+                    ]);
+                    // Continue trying other contacts
+                }
+            }
+    
+            // Prepare the campaign data with the list ID
             $campaignData = [
                 'sender' => [
                     'name' => 'TalentHub',
@@ -1003,73 +1053,47 @@ class NotificationController extends Controller
                 'subject' => $request->input('subject'),
                 'htmlContent' => $request->input('html_content'),
                 'recipients' => [
-                    'listIds' => [],
+                    'listIds' => [$listId], // Now we have a valid list ID
                     'exclusionListIds' => []
                 ],
                 'scheduledAt' => now()->addMinutes(5)->format('Y-m-d\TH:i:s.vP'),
                 'inlineImageActivation' => true
             ];
-
+    
             // Add plain text content if provided
             if ($request->has('plain_content')) {
                 $campaignData['plainTextContent'] = $request->input('plain_content');
             }
-
-            // Log the attempt
-            Log::info('Attempting to create email campaign', [
-                'subject' => $request->input('subject'),
-                'recipient_count' => count($recipients)
-            ]);
-
+    
             // Create the campaign
             $response = Http::withHeaders([
                 'api-key' => $apikey,
                 'accept' => 'application/json',
                 'content-type' => 'application/json'
             ])->post('https://api.brevo.com/v3/emailCampaigns', $campaignData);
-
+    
             // Handle response
             if ($response->successful()) {
                 $campaignId = $response->json('id');
-
-                // Now add recipients to the campaign
-                $addContactsResponse = Http::withHeaders([
-                    'api-key' => $apikey,
-                    'accept' => 'application/json',
-                    'content-type' => 'application/json'
-                ])->post("https://api.brevo.com/v3/emailCampaigns/{$campaignId}/recipients", [
-                    'emails' => array_column($recipients, 'email')
+                
+                Log::info('Email campaign created successfully', [
+                    'campaign_id' => $campaignId,
+                    'recipient_count' => count($recipients),
+                    'list_id' => $listId
                 ]);
-
-                if ($addContactsResponse->successful()) {
-                    Log::info('Email campaign created successfully', [
-                        'campaign_id' => $campaignId,
-                        'recipient_count' => count($recipients)
-                    ]);
-
-                    return response()->json([
-                        'message' => 'Email campaign created successfully',
-                        'campaign_id' => $campaignId,
-                        'scheduled_at' => $campaignData['scheduledAt']
-                    ], 200);
-                } else {
-                    Log::error('Failed to add recipients to campaign', [
-                        'campaign_id' => $campaignId,
-                        'status' => $addContactsResponse->status(),
-                        'response' => $addContactsResponse->body()
-                    ]);
-
-                    return response()->json([
-                        'error' => 'Failed to add recipients to campaign',
-                        'details' => $addContactsResponse->json()
-                    ], 500);
-                }
+    
+                return response()->json([
+                    'message' => 'Email campaign created successfully',
+                    'campaign_id' => $campaignId,
+                    'scheduled_at' => $campaignData['scheduledAt'],
+                    'list_id' => $listId
+                ], 200);
             } else {
                 Log::error('Failed to create email campaign', [
                     'status' => $response->status(),
                     'response' => $response->body()
                 ]);
-
+    
                 return response()->json([
                     'error' => 'Failed to create email campaign',
                     'details' => $response->json()
@@ -1079,7 +1103,7 @@ class NotificationController extends Controller
             Log::error('Exception while creating email campaign: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString()
             ]);
-
+    
             return response()->json([
                 'error' => 'An error occurred while sending email',
                 'message' => $e->getMessage()
