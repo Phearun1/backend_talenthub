@@ -315,6 +315,7 @@ class PortfolioController extends Controller
                 'portfolios.updated_at',
                 'users.name as name',
                 'users.email',
+                'users.role_id as role',
                 'users.photo'
             )
             ->where('users.name', 'LIKE', '%' . $searchTerm . '%')
