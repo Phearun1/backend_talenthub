@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use App\Mail\MyTestEmail;
 
 
@@ -902,6 +903,131 @@ public function viewNotification(Request $request)
     }
 }
     
+public function email(Request $request)
+{
+    try {
+        // Validate incoming request
+        $request->validate([
+            'subject' => 'required|string|max:255',
+            'recipients' => 'required|array|min:1',
+            'recipients.*.email' => 'required|email',
+            'recipients.*.name' => 'nullable|string',
+            'html_content' => 'required|string',
+            'plain_content' => 'nullable|string',
+        ]);
+
+        $apikey = env('BREVO_API_KEY');
+        
+        if (!$apikey) {
+            Log::error('Brevo API key not found in environment variables');
+            return response()->json([
+                'error' => 'Email service configuration missing'
+            ], 500);
+        }
+
+        // Format recipients for Brevo API
+        $recipients = [];
+        foreach ($request->input('recipients') as $recipient) {
+            $recipients[] = [
+                'email' => $recipient['email'],
+                'name' => $recipient['name'] ?? null
+            ];
+        }
+
+        // Prepare the campaign data
+        $campaignData = [
+            'sender' => [
+                'name' => 'TalentHub',
+                'email' => 'talenthub.paragoniu@gmail.com'
+            ],
+            'name' => $request->input('subject') . ' - ' . now()->format('Y-m-d H:i'),
+            'subject' => $request->input('subject'),
+            'htmlContent' => $request->input('html_content'),
+            'recipients' => [
+                'listIds' => [],
+                'exclusionListIds' => []
+            ],
+            'scheduledAt' => now()->addMinutes(5)->format('Y-m-d\TH:i:s.vP'),
+            'inlineImageActivation' => true
+        ];
+
+        // Add plain text content if provided
+        if ($request->has('plain_content')) {
+            $campaignData['plainTextContent'] = $request->input('plain_content');
+        }
+
+        // Log the attempt
+        Log::info('Attempting to create email campaign', [
+            'subject' => $request->input('subject'),
+            'recipient_count' => count($recipients)
+        ]);
+
+        // Create the campaign
+        $response = Http::withHeaders([
+            'api-key' => $apikey,
+            'accept' => 'application/json',
+            'content-type' => 'application/json'
+        ])->post('https://api.brevo.com/v3/emailCampaigns', $campaignData);
+
+        // Handle response
+        if ($response->successful()) {
+            $campaignId = $response->json('id');
+            
+            // Now add recipients to the campaign
+            $addContactsResponse = Http::withHeaders([
+                'api-key' => $apikey,
+                'accept' => 'application/json',
+                'content-type' => 'application/json'
+            ])->post("https://api.brevo.com/v3/emailCampaigns/{$campaignId}/recipients", [
+                'emails' => array_column($recipients, 'email')
+            ]);
+
+            if ($addContactsResponse->successful()) {
+                Log::info('Email campaign created successfully', [
+                    'campaign_id' => $campaignId,
+                    'recipient_count' => count($recipients)
+                ]);
+
+                return response()->json([
+                    'message' => 'Email campaign created successfully',
+                    'campaign_id' => $campaignId,
+                    'scheduled_at' => $campaignData['scheduledAt']
+                ], 200);
+            } else {
+                Log::error('Failed to add recipients to campaign', [
+                    'campaign_id' => $campaignId,
+                    'status' => $addContactsResponse->status(),
+                    'response' => $addContactsResponse->body()
+                ]);
+
+                return response()->json([
+                    'error' => 'Failed to add recipients to campaign',
+                    'details' => $addContactsResponse->json()
+                ], 500);
+            }
+        } else {
+            Log::error('Failed to create email campaign', [
+                'status' => $response->status(),
+                'response' => $response->body()
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to create email campaign',
+                'details' => $response->json()
+            ], $response->status());
+        }
+    } catch (\Exception $e) {
+        Log::error('Exception while creating email campaign: ' . $e->getMessage(), [
+            'trace' => $e->getTraceAsString()
+        ]);
+        
+        return response()->json([
+            'error' => 'An error occurred while sending email',
+            'message' => $e->getMessage()
+        ], 500);
+    }
+}
+
 
 public function sendWelcomeEmail(Request $request)
     {
