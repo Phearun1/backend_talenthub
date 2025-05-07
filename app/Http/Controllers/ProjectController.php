@@ -78,27 +78,27 @@ class ProjectController extends Controller
         $request->validate([
             'portfolio_id' => 'required|integer',
         ]);
-
+    
         $portfolioId = $request->input('portfolio_id');
-
+    
         // Verify the portfolio exists and user is active
         $portfolio = DB::table('portfolios')
             ->join('users', 'portfolios.user_id', '=', 'users.google_id')
             ->select('portfolios.*', 'users.status as user_status', 'users.name as owner_name', 'users.google_id as owner_google_id')
             ->where('portfolios.id', $portfolioId)
             ->first();
-
+    
         if (!$portfolio) {
             return response()->json(['error' => 'Portfolio not found.'], 404);
         }
-
+    
         // Only continue if user is active (status = 1)
         if ($portfolio->user_status !== 1) {
             return response()->json(['error' => 'Portfolio not available.'], 200);
         }
-
+    
         $user = $request->user();
-
+    
         // Retrieve all projects for the specified portfolio
         $projectsQuery = DB::table('projects')
             ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
@@ -114,14 +114,14 @@ class ProjectController extends Controller
             )
             ->where('projects.portfolio_id', $portfolioId)
             ->where('users.status', 1); // Only include projects where user_status = 1
-
+    
         // If user is not the owner, only show public projects
         if (!$user || $user->google_id !== $portfolio->user_id) {
             $projectsQuery->where('projects.project_visibility_status', 0); // Only public
         }
-
+    
         $projects = $projectsQuery->get();
-
+        
         // Get collaborator information for each project
         $projectsWithCollaborators = $projects->map(function ($project) {
             // Get collaborators for this project
@@ -138,10 +138,10 @@ class ProjectController extends Controller
                     'users.google_id',
                     'project_collaborator_invitation_statuses.project_collab_status_id'
                 )
-                ->where(function ($query) {
+                ->where(function($query) {
                     // Only include accepted collaborators (status 2) or null for backwards compatibility
                     $query->where('project_collaborator_invitation_statuses.project_collab_status_id', 2)
-                        ->orWhereNull('project_collaborator_invitation_statuses.project_collab_status_id');
+                          ->orWhereNull('project_collaborator_invitation_statuses.project_collab_status_id');
                 })
                 ->get()
                 ->map(function ($collaborator) {
@@ -153,7 +153,7 @@ class ProjectController extends Controller
                     ];
                 })
                 ->toArray();
-
+    
             // Add the owner as the first collaborator
             $allCollaborators = array_merge([[
                 'id' => $project->owner_id,
@@ -161,7 +161,7 @@ class ProjectController extends Controller
                 'google_id' => $project->owner_google_id,
                 'is_owner' => 0
             ]], $collaborators);
-
+    
             return [
                 'portfolio_id' => $project->portfolio_id,
                 'project_id' => $project->project_id,
@@ -170,7 +170,7 @@ class ProjectController extends Controller
                 'collaborators' => $allCollaborators
             ];
         });
-
+    
         // Return the projects data
         return response()->json([
             'projects' => $projectsWithCollaborators
@@ -2017,64 +2017,64 @@ class ProjectController extends Controller
                 'emails' => 'required|array',
                 'emails.*' => 'email|max:255',
             ]);
-
+    
             // Check if the project exists
             $project = DB::table('projects')->where('id', $projectId)->first();
             if (!$project) {
                 return response()->json(['error' => 'Project not found.'], 404);
             }
-
+    
             // Check if the authenticated user is the project owner
             $portfolio = DB::table('portfolios')->where('id', $project->portfolio_id)->first();
             if (!$portfolio) {
                 return response()->json(['error' => 'Portfolio not found.'], 404);
             }
-
+    
             if ($portfolio->user_id !== $request->user()->google_id) {
                 return response()->json(['error' => 'You are not authorized to add collaborators to this project.'], 403);
             }
-
+    
             // Get the project owner's name for the email
             $projectOwner = DB::table('users')
                 ->where('google_id', $portfolio->user_id)
                 ->first();
-
+            
             if (!$projectOwner) {
                 return response()->json(['error' => 'Project owner information not found.'], 404);
             }
-
+    
             $collaborator = [];
             $notFoundUsers = [];
-
+    
             // Set the default collaboration status to 1 (pending)
             $collaborationStatusId = 1; // Pending status
             $rejectedStatusId = 3;     // Rejected status
-
+    
             foreach ($request->input('emails') as $email) {
                 // Find user by email
                 $user = DB::table('users')->where('email', $email)->first();
-
+    
                 if (!$user) {
                     $notFoundUsers[] = $email;
                     continue;
                 }
-
+    
                 // Check if the collaborator already exists for this project
                 $existingCollaborator = DB::table('project_collaborators')
                     ->where('project_id', $projectId)
                     ->where('user_id', $user->google_id)
                     ->first();
-
+    
                 $isNewCollaborator = !$existingCollaborator;
-
+    
                 // Check if this collaborator previously rejected the request
                 $existingStatus = DB::table('project_collaborator_invitation_statuses')
                     ->where('project_id', $projectId)
                     ->where('collaborator_id', $user->google_id)
                     ->first();
-
+    
                 $wasRejected = $existingStatus && $existingStatus->project_collab_status_id === $rejectedStatusId;
-
+    
                 // If collaborator already exists but previously rejected, allow a new request
                 if (!$isNewCollaborator && !$wasRejected) {
                     // Collaborator already exists and did not reject
@@ -2082,7 +2082,7 @@ class ProjectController extends Controller
                     $currentStatus = $existingStatus;
                 } else {
                     // This is either a new collaborator or one who previously rejected
-
+    
                     if ($wasRejected) {
                         // Collaborator previously rejected, creating new request
                     } else {
@@ -2096,7 +2096,7 @@ class ProjectController extends Controller
                             ]);
                         }
                     }
-
+    
                     // Update or insert collaboration status
                     if ($wasRejected) {
                         // Update existing record if it was rejected
@@ -2117,7 +2117,7 @@ class ProjectController extends Controller
                             'updated_at' => now(),
                         ]);
                     }
-
+    
                     // Send email notification for new or renewed requests
                     $this->sendCollaborationInvitationEmail(
                         $email,
@@ -2126,19 +2126,19 @@ class ProjectController extends Controller
                         $project->title,
                         $projectId
                     );
-
+    
                     // Get updated status for response
                     $currentStatus = DB::table('project_collaborator_invitation_statuses')
                         ->where('project_id', $projectId)
                         ->where('collaborator_id', $user->google_id)
                         ->first();
                 }
-
+    
                 // Get the status name for the response using the correct field name
                 $statusName = DB::table('project_collaboration_statuses')
                     ->where('id', $currentStatus ? $currentStatus->project_collab_status_id : $collaborationStatusId)
                     ->value('status') ?? 'Pending';
-
+    
                 $collaborator[] = [
                     'id' => $user->id,
                     'email' => $email,
@@ -2150,7 +2150,7 @@ class ProjectController extends Controller
                     ]
                 ];
             }
-
+    
             return response()->json([
                 'message' => 'Collaborators processed successfully',
                 'collaborator' => $collaborator,
@@ -2162,23 +2162,23 @@ class ProjectController extends Controller
             ], 500);
         }
     }
-
+    
     private function sendCollaborationInvitationEmail($recipientEmail, $recipientName, $ownerName, $projectTitle, $projectId)
     {
         try {
             $apikey = env('BREVO_API_KEY');
-
+    
             if (!$apikey) {
                 Log::error('Brevo API key not found in environment variables');
                 return;
             }
-
+    
             // Extract first name for personalization
             $firstName = explode(' ', $recipientName)[0];
-
+    
             // Build the link to the project/notification page
             $projectLink = env('FRONTEND_URL', 'https://talenthub.newlinkmarketing.com') . '/notifications';
-
+    
             // Create email content
             $htmlContent = "<h1>Project Collaboration Invitation</h1>
                             <p>Hello {$firstName},</p>
@@ -2186,9 +2186,9 @@ class ProjectController extends Controller
                             <p>You can accept or decline this invitation by visiting your notifications page.</p>
                             <p><a href='{$projectLink}'>View Invitation</a></p>
                             <p>Best regards,<br>The TalentHub Team</p>";
-
+            
             $plainContent = "Project Collaboration Invitation\n\nHello {$firstName},\n\n{$ownerName} has invited you to collaborate on the project '{$projectTitle}'.\n\nYou can accept or decline this invitation by visiting your notifications page.\n\nView Invitation: {$projectLink}\n\nBest regards,\nThe TalentHub Team";
-
+    
             // Prepare the email data
             $emailData = [
                 'sender' => [
@@ -2205,14 +2205,14 @@ class ProjectController extends Controller
                 'htmlContent' => $htmlContent,
                 'textContent' => $plainContent
             ];
-
+    
             // Send the email
             $response = Http::withHeaders([
                 'api-key' => $apikey,
                 'accept' => 'application/json',
                 'content-type' => 'application/json'
             ])->post('https://api.brevo.com/v3/smtp/email', $emailData);
-
+    
             if ($response->successful()) {
                 Log::info('Collaboration invitation email sent', [
                     'recipient' => $recipientEmail,
@@ -2234,144 +2234,145 @@ class ProjectController extends Controller
                 'project_id' => $projectId
             ]);
         }
-    }ç
-
-    public function changeEndorsementCollaborationRequest(Request $request)
-    {
-        try {
-            // Get request data
-            $receiverGoogleId = $request->input('receiver_google_id');
-            $recordId = $request->input('id'); // ID from status tables, not portfolio ID
-            $type = $request->input('type'); // 1 = Collaboration, 2 = Endorsement
-            $endorsementType = $request->input('endorsement_type'); // Only if type is 2
-            $status = $request->input('status'); // 2 = Approved, 3 = Declined
-
-            Log::info('changeEndorsementCollaborationRequest called', [
-                'id' => $recordId,
-                'receiver_google_id' => $receiverGoogleId,
-                'type' => $type,
-                'endorsement_type' => $endorsementType,
-                'status' => $status
-            ]);
-
-            // Verify that the receiver_google_id in the request matches the authenticated user
-            if ($receiverGoogleId !== auth()->user()->google_id) {
-                Log::error('Mismatched receiver ID', [
-                    'request_receiver_id' => $receiverGoogleId,
-                    'auth_user_id' => auth()->user()->google_id
-                ]);
-                return response()->json([
-                    'error' => 'The receiver ID in the request does not match your account.',
-                    'provided_id' => $receiverGoogleId,
-                    'your_id' => auth()->user()->google_id
-                ], 403);
-            }
-
-            // Validate endorsement_type based on type
-            if ($type === 2 && !in_array($endorsementType, [1, 2, 3, 4])) {
-                Log::error('Invalid endorsement type', [
+    }
+    
+        public function changeEndorsementCollaborationRequest(Request $request)
+        {
+            try {
+                // Get request data
+                $receiverGoogleId = $request->input('receiver_google_id');
+                $recordId = $request->input('id'); // ID from status tables, not portfolio ID
+                $type = $request->input('type'); // 1 = Collaboration, 2 = Endorsement
+                $endorsementType = $request->input('endorsement_type'); // Only if type is 2
+                $status = $request->input('status'); // 2 = Approved, 3 = Declined
+        
+                Log::info('changeEndorsementCollaborationRequest called', [
+                    'id' => $recordId,
+                    'receiver_google_id' => $receiverGoogleId,
                     'type' => $type,
-                    'endorsement_type' => $endorsementType
+                    'endorsement_type' => $endorsementType,
+                    'status' => $status
                 ]);
-                return response()->json([
-                    'error' => 'Invalid endorsement type. Expected values are: 1 (Skill), 2 (Project), 3 (Experience), or 4 (Achievement).',
-                    'provided_endorsement_type' => $endorsementType
-                ], 400);
-            }
-
-            // Determine the correct table based on type and endorsement_type
-            $table = match (true) {
-                $type === 1 => 'project_collaborator_invitation_statuses',
-                $type === 2 && $endorsementType === 1 => 'skill_endorsement_statuses',
-                $type === 2 && $endorsementType === 2 => 'project_endorsement_statuses',
-                $type === 2 && $endorsementType === 3 => 'experience_endorsement_statuses',
-                $type === 2 && $endorsementType === 4 => 'achievement_endorsement_statuses',
-                default => null,
-            };
-
+        
+                // Verify that the receiver_google_id in the request matches the authenticated user
+                if ($receiverGoogleId !== auth()->user()->google_id) {
+                    Log::error('Mismatched receiver ID', [
+                        'request_receiver_id' => $receiverGoogleId,
+                        'auth_user_id' => auth()->user()->google_id
+                    ]);
+                    return response()->json([
+                        'error' => 'The receiver ID in the request does not match your account.',
+                        'provided_id' => $receiverGoogleId,
+                        'your_id' => auth()->user()->google_id
+                    ], 403);
+                }
+        
+                // Validate endorsement_type based on type
+                if ($type === 2 && !in_array($endorsementType, [1, 2, 3, 4])) {
+                    Log::error('Invalid endorsement type', [
+                        'type' => $type,
+                        'endorsement_type' => $endorsementType
+                    ]);
+                    return response()->json([
+                        'error' => 'Invalid endorsement type. Expected values are: 1 (Skill), 2 (Project), 3 (Experience), or 4 (Achievement).',
+                        'provided_endorsement_type' => $endorsementType
+                    ], 400);
+                }
+        
+                // Determine the correct table based on type and endorsement_type
+                $table = match (true) {
+                    $type === 1 => 'project_collaborator_invitation_statuses',
+                    $type === 2 && $endorsementType === 1 => 'skill_endorsement_statuses',
+                    $type === 2 && $endorsementType === 2 => 'project_endorsement_statuses',
+                    $type === 2 && $endorsementType === 3 => 'experience_endorsement_statuses',
+                    $type === 2 && $endorsementType === 4 => 'achievement_endorsement_statuses',
+                    default => null,
+                };
+        
             if (!$table) {
-                return response()->json(['error' => 'Invalid type or endorsement type provided.'], 400);
-            }
-
-            // Find the record by its ID
-            $record = DB::table($table)->where('id', $recordId)->first();
-
-            if (!$record) {
-                return response()->json([
-                    'error' => 'Record not found.',
-                    'table' => $table,
-                    'id' => $recordId
-                ], 404);
-            }
-
-            // Verify this record belongs to the current user
-            $fieldToCheck = $type === 1 ? 'collaborator_id' : 'endorser_id';
-
-            if ($record->$fieldToCheck !== auth()->user()->google_id) {
-                return response()->json([
-                    'error' => 'You are not authorized to update this request.',
-                    'user_id' => auth()->user()->google_id,
-                    'record_id' => $recordId
-                ], 403);
-            }
-
-            // Verify the status value is valid (2 = Approved, 3 = Declined)
-            if (!in_array($status, [2, 3])) {
-                return response()->json([
-                    'error' => 'Invalid status value. Expected 2 (Approved) or 3 (Declined).',
-                    'provided_status' => $status
-                ], 400);
-            }
-
-            // Begin transaction
-            DB::beginTransaction();
-
-            // Determine the correct column to update based on table and type
-            $column = match ($table) {
-                'project_collaborator_invitation_statuses' => 'project_collab_status_id',
-                'skill_endorsement_statuses' => 'endorsement_status_id',
-                'project_endorsement_statuses' => 'endorsement_status_id',
-                'experience_endorsement_statuses' => 'experience_status_id',
-                'achievement_endorsement_statuses' => 'endorsement_status_id',
-                default => null,
-            };
-
-            if (!$column) {
+                    return response()->json(['error' => 'Invalid type or endorsement type provided.'], 400);
+                }
+        
+                // Find the record by its ID
+                $record = DB::table($table)->where('id', $recordId)->first();
+                
+                if (!$record) {
+                    return response()->json([
+                        'error' => 'Record not found.',
+                        'table' => $table,
+                        'id' => $recordId
+                    ], 404);
+                }
+                
+                // Verify this record belongs to the current user
+                $fieldToCheck = $type === 1 ? 'collaborator_id' : 'endorser_id';
+                
+                if ($record->$fieldToCheck !== auth()->user()->google_id) {
+                    return response()->json([
+                        'error' => 'You are not authorized to update this request.',
+                        'user_id' => auth()->user()->google_id,
+                        'record_id' => $recordId
+                    ], 403);
+                }
+        
+                // Verify the status value is valid (2 = Approved, 3 = Declined)
+                if (!in_array($status, [2, 3])) {
+                    return response()->json([
+                        'error' => 'Invalid status value. Expected 2 (Approved) or 3 (Declined).',
+                        'provided_status' => $status
+                    ], 400);
+                }
+        
+                // Begin transaction
+                DB::beginTransaction();
+        
+                // Determine the correct column to update based on table and type
+                $column = match ($table) {
+                    'project_collaborator_invitation_statuses' => 'project_collab_status_id',
+                    'skill_endorsement_statuses' => 'endorsement_status_id',
+                    'project_endorsement_statuses' => 'endorsement_status_id',
+                    'experience_endorsement_statuses' => 'experience_status_id',
+                    'achievement_endorsement_statuses' => 'endorsement_status_id',
+                    default => null,
+                };
+        
+                if (!$column) {
+                    DB::rollBack();
+                    return response()->json(['error' => 'Invalid table or column mapping.'], 400);
+                }
+        
+                // Perform the update - only update the record with the matching ID
+                $updated = DB::table($table)
+                    ->where('id', $recordId)
+                    ->update([
+                        $column => $status,
+                        'updated_at' => now(),
+                    ]);
+        
+                DB::commit();
+        
+                if ($updated) {
+                    return response()->json([
+                        'message' => 'Request status updated successfully.',
+                        'status' => $status,
+                    ], 200);
+                } else {
+                    return response()->json([
+                        'error' => 'Failed to update the record.'
+                    ], 500);
+                }
+            } catch (\Exception $e) {
                 DB::rollBack();
-                return response()->json(['error' => 'Invalid table or column mapping.'], 400);
-            }
-
-            // Perform the update - only update the record with the matching ID
-            $updated = DB::table($table)
-                ->where('id', $recordId)
-                ->update([
-                    $column => $status,
-                    'updated_at' => now(),
+                Log::error('Error in changeEndorsementCollaborationRequest', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
                 ]);
-
-            DB::commit();
-
-            if ($updated) {
+                
                 return response()->json([
-                    'message' => 'Request status updated successfully.',
-                    'status' => $status,
-                ], 200);
-            } else {
-                return response()->json([
-                    'error' => 'Failed to update the record.'
+                    'error' => 'An error occurred while processing the request.',
+                    'message' => $e->getMessage(),
                 ], 500);
             }
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Error in changeEndorsementCollaborationRequest', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return response()->json([
-                'error' => 'An error occurred while processing the request.',
-                'message' => $e->getMessage(),
-            ], 500);
         }
-    }
+    
 }
