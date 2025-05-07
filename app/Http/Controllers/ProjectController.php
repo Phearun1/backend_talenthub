@@ -149,22 +149,25 @@ class ProjectController extends Controller
                         'id' => $collaborator->id,
                         'name' => $collaborator->name,
                         'google_id' => $collaborator->google_id,
-                        'status' => $collaborator->project_collab_status_id
+                        'is_owner' => false
                     ];
                 })
                 ->toArray();
+    
+            // Add the owner as the first collaborator
+            $allCollaborators = array_merge([[
+                'id' => $project->owner_id,
+                'name' => $project->owner_name,
+                'google_id' => $project->owner_google_id,
+                'is_owner' => true
+            ]], $collaborators);
     
             return [
                 'portfolio_id' => $project->portfolio_id,
                 'project_id' => $project->project_id,
                 'title' => $project->title,
                 'project_visibility_status' => $project->project_visibility_status,
-                'owner' => [
-                    'id' => $project->owner_id,
-                    'name' => $project->owner_name,
-                    'google_id' => $project->owner_google_id
-                ],
-                'collaborators' => $collaborators
+                'collaborators' => $allCollaborators
             ];
         });
     
