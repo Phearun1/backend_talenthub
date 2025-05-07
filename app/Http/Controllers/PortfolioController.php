@@ -77,8 +77,8 @@ class PortfolioController extends Controller
     
         $portfolioId = $portfolio->id;
     
-        // Get projects with ownership information
-        $projects = DB::table('projects')
+        // Get projects that the user owns
+        $ownedProjects = DB::table('projects')
             ->select(
                 'projects.id as project_id',
                 'projects.portfolio_id',
@@ -87,23 +87,51 @@ class PortfolioController extends Controller
             )
             ->where('projects.portfolio_id', $portfolioId)
             ->get()
-            ->map(function ($project) use ($userID) {
-                // Get the owner's google_id for this project
-                $ownerGoogleId = DB::table('portfolios')
-                    ->where('portfolios.id', $project->portfolio_id)
-                    ->value('user_id');
-                
-                // Determine if the viewed user is the owner of this project
-                $isOwner = ($ownerGoogleId === $userID) ? 0 : 1;
-                
+            ->map(function ($project) {
                 return [
                     'project_id' => $project->project_id,
                     'portfolio_id' => $project->portfolio_id,
                     'title' => $project->title,
                     'project_visibility_status' => $project->project_visibility_status,
-                    'is_owner' => $isOwner
+                    'is_owner' => 0  // User is the owner
                 ];
-            });
+            })
+            ->toArray();
+    
+        // Get projects where the user is a collaborator
+        $collaboratedProjects = DB::table('project_collaborators')
+            ->join('projects', 'project_collaborators.project_id', '=', 'projects.id')
+            ->leftJoin('project_collaborator_invitation_statuses', function ($join) use ($userID) {
+                $join->on('project_collaborator_invitation_statuses.project_id', '=', 'projects.id')
+                    ->where('project_collaborator_invitation_statuses.collaborator_id', '=', $userID);
+            })
+            ->where('project_collaborators.user_id', $userID)
+            ->where(function($query) {
+                // Only include projects where the invitation was accepted (status 2) or null (for backwards compatibility)
+                $query->where('project_collaborator_invitation_statuses.project_collab_status_id', 2)
+                      ->orWhereNull('project_collaborator_invitation_statuses.project_collab_status_id');
+            })
+            ->select(
+                'projects.id as project_id',
+                'projects.portfolio_id',
+                'projects.title',
+                'projects.project_visibility_status'
+            )
+            ->distinct()
+            ->get()
+            ->map(function ($project) {
+                return [
+                    'project_id' => $project->project_id,
+                    'portfolio_id' => $project->portfolio_id,
+                    'title' => $project->title,
+                    'project_visibility_status' => $project->project_visibility_status,
+                    'is_owner' => 1  // User is a collaborator
+                ];
+            })
+            ->toArray();
+    
+        // Merge the owned and collaborated projects
+        $projects = array_merge($ownedProjects, $collaboratedProjects);
     
         // Get other related data like education, achievements, skills, etc.
         $education = DB::table('education')->where('portfolio_id', $portfolioId)->get();
