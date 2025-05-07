@@ -149,7 +149,7 @@ class ProjectController extends Controller
                         'id' => $collaborator->id,
                         'name' => $collaborator->name,
                         'google_id' => $collaborator->google_id,
-                        'is_owner' => false
+                        'is_owner' => 1
                     ];
                 })
                 ->toArray();
@@ -159,7 +159,7 @@ class ProjectController extends Controller
                 'id' => $project->owner_id,
                 'name' => $project->owner_name,
                 'google_id' => $project->owner_google_id,
-                'is_owner' => true
+                'is_owner' => 0
             ]], $collaborators);
     
             return [
