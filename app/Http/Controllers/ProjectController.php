@@ -11,33 +11,94 @@ use Laravel\Sanctum\PersonalAccessToken;
 class ProjectController extends Controller
 {
 
+    // public function viewAllProjects(Request $request)
+    // {
+    //     // Validate the request
+    //     $request->validate([
+    //         'portfolio_id' => 'required|integer',
+    //     ]);
+
+    //     $portfolioId = $request->input('portfolio_id');
+
+    //     // Verify the portfolio exists and user is active
+    //     $portfolio = DB::table('portfolios')
+    //         ->join('users', 'portfolios.user_id', '=', 'users.google_id')
+    //         ->select('portfolios.*', 'users.status as user_status')
+    //         ->where('portfolios.id', $portfolioId)
+    //         ->first();
+
+    //     if (!$portfolio) {
+    //         return response()->json(['error' => 'Portfolio not found.'], 404);
+    //     }
+
+    //     // Only continue if user is active (status = 1)
+    //     if ($portfolio->user_status !== 1) {
+    //         return response()->json(['error' => 'Portfolio not available.'], 200);
+    //     }
+
+    //     $user = $request->user();
+
+    //     // Retrieve all projects for the specified portfolio
+    //     $projectsQuery = DB::table('projects')
+    //         ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
+    //         ->join('users', 'portfolios.user_id', '=', 'users.google_id')
+    //         ->select(
+    //             'portfolios.id as portfolio_id',
+    //             'projects.id as project_id',
+    //             'projects.title',
+    //             'projects.project_visibility_status'
+    //         )
+    //         ->where('projects.portfolio_id', $portfolioId)
+    //         ->where('users.status', 1); // Only include projects where user_status = 1
+
+    //     // If user is not the owner, only show public projects
+    //     if (!$user || $user->google_id !== $portfolio->user_id) {
+    //         $projectsQuery->where('projects.project_visibility_status', 0); // Only public
+    //     }
+
+    //     $projects = $projectsQuery->get();
+
+    //     // Return the projects data
+    //     return response()->json([
+    //         'projects' => $projects->map(function ($project) {
+    //             return [
+    //                 'portfolio_id' => $project->portfolio_id,
+    //                 'project_id' => $project->project_id,
+    //                 'title' => $project->title,
+    //                 'project_visibility_status' => $project->project_visibility_status
+    //             ];
+    //         })
+    //     ]);
+    // }
+
+
     public function viewAllProjects(Request $request)
     {
         // Validate the request
         $request->validate([
             'portfolio_id' => 'required|integer',
         ]);
-
+    
         $portfolioId = $request->input('portfolio_id');
-
+    
         // Verify the portfolio exists and user is active
         $portfolio = DB::table('portfolios')
             ->join('users', 'portfolios.user_id', '=', 'users.google_id')
-            ->select('portfolios.*', 'users.status as user_status')
+            ->select('portfolios.*', 'users.status as user_status', 'users.name as owner_name', 'users.google_id as owner_google_id')
             ->where('portfolios.id', $portfolioId)
             ->first();
-
+    
         if (!$portfolio) {
             return response()->json(['error' => 'Portfolio not found.'], 404);
         }
-
+    
         // Only continue if user is active (status = 1)
         if ($portfolio->user_status !== 1) {
             return response()->json(['error' => 'Portfolio not available.'], 200);
         }
-
+    
         $user = $request->user();
-
+    
         // Retrieve all projects for the specified portfolio
         $projectsQuery = DB::table('projects')
             ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
@@ -46,31 +107,70 @@ class ProjectController extends Controller
                 'portfolios.id as portfolio_id',
                 'projects.id as project_id',
                 'projects.title',
-                'projects.project_visibility_status'
+                'projects.project_visibility_status',
+                'users.name as owner_name',
+                'users.google_id as owner_google_id'
             )
             ->where('projects.portfolio_id', $portfolioId)
             ->where('users.status', 1); // Only include projects where user_status = 1
-
+    
         // If user is not the owner, only show public projects
         if (!$user || $user->google_id !== $portfolio->user_id) {
             $projectsQuery->where('projects.project_visibility_status', 0); // Only public
         }
-
+    
         $projects = $projectsQuery->get();
-
+        
+        // Get collaborator information for each project
+        $projectsWithCollaborators = $projects->map(function ($project) {
+            // Get collaborators for this project
+            $collaborators = DB::table('project_collaborators')
+                ->join('users', 'project_collaborators.user_id', '=', 'users.google_id')
+                ->leftJoin('project_collaborator_invitation_statuses', function ($join) use ($project) {
+                    $join->on('project_collaborators.user_id', '=', 'project_collaborator_invitation_statuses.collaborator_id')
+                        ->where('project_collaborator_invitation_statuses.project_id', '=', DB::raw("'{$project->project_id}'"));
+                })
+                ->where('project_collaborators.project_id', $project->project_id)
+                ->select(
+                    'users.id',
+                    'users.name',
+                    'users.google_id',
+                    'project_collaborator_invitation_statuses.project_collab_status_id'
+                )
+                ->where(function($query) {
+                    // Only include accepted collaborators (status 2) or null for backwards compatibility
+                    $query->where('project_collaborator_invitation_statuses.project_collab_status_id', 2)
+                          ->orWhereNull('project_collaborator_invitation_statuses.project_collab_status_id');
+                })
+                ->get()
+                ->map(function ($collaborator) {
+                    return [
+                        'id' => $collaborator->id,
+                        'name' => $collaborator->name,
+                        'google_id' => $collaborator->google_id,
+                        'status' => $collaborator->project_collab_status_id
+                    ];
+                })
+                ->toArray();
+    
+            return [
+                'portfolio_id' => $project->portfolio_id,
+                'project_id' => $project->project_id,
+                'title' => $project->title,
+                'project_visibility_status' => $project->project_visibility_status,
+                'owner' => [
+                    'name' => $project->owner_name,
+                    'google_id' => $project->owner_google_id
+                ],
+                'collaborators' => $collaborators
+            ];
+        });
+    
         // Return the projects data
         return response()->json([
-            'projects' => $projects->map(function ($project) {
-                return [
-                    'portfolio_id' => $project->portfolio_id,
-                    'project_id' => $project->project_id,
-                    'title' => $project->title,
-                    'project_visibility_status' => $project->project_visibility_status
-                ];
-            })
+            'projects' => $projectsWithCollaborators
         ]);
     }
-
 
     public function viewProjectDetail($projectId, Request $request)
     {
