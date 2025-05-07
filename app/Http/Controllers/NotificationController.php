@@ -951,8 +951,8 @@ class NotificationController extends Controller
             // Get the total count of notifications for pagination info
             $totalCount = count($notifications);
             
-            // Return only the requested number based on page
-            $notifications = array_slice($notifications, 0, $limit);
+            // Apply pagination - skip previous pages and limit to perPage items
+            $notifications = array_slice($notifications, ($page - 1) * $perPage, $perPage);
     
             return response()->json($notifications);
         } catch (\Exception $e) {
