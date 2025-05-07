@@ -210,8 +210,6 @@ class ProjectController extends Controller
                 ELSE NULL
             END as file"),
                 'projects.project_visibility_status',
-                'users.name as owner_name',
-                'users.photo as owner_photo',
                 'users.google_id as google_id',
                 'users.status as user_status'
             )
