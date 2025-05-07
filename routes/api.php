@@ -114,7 +114,7 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
 
     Route::get('/view_notification', [NotificationController::class, 'viewNotification']);
 
-
+    Route::post('/update_project_visibility/{projectId}', [ProjectController::class, 'updateProjectVisibility']);
 
 
     // Admin route 
