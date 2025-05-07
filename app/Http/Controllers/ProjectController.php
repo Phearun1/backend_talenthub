@@ -108,6 +108,7 @@ class ProjectController extends Controller
                 'projects.id as project_id',
                 'projects.title',
                 'projects.project_visibility_status',
+                'users.id as owner_id',
                 'users.name as owner_name',
                 'users.google_id as owner_google_id'
             )
@@ -159,6 +160,7 @@ class ProjectController extends Controller
                 'title' => $project->title,
                 'project_visibility_status' => $project->project_visibility_status,
                 'owner' => [
+                    'id' => $project->owner_id,
                     'name' => $project->owner_name,
                     'google_id' => $project->owner_google_id
                 ],
