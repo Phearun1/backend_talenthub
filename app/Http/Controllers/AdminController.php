@@ -206,4 +206,31 @@ class AdminController extends Controller
             'status' => $user->status
         ]);
     }
+
+    public function adminSearchPortfolio(Request $request)
+    {
+        $searchTerm = $request->input('name');
+
+        $portfolios = DB::table('portfolios')
+            ->join('users', 'portfolios.user_id', '=', 'users.google_id')
+            ->select(
+                'portfolios.id',
+                'portfolios.user_id',
+                'portfolios.major_id as major',
+                'portfolios.phone_number',
+                'portfolios.about',
+                'portfolios.working_status',
+                'users.status as status',
+                'portfolios.created_at',
+                'portfolios.updated_at',
+                'users.name as name',
+                'users.email',
+                'users.role_id as role',
+                'users.photo'
+            )
+            ->where('users.name', 'LIKE', '%' . $searchTerm . '%')
+            ->get();
+
+        return response()->json($portfolios);
+    }
 }
