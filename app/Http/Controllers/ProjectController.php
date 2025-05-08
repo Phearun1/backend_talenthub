@@ -1662,38 +1662,38 @@ class ProjectController extends Controller
         try {
             // Validate the request data
             $request->validate([
-                'visibility_status' => 'required',
+                'visibility_status' => 'required|integer|in:0,1', // 0 = public, 1 = private
             ]);
-
+    
             // Check if the project exists
             $project = DB::table('projects')->where('id', $projectId)->first();
-
+    
             if (!$project) {
                 return response()->json(['error' => 'Project not found.'], 404);
             }
-
+    
             // Check if the authenticated user is the project owner
             $portfolio = DB::table('portfolios')->where('id', $project->portfolio_id)->first();
-
+    
             if (!$portfolio) {
                 return response()->json(['error' => 'Portfolio not found.'], 404);
             }
-
+    
             if ($portfolio->user_id !== auth()->user()->google_id) {
                 return response()->json(['error' => 'You are not authorized to update this project.'], 403);
             }
-
-            // Update the project visibility
+    
+            // Update the project visibility - use visibility_status which is what you're validating
             DB::table('projects')
                 ->where('id', $projectId)
                 ->update([
-                    'project_visibility_status' => $request->input('visibility'),
+                    'project_visibility_status' => $request->input('visibility_status'),
                     'updated_at' => now(),
                 ]);
-
+    
             return response()->json([
                 'message' => 'Project visibility updated successfully.',
-                $project
+                'project' => DB::table('projects')->where('id', $projectId)->first()
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
