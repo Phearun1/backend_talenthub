@@ -1662,7 +1662,7 @@ class ProjectController extends Controller
         try {
             // Validate the request data
             $request->validate([
-                'visibility' => 'required',
+                'visibility_status' => 'required',
             ]);
 
             // Check if the project exists
