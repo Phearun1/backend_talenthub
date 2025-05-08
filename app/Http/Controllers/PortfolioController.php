@@ -62,11 +62,11 @@ class PortfolioController extends Controller
             )
             ->where('portfolios.user_id', $userID)
             ->first();
-    
+
         if (!$portfolio) {
             return response()->json(['error' => 'Portfolio not found.'], 404);
         }
-    
+
         // Check if user has been banned (status = 0)
         if ($portfolio->status === 0) {
             return response()->json([
@@ -74,9 +74,9 @@ class PortfolioController extends Controller
                 'status' => 0
             ], 200);
         }
-    
+
         $portfolioId = $portfolio->id;
-    
+
         // Get projects that the user owns
         $ownedProjects = DB::table('projects')
             ->select(
@@ -97,7 +97,7 @@ class PortfolioController extends Controller
                 ];
             })
             ->toArray();
-    
+
         // Get projects where the user is a collaborator
         $collaboratedProjects = DB::table('project_collaborators')
             ->join('projects', 'project_collaborators.project_id', '=', 'projects.id')
@@ -106,10 +106,10 @@ class PortfolioController extends Controller
                     ->where('project_collaborator_invitation_statuses.collaborator_id', '=', $userID);
             })
             ->where('project_collaborators.user_id', $userID)
-            ->where(function($query) {
+            ->where(function ($query) {
                 // Only include projects where the invitation was accepted (status 2) or null (for backwards compatibility)
                 $query->where('project_collaborator_invitation_statuses.project_collab_status_id', 2)
-                      ->orWhereNull('project_collaborator_invitation_statuses.project_collab_status_id');
+                    ->orWhereNull('project_collaborator_invitation_statuses.project_collab_status_id');
             })
             ->select(
                 'projects.id as project_id',
@@ -129,22 +129,22 @@ class PortfolioController extends Controller
                 ];
             })
             ->toArray();
-    
+
         // Merge the owned and collaborated projects
         $projects = array_merge($ownedProjects, $collaboratedProjects);
-    
+
         // Get other related data like education, achievements, skills, etc.
         $education = DB::table('education')->where('portfolio_id', $portfolioId)->get();
         $achievements = DB::table('achievements')->where('portfolio_id', $portfolioId)->get();
         $skills = DB::table('skills')->where('portfolio_id', $portfolioId)->get();
         $experiences = DB::table('experiences')->where('portfolio_id', $portfolioId)->get();
-    
+
         // Modify experiences and achievements if needed, as done earlier
         foreach ($experiences as $experience) {
             $company = DB::table('companies')->where('id', $experience->company_id)->first();
             $experience->company_name = $company ? $company->company_name : 'Unknown';
             unset($experience->company_id);
-    
+
             $rawEndorsers = DB::table('experience_endorsers')
                 ->join('users', 'experience_endorsers.user_id', '=', 'users.google_id')
                 ->join('experience_endorsement_statuses', function ($join) use ($experience) {
@@ -156,17 +156,18 @@ class PortfolioController extends Controller
                     'users.google_id as id',
                     'users.name',
                     'users.email',
+                    'users.photo',
                     'endorsement_statuses.status as status',
                     'endorsement_statuses.id as status_id'
                 )
                 ->where('experience_endorsers.experience_id', $experience->id)
                 ->get();
-    
+
             $experience->endorsers = collect($rawEndorsers)
                 ->unique('id')
                 ->values();
         }
-    
+
         foreach ($achievements as $achievement) {
             $achievement->endorsers = DB::table('achievement_endorsers')
                 ->join('users', 'achievement_endorsers.user_id', '=', 'users.google_id')
@@ -175,11 +176,11 @@ class PortfolioController extends Controller
                         ->where('achievement_endorsement_statuses.achievement_id', '=', $achievement->id);
                 })
                 ->join('endorsement_statuses', 'achievement_endorsement_statuses.endorsement_status_id', '=', 'endorsement_statuses.id')
-                ->select('users.google_id as id', 'users.name', 'users.email', 'endorsement_statuses.status as status', 'endorsement_statuses.id as status_id')
+                ->select('users.google_id as id', 'users.name', 'users.email', 'users.photo', 'endorsement_statuses.status as status', 'endorsement_statuses.id as status_id')
                 ->distinct()
                 ->get();
         }
-    
+
         // Add skill endorsers with endorsement statuses
         foreach ($skills as $skill) {
             $skill->endorsers = DB::table('skill_endorsement_statuses')
@@ -189,6 +190,7 @@ class PortfolioController extends Controller
                     'users.google_id as id',
                     'users.name as name',
                     'users.email as email',
+                    'users.photo',
                     'endorsement_statuses.id as status_id',
                     'endorsement_statuses.status as status'
                 )
@@ -196,7 +198,7 @@ class PortfolioController extends Controller
                 ->distinct()  // Ensure distinct records
                 ->get();
         }
-    
+
         // Return the response with all the data
         return response()->json([
             'portfolio' => $portfolio,
