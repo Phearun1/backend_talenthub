@@ -103,16 +103,12 @@ class AdminController extends Controller
             return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
         }
     
-        // Validate and get the limit from query parameters, default is 18, max 100
-        $validated = $request->validate([
-            'limit' => 'nullable|integer|min:1',
-        ]);
+        $page = $request->input('page', 1); // Default page to 1 if not provided
+        $perPage = 18; // Fixed number of users per page
     
-        $limit = $request->query('limit', 20);
-    
-        // Fetch users with only specific fields and apply the limit
+        // Fetch users with pagination
         $users = DB::table('users')
-            ->leftJoin('portfolios', 'users.google_id', '=', 'portfolios.user_id') // Changed join condition
+            ->leftJoin('portfolios', 'users.google_id', '=', 'portfolios.user_id')
             ->select(
                 'users.id',
                 'users.email',
@@ -120,9 +116,15 @@ class AdminController extends Controller
                 'users.photo',
                 'users.google_id',
                 'users.role_id',
-                'portfolios.phone_number'
+                'users.status',
+                'portfolios.phone_number',
+                'portfolios.about',
+                'users.created_at',
+                'users.updated_at'
             )
-            ->limit($limit)
+            ->orderBy('users.created_at', 'desc') // Order by most recently created
+            ->skip(($page - 1) * $perPage) // Skip previous pages
+            ->take($perPage) // Take only perPage number of records
             ->get();
     
         return response()->json($users);
