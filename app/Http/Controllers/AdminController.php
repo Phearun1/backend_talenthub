@@ -329,4 +329,36 @@ class AdminController extends Controller
                 
         return response()->json($topJobTitles);
     }
+
+    public function viewTop10Companies()
+    {
+        // Check if the authenticated user is an admin (role_id = 3)
+        if (auth()->user() && auth()->user()->role_id !== 3) {
+            return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
+        }
+        
+        // Query to get top 10 companies and count of students
+        $topCompanies = DB::table('experiences')
+            ->join('companies', 'experiences.company_id', '=', 'companies.id')
+            ->join('portfolios', 'experiences.portfolio_id', '=', 'portfolios.id')
+            ->join('users', 'portfolios.user_id', '=', 'users.google_id')
+            ->select(
+                'companies.company_name as title',
+                DB::raw('COUNT(DISTINCT portfolios.user_id) as students')
+            )
+            ->where('users.role_id', 1) // Only include students (role_id = 1)
+            ->where('users.status', 1)  // Only include unbanned students
+            ->groupBy('companies.company_name')
+            ->orderBy('students', 'desc')
+            ->take(10)
+            ->get()
+            ->map(function($item) {
+                return [
+                    'title' => $item->title,
+                    'students' => (int)$item->students  // Ensure students is returned as an integer
+                ];
+            });
+        
+        return response()->json($topCompanies);
+    }
 }
