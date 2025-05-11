@@ -296,5 +296,37 @@ class AdminController extends Controller
             ['name' => 'Unemployed', 'value' => $unemployedUsers]
         ]);
     }
-   
+
+
+    public function viewTop10JobTitle()
+    {
+        // Check if the authenticated user is an admin (role_id = 3)
+        if (auth()->user() && auth()->user()->role_id !== 3) {
+            return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
+        }
+        
+        // Query to get top 10 job titles and count of students 
+        $topJobTitles = DB::table('experiences')
+            ->join('portfolios', 'experiences.portfolio_id', '=', 'portfolios.id')
+            ->join('users', 'portfolios.user_id', '=', 'users.google_id')
+            ->select(
+                'experiences.work_title as title',  // Changed from 'experiences.title' to 'experiences.work_title'
+                DB::raw('COUNT(DISTINCT portfolios.user_id) as students')
+            )
+            ->where('users.role_id', 1) // Only include students (role_id = 1)
+            ->where('users.status', 1)  // Only include unbanned students
+            ->whereNotNull('experiences.work_title')  // Changed from 'experiences.title' to 'experiences.work_title'
+            ->groupBy('experiences.work_title')  // Changed from 'experiences.title' to 'experiences.work_title'
+            ->orderBy('students', 'desc')
+            ->take(10)
+            ->get()
+            ->map(function($item) {
+                return [
+                    'title' => $item->title,
+                    'students' => (int)$item->students  // Ensure students is returned as an integer
+                ];
+            });
+                
+        return response()->json($topJobTitles);
+    }
 }

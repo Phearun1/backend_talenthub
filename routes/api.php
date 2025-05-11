@@ -132,4 +132,5 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
     Route::middleware('role:3')->get('/admin_search_portfolio/{name}', [AdminController::class, 'adminSearchPortfolio']);
     Route::middleware('role:3')->post('/admin/logout', [AuthController::class, 'adminLogout']);
     Route::middleware('role:3')->get('/admin_view_employment_rate', [AdminController::class, 'viewEmploymentRate']);
+    Route::middleware('role:3')->get('/admin_view_top_10_job_title', [AdminController::class, 'viewTop10JobTitle']);
 });
