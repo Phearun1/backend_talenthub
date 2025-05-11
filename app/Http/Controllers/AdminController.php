@@ -298,7 +298,6 @@ class AdminController extends Controller
         // Calculate employment rate as a percentage (if there are students with working status)
         $totalWithStatus = $employedUsers + $unemployedUsers;
     
-
         return response()->json([
             'Employed' => $employedUsers,
             'Unemployed' => $unemployedUsers,
