@@ -235,11 +235,17 @@ class AdminController extends Controller
     }
 
 
-    public function adminViewAllPortfolio(Request $request)
+    public function adminViewAllPortfolioAndProject(Request $request)
     {
+        // Check if the authenticated user is an admin (role_id = 3)
+        if ($request->user() && $request->user()->role_id !== 3) {
+            return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
+        }
+        
         $page = $request->input('page', 1); // Default page to 1 if not provided
         $perPage = 2; // Fixed number of portfolios per page
-
+    
+        // Fetch portfolios with pagination
         $portfolios = DB::table('portfolios')
             ->join('users', 'portfolios.user_id', '=', 'users.google_id')
             ->select(
@@ -257,14 +263,36 @@ class AdminController extends Controller
                 'users.photo',
                 'users.role_id as role'
             )
-            // ->where('users.status', '=', 1) // Only show active users (status = 1)
             ->orderBy('portfolios.updated_at', 'desc') // Order by most recently updated
             ->skip(($page - 1) * $perPage) // Skip previous pages
             ->take($perPage) // Take only perPage number of records
             ->get();
-
-        return response()->json($portfolios);
+        
+        // Get all portfolio IDs
+        $portfolioIds = $portfolios->pluck('id')->toArray();
+        
+        // Fetch projects associated with these portfolios
+        $projects = DB::table('projects')
+            ->whereIn('portfolio_id', $portfolioIds)
+            ->select(
+                'projects.id as project_id',
+                'projects.portfolio_id',
+                'projects.title',
+                'projects.description',
+                'projects.project_visibility_status',
+                'projects.created_at',
+                'projects.updated_at'
+            )
+            ->get();
+        
+        // Return both portfolios and projects in the requested structure
+        return response()->json([
+            'portfolio' => $portfolios,
+            'project' => $projects
+        ]);
     }
+
+    
 
 
     public function viewEmploymentRate()
