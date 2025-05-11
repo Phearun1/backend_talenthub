@@ -124,6 +124,7 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
 
     // User Management
 
+    Route::middleware('role:3')->get('/admin/view_all_portfolio', [AdminController::class, 'adminViewAllPortfolio']);
     Route::middleware('role:3')->get('/users', [AdminController::class, 'viewAllUser']);
     Route::middleware('role:3')->post('/update_user_role/{google_id}', [AdminController::class, 'updateUserRole']);
     Route::middleware('role:3')->post('/admin_change_password', [AdminController::class, 'adminChangePassword']);
