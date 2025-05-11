@@ -273,34 +273,25 @@ class AdminController extends Controller
         if (auth()->user() && auth()->user()->role_id !== 3) {
             return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
         }
-
-        // Get total number of student users (only role_id = 1)
-        $totalUsers = DB::table('users')
-            ->where('role_id', 1) // Only include students (role_id = 1)
-            ->count();
-
+    
         // Get number of employed students (working_status = 1)
         $employedUsers = DB::table('portfolios')
             ->join('users', 'portfolios.user_id', '=', 'users.google_id')
             ->where('portfolios.working_status', 1)
             ->where('users.role_id', 1) // Only include students (role_id = 1)
             ->count();
-
+    
         // Get number of unemployed students (working_status = 2)
         $unemployedUsers = DB::table('portfolios')
             ->join('users', 'portfolios.user_id', '=', 'users.google_id')
             ->where('portfolios.working_status', 2)
             ->where('users.role_id', 1) // Only include students (role_id = 1)
             ->count();
-
-        
-
-        // Calculate employment rate as a percentage (if there are students with working status)
-        $totalWithStatus = $employedUsers + $unemployedUsers;
     
+        // Return data in exactly the requested format
         return response()->json([
-            'Employed' => $employedUsers,
-            'Unemployed' => $unemployedUsers,
+            ['name' => 'Employed', 'value' => $employedUsers],
+            ['name' => 'Unemployed', 'value' => $unemployedUsers]
         ]);
     }
 
