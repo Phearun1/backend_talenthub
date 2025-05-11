@@ -104,7 +104,7 @@ class AdminController extends Controller
         }
 
         $page = $request->input('page', 1); // Default page to 1 if not provided
-        $perPage = 2; // Fixed number of users per page
+        $perPage = 10; // Fixed number of users per page
 
         // Fetch users with pagination
         $users = DB::table('users')
