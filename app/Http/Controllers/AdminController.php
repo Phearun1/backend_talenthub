@@ -257,7 +257,7 @@ class AdminController extends Controller
                 'users.photo',
                 'users.role_id as role'
             )
-            ->where('users.status', '=', 1) // Only show active users (status = 1)
+            // ->where('users.status', '=', 1) // Only show active users (status = 1)
             ->orderBy('portfolios.updated_at', 'desc') // Order by most recently updated
             ->skip(($page - 1) * $perPage) // Skip previous pages
             ->take($perPage) // Take only perPage number of records
