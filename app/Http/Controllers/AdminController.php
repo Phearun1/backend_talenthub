@@ -301,8 +301,8 @@ class AdminController extends Controller
 
         return response()->json([
             'total_users' => $totalUsers,
-            'employed_users' => $employedUsers,
-            'unemployed_users' => $unemployedUsers,
+            'Employed' => $employedUsers,
+            'Unemployed' => $unemployedUsers,
         ]);
     }
 }
