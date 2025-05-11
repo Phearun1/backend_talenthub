@@ -274,18 +274,20 @@ class AdminController extends Controller
             return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
         }
     
-        // Get number of employed students (working_status = 1)
+        // Get number of employed students (working_status = 1) who are not banned (status = 1)
         $employedUsers = DB::table('portfolios')
             ->join('users', 'portfolios.user_id', '=', 'users.google_id')
             ->where('portfolios.working_status', 1)
             ->where('users.role_id', 1) // Only include students (role_id = 1)
+            ->where('users.status', 1)  // Only include unbanned students
             ->count();
     
-        // Get number of unemployed students (working_status = 2)
+        // Get number of unemployed students (working_status = 2) who are not banned (status = 1)
         $unemployedUsers = DB::table('portfolios')
             ->join('users', 'portfolios.user_id', '=', 'users.google_id')
             ->where('portfolios.working_status', 2)
             ->where('users.role_id', 1) // Only include students (role_id = 1)
+            ->where('users.status', 1)  // Only include unbanned students
             ->count();
     
         // Return data in exactly the requested format
@@ -294,6 +296,5 @@ class AdminController extends Controller
             ['name' => 'Unemployed', 'value' => $unemployedUsers]
         ]);
     }
-
    
 }
