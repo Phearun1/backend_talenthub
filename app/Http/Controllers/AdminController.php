@@ -283,7 +283,7 @@ class AdminController extends Controller
                 'projects.created_at',
                 'projects.updated_at'
             )
-            ->orderBy('portfolios.updated_at', 'desc') // Order by most recently updated
+            ->orderBy('projects.updated_at', 'desc') // Use projects table for ordering
             ->skip(($page - 1) * $perPage) // Skip previous pages
             ->take($perPage) // Take only perPage number of records
             ->get();
