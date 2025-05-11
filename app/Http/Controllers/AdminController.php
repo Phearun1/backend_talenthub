@@ -241,10 +241,10 @@ class AdminController extends Controller
         if ($request->user() && $request->user()->role_id !== 3) {
             return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
         }
-        
+
         $page = $request->input('page', 1); // Default page to 1 if not provided
         $perPage = 2; // Fixed number of portfolios per page
-    
+
         // Fetch portfolios with pagination
         $portfolios = DB::table('portfolios')
             ->join('users', 'portfolios.user_id', '=', 'users.google_id')
@@ -267,10 +267,10 @@ class AdminController extends Controller
             ->skip(($page - 1) * $perPage) // Skip previous pages
             ->take($perPage) // Take only perPage number of records
             ->get();
-        
+
         // Get all portfolio IDs
         $portfolioIds = $portfolios->pluck('id')->toArray();
-        
+
         // Fetch projects associated with these portfolios
         $projects = DB::table('projects')
             ->whereIn('portfolio_id', $portfolioIds)
@@ -283,8 +283,11 @@ class AdminController extends Controller
                 'projects.created_at',
                 'projects.updated_at'
             )
+            ->orderBy('portfolios.updated_at', 'desc') // Order by most recently updated
+            ->skip(($page - 1) * $perPage) // Skip previous pages
+            ->take($perPage) // Take only perPage number of records
             ->get();
-        
+
         // Return both portfolios and projects in the requested structure
         return response()->json([
             'portfolio' => $portfolios,
@@ -292,7 +295,7 @@ class AdminController extends Controller
         ]);
     }
 
-    
+
 
 
     public function viewEmploymentRate()
@@ -301,7 +304,7 @@ class AdminController extends Controller
         if (auth()->user() && auth()->user()->role_id !== 3) {
             return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
         }
-    
+
         // Get number of employed students (working_status = 1) who are not banned (status = 1)
         $employedUsers = DB::table('portfolios')
             ->join('users', 'portfolios.user_id', '=', 'users.google_id')
@@ -309,7 +312,7 @@ class AdminController extends Controller
             ->where('users.role_id', 1) // Only include students (role_id = 1)
             ->where('users.status', 1)  // Only include unbanned students
             ->count();
-    
+
         // Get number of unemployed students (working_status = 2) who are not banned (status = 1)
         $unemployedUsers = DB::table('portfolios')
             ->join('users', 'portfolios.user_id', '=', 'users.google_id')
@@ -317,7 +320,7 @@ class AdminController extends Controller
             ->where('users.role_id', 1) // Only include students (role_id = 1)
             ->where('users.status', 1)  // Only include unbanned students
             ->count();
-    
+
         // Return data in exactly the requested format
         return response()->json([
             ['name' => 'Employed', 'value' => $employedUsers],
@@ -332,7 +335,7 @@ class AdminController extends Controller
         if (auth()->user() && auth()->user()->role_id !== 3) {
             return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
         }
-        
+
         // Query to get top 10 job titles and count of students 
         $topJobTitles = DB::table('experiences')
             ->join('portfolios', 'experiences.portfolio_id', '=', 'portfolios.id')
@@ -348,13 +351,13 @@ class AdminController extends Controller
             ->orderBy('students', 'desc')
             ->take(10)
             ->get()
-            ->map(function($item) {
+            ->map(function ($item) {
                 return [
                     'title' => $item->title,
                     'students' => (int)$item->students  // Ensure students is returned as an integer
                 ];
             });
-                
+
         return response()->json($topJobTitles);
     }
 
@@ -364,7 +367,7 @@ class AdminController extends Controller
         if (auth()->user() && auth()->user()->role_id !== 3) {
             return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
         }
-        
+
         // Query to get top 10 companies and count of students
         $topCompanies = DB::table('experiences')
             ->join('companies', 'experiences.company_id', '=', 'companies.id')
@@ -380,13 +383,13 @@ class AdminController extends Controller
             ->orderBy('students', 'desc')
             ->take(10)
             ->get()
-            ->map(function($item) {
+            ->map(function ($item) {
                 return [
                     'title' => $item->title,
                     'students' => (int)$item->students  // Ensure students is returned as an integer
                 ];
             });
-        
+
         return response()->json($topCompanies);
     }
 }
