@@ -49,6 +49,10 @@ class AuthController extends Controller
             // If user exists but doesn't have google_id linked, update it
             if ($user && !$user->google_id) {
                 $user->google_id = $profile['sub'];
+                // Also update the user's photo if provided
+                if (!empty($profile['photo'])) {
+                    $user->photo = $profile['photo'];
+                }
                 $user->save();
             }
         }
@@ -71,8 +75,8 @@ class AuthController extends Controller
         // Check if user is banned
         if ($user->status === 0) {
             return response()->json([
-            'error' => 'Your account has been suspended. Please contact an administrator.',
-            'user_status' => 0
+                'error' => 'Your account has been suspended. Please contact an administrator.',
+                'user_status' => 0
             ], 200);
         }
 
