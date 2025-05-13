@@ -123,11 +123,11 @@ class AuthController extends Controller
             'name' => 'required|string',
             'photo' => 'nullable|string',
         ]);
-
+    
         if ($validator->fails()) {
             return response()->json(['error' => 'Invalid profile data'], 400);
         }
-
+    
         // Retrieve parameters directly from query string
         $profile = [
             'sub' => $request->query('sub'),
@@ -135,7 +135,7 @@ class AuthController extends Controller
             'name' => $request->query('name'),
             'photo' => $request->query('photo'),
         ];
-
+    
         // Check if the email is from a personal domain (not allowed)
         if ($this->isPersonalEmail($profile['email'])) {
             return response()->json([
@@ -143,39 +143,39 @@ class AuthController extends Controller
                 'user_status' => -2  // Special status to indicate personal email
             ], 401);
         }
-
-        // First, try finding user by Google ID
-        $user = User::where('google_id', $profile['sub'])->first();
-
-        // If not found, try matching by email
+    
+        // Try finding user where all three fields match (strict check)
+        $user = User::where('google_id', $profile['sub'])
+                  ->where('email', $profile['email'])
+                  ->where('name', $profile['name'])
+                  ->first();
+    
         if (!$user) {
-            $user = User::where('email', $profile['email'])->first();
-
-            // If user exists but doesn't have google_id linked, update it
-            if ($user && !$user->google_id) {
-                $user->google_id = $profile['sub'];
-                // Also update the user's photo if provided
-                if (!empty($profile['photo'])) {
-                    $user->photo = $profile['photo'];
-                }
-                $user->save();
-            }
-        } else {
-            // User found by Google ID - update photo if provided to keep it current
-            if (!empty($profile['photo']) && $user->photo !== $profile['photo']) {
-                $user->photo = $profile['photo'];
-                $user->save();
+            // If strict check failed, check if email exists but other fields don't match
+            $emailUser = User::where('email', $profile['email'])->first();
+            
+            if ($emailUser) {
+                // Email exists, but either sub or name doesn't match
+                return response()->json([
+                    'error' => 'Authentication failed. User credentials do not match our records.',
+                    'user_status' => -3  // Credentials mismatch
+                ], 401);
+            } else {
+                // Email doesn't exist in our system
+                return response()->json([
+                    'error' => 'Account not found. Please contact an administrator to register your account.',
+                    'user_status' => -1  // User doesn't exist
+                ], 401);
             }
         }
-
-        // If user doesn't exist in our database, return unauthorized
-        if (!$user) {
-            return response()->json([
-                'error' => 'Account not found. Please contact an administrator to register your account.',
-                'user_status' => -1  // Special status to indicate user doesn't exist
-            ], 401);
+        
+        // User was found with matching sub, email, and name
+        // Update photo if needed
+        if (!empty($profile['photo']) && $user->photo !== $profile['photo']) {
+            $user->photo = $profile['photo'];
+            $user->save();
         }
-
+    
         // Check if user is banned
         if ($user->status === 0) {
             return response()->json([
@@ -183,7 +183,7 @@ class AuthController extends Controller
                 'user_status' => 0
             ], 200);
         }
-
+    
         // Auto-create portfolio only if not already created
         $existingPortfolio = Portfolio::where('user_id', $user->google_id)->first();
         if (!$existingPortfolio) {
@@ -195,17 +195,17 @@ class AuthController extends Controller
                 'working_status' => 2,
             ]);
         }
-
+    
         // Token & role check
         $roleId = $user->role_id;
         if ($roleId === 1 || $roleId === 2) {
             $expiresAt = Carbon::now()->addMonth();
             $token = $user->createToken('API Token')->plainTextToken;
-
+    
             $user->tokens->last()->update([
                 'expires_at' => $expiresAt,
             ]);
-
+    
             return response()->json([
                 'token' => $token,
                 'role_id' => $roleId,
@@ -213,7 +213,7 @@ class AuthController extends Controller
                 'google_id' => $user->google_id,
             ]);
         }
-
+    
         return response()->json(['error' => 'Unauthorized role'], 403);
     }
 
