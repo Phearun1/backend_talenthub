@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Route;
 
 // Public route for Google login
 Route::post('/login_google', [AuthController::class, 'loginWithGoogle']);
+Route::post('/login_google2', [AuthController::class, 'loginWithGoogle2']);
 Route::post('/admin_login', [AuthController::class, 'adminLogin']);
 
 Route::get('/view_all_companies', [ExperienceController::class, 'viewAllCompanies']);
