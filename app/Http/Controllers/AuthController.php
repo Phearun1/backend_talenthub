@@ -123,11 +123,11 @@ class AuthController extends Controller
             'name' => 'required|string',
             'photo' => 'nullable|string',
         ]);
-    
+
         if ($validator->fails()) {
             return response()->json(['error' => 'Invalid profile data'], 400);
         }
-    
+
         // Retrieve parameters directly from query string
         $profile = [
             'sub' => $request->query('sub'),
@@ -135,10 +135,10 @@ class AuthController extends Controller
             'name' => $request->query('name'),
             'photo' => $request->query('photo'),
         ];
-    
+
         // First, check if the email exists in our database
         $emailExists = User::where('email', $profile['email'])->exists();
-    
+
         // If email doesn't exist, check if it's a personal email
         if (!$emailExists) {
             if ($this->isPersonalEmail($profile['email'])) {
@@ -156,48 +156,75 @@ class AuthController extends Controller
                     'role_id' => 1, // Default to student role
                     'status' => 1,  // Set default status to active
                 ]);
-    
+
                 // Log the new user creation
                 Log::info('New user created with non-personal email: ' . $profile['email']);
             }
         } else {
-            // Email exists, try finding user by Google ID and email
+            // Email exists 
+            // First check if there's a user with matching Google ID and email
             $user = User::where('google_id', $profile['sub'])
                 ->where('email', $profile['email'])
                 ->first();
-    
-            if (!$user) {
-                // If not found by Google ID and email, check if email exists but other fields don't match
+
+            if ($user) {
+                // User found by Google ID and email, but we should also verify the name
+                if ($user->name !== $profile['name']) {
+                    // The name doesn't match - this could be suspicious
+                    Log::warning("Login attempt with correct Google ID and email but wrong name. Email: {$profile['email']}, Provided name: {$profile['name']}, Stored name: {$user->name}");
+
+                    return response()->json([
+                        'error' => 'Authentication failed. User credentials do not match our records.',
+                    ], 401);
+
+                    // Or just update the name if you want to be more flexible:
+                    // $user->name = $profile['name'];
+                    // $user->save();
+                }
+            } else {
+                // No user found with this Google ID and email
+                // Check if the email exists but with a different Google ID
                 $emailUser = User::where('email', $profile['email'])->first();
-    
+
                 if ($emailUser) {
-                    // If user has no Google ID linked yet, update it
+                    // Email exists but either with wrong Google ID or no Google ID
+
+                    // Only allow linking if there is no Google ID yet
                     if (!$emailUser->google_id) {
+                        // Email exists but no Google ID linked yet, so link it
                         $emailUser->google_id = $profile['sub'];
                         $emailUser->name = $profile['name'];
                         if (!empty($profile['photo'])) {
                             $emailUser->photo = $profile['photo'];
                         }
                         $emailUser->save();
+
                         $user = $emailUser;
                     } else {
-                        // Email exists with different Google ID
+                        // Email exists with a DIFFERENT Google ID - this is suspicious!
+                        // Someone might be trying to take over an account
+                        Log::warning("Login attempt with wrong Google ID. Email: {$profile['email']}, Provided sub: {$profile['sub']}, Stored sub: {$emailUser->google_id}");
+
                         return response()->json([
                             'error' => 'Authentication failed. User credentials do not match our records.',
                         ], 401);
                     }
+                } else {
+                    // This shouldn't happen as we already checked if email exists
+                    return response()->json([
+                        'error' => 'Authentication error. Please try again.',
+                    ], 500);
                 }
             }
         }
-    
+
         // Check if user is banned
         if ($user->status === 0) {
             return response()->json([
                 'error' => 'Your account has been suspended. Please contact an administrator.',
-                'user_status' => 0
             ], 200);
         }
-    
+
         // Auto-create portfolio only if not already created
         $existingPortfolio = Portfolio::where('user_id', $user->google_id)->first();
         if (!$existingPortfolio) {
@@ -209,17 +236,17 @@ class AuthController extends Controller
                 'working_status' => 2,
             ]);
         }
-    
+
         // Token & role check
         $roleId = $user->role_id;
         if ($roleId === 1 || $roleId === 2) {
             $expiresAt = Carbon::now()->addMonth();
             $token = $user->createToken('API Token')->plainTextToken;
-    
+
             $user->tokens->last()->update([
                 'expires_at' => $expiresAt,
             ]);
-    
+
             return response()->json([
                 'token' => $token,
                 'role_id' => $roleId,
@@ -227,7 +254,7 @@ class AuthController extends Controller
                 'google_id' => $user->google_id,
             ]);
         }
-    
+
         return response()->json(['error' => 'Unauthorized role'], 403);
     }
     private function isPersonalEmail($email)
