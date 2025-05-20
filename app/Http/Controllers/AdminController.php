@@ -11,9 +11,7 @@ use App\Models\User;
 
 class AdminController extends Controller
 {
-    /**
-     * Admin creates a new endorser account (with email only)
-     */
+    
     public function adminCreateEndorserAccount(Request $request)
     {
         // Check if the authenticated user is an admin (role_id = 3)
@@ -40,39 +38,46 @@ class AdminController extends Controller
         return response()->json(['message' => 'Success', 'user' => $user]);
     }
 
-    /**
-     * Admin creates a new admin account (with email and password)
-     */
+   
     public function adminCreateAdminAccount(Request $request)
     {
         // Check if the authenticated user is an admin (role_id = 3)
         if ($request->user() && $request->user()->role_id !== 3) {
             return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
         }
-
+    
         // Validate the admin input for the admin email
         $validator = Validator::make($request->all(), [
             'email' => 'required|email|unique:admins,email',
+            'name' => 'required|string|max:255',
+            'password' => 'required|string|min:8',
+            'password_confirmation' => 'required|same:password',
         ]);
-
+    
         if ($validator->fails()) {
-            return response()->json(['error' => 'Invalid or existing email'], 400);
+            return response()->json(['error' => $validator->errors()], 400);
         }
-
-        // Set a default password
-        $defaultPassword = '12345678';
-
-        // Create the admin with email and default password
+    
+        // Create the admin with email and password
         $admin = Admin::create([
             'email' => $request->email,
-            'password' => Hash::make($defaultPassword), // Hash the default password
+            'name' => $request->name,
+            'password' => Hash::make($request->password), // Hash the provided password
             'role_id' => 3, // Admin role
             'photo' => null, // Default photo is set to null
         ]);
+    
 
-        return response()->json(['message' => 'Success', 'admin' => $admin]);
+        return response()->json([
+            'message' => 'Admin account created successfully',
+            'admin' => [
+                'id' => $admin->id,
+                'email' => $admin->email,
+                'name' => $admin->name,
+                'role_id' => $admin->role_id,
+            ]
+        ], 201);
     }
-
 
     public function adminChangePassword(Request $request)
     {
@@ -304,7 +309,7 @@ class AdminController extends Controller
         }
     
         $page = $request->input('page', 1); // Default page to 1 if not provided
-        $perPage = 18; // Fixed number of portfolios per page
+        $perPage = 2; // Fixed number of portfolios per page
     
         // Fetch portfolios with pagination
         $portfolios = DB::table('portfolios')
@@ -341,7 +346,7 @@ class AdminController extends Controller
         }
     
         $page = $request->input('page', 1); // Default page to 1 if not provided
-        $perPage = 18; // Fixed number of projects per page
+        $perPage = 2; // Fixed number of projects per page
     
         // Fetch projects with pagination
         $projects = DB::table('projects')
@@ -356,6 +361,7 @@ class AdminController extends Controller
                 'projects.created_at',
                 'projects.updated_at',
                 'users.name as user_name',
+                'users.google_id as user_google_id',
                 'users.email as user_email'
             )
             ->orderBy('projects.updated_at', 'desc')
