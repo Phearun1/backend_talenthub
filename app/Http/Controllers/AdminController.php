@@ -235,16 +235,77 @@ class AdminController extends Controller
     }
 
 
-    public function adminViewAllPortfolioAndProject(Request $request)
+    // public function adminViewAllPortfolioAndProject(Request $request)
+    // {
+    //     // Check if the authenticated user is an admin (role_id = 3)
+    //     if ($request->user() && $request->user()->role_id !== 3) {
+    //         return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
+    //     }
+
+    //     $page = $request->input('page', 1); // Default page to 1 if not provided
+    //     $perPage = 2; // Fixed number of portfolios per page
+
+    //     // Fetch portfolios with pagination
+    //     $portfolios = DB::table('portfolios')
+    //         ->join('users', 'portfolios.user_id', '=', 'users.google_id')
+    //         ->select(
+    //             'portfolios.id',
+    //             'portfolios.user_id',
+    //             'portfolios.major_id as major',
+    //             'portfolios.phone_number',
+    //             'portfolios.about',
+    //             'portfolios.working_status',
+    //             'users.status as status',
+    //             'portfolios.created_at',
+    //             'portfolios.updated_at',
+    //             'users.name as name',
+    //             'users.email',
+    //             'users.photo',
+    //             'users.role_id as role'
+    //         )
+    //         ->orderBy('portfolios.updated_at', 'desc') // Order by most recently updated
+    //         ->skip(($page - 1) * $perPage) // Skip previous pages
+    //         ->take($perPage) // Take only perPage number of records
+    //         ->get();
+
+    //     // Get all portfolio IDs
+    //     $portfolioIds = $portfolios->pluck('id')->toArray();
+
+    //     // Fetch projects associated with these portfolios
+    //     $projects = DB::table('projects')
+    //         ->whereIn('portfolio_id', $portfolioIds)
+    //         ->select(
+    //             'projects.id as project_id',
+    //             'projects.portfolio_id',
+    //             'projects.title',
+    //             'projects.description',
+    //             'projects.project_visibility_status',
+    //             'projects.created_at',
+    //             'projects.updated_at'
+    //         )
+    //         ->orderBy('projects.updated_at', 'desc') // Use projects table for ordering
+    //         ->skip(($page - 1) * $perPage) // Skip previous pages
+    //         ->take($perPage) // Take only perPage number of records
+    //         ->get();
+
+    //     // Return both portfolios and projects in the requested structure
+    //     return response()->json([
+    //         'portfolio' => $portfolios,
+    //         'project' => $projects
+    //     ]);
+    // }
+
+
+    public function adminViewAllPortfolio(Request $request)
     {
         // Check if the authenticated user is an admin (role_id = 3)
         if ($request->user() && $request->user()->role_id !== 3) {
             return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
         }
-
+    
         $page = $request->input('page', 1); // Default page to 1 if not provided
-        $perPage = 2; // Fixed number of portfolios per page
-
+        $perPage = 18; // Fixed number of portfolios per page
+    
         // Fetch portfolios with pagination
         $portfolios = DB::table('portfolios')
             ->join('users', 'portfolios.user_id', '=', 'users.google_id')
@@ -267,13 +328,25 @@ class AdminController extends Controller
             ->skip(($page - 1) * $perPage) // Skip previous pages
             ->take($perPage) // Take only perPage number of records
             ->get();
-
-        // Get all portfolio IDs
-        $portfolioIds = $portfolios->pluck('id')->toArray();
-
-        // Fetch projects associated with these portfolios
+    
+        return response()->json($portfolios);
+    }
+    
+   
+    public function adminViewAllProject(Request $request)
+    {
+        // Check if the authenticated user is an admin (role_id = 3)
+        if ($request->user() && $request->user()->role_id !== 3) {
+            return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
+        }
+    
+        $page = $request->input('page', 1); // Default page to 1 if not provided
+        $perPage = 18; // Fixed number of projects per page
+    
+        // Fetch projects with pagination
         $projects = DB::table('projects')
-            ->whereIn('portfolio_id', $portfolioIds)
+            ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
+            ->join('users', 'portfolios.user_id', '=', 'users.google_id')
             ->select(
                 'projects.id as project_id',
                 'projects.portfolio_id',
@@ -281,18 +354,39 @@ class AdminController extends Controller
                 'projects.description',
                 'projects.project_visibility_status',
                 'projects.created_at',
-                'projects.updated_at'
+                'projects.updated_at',
+                'users.name as user_name',
+                'users.email as user_email'
             )
-            ->orderBy('projects.updated_at', 'desc') // Use projects table for ordering
-            ->skip(($page - 1) * $perPage) // Skip previous pages
-            ->take($perPage) // Take only perPage number of records
+            ->orderBy('projects.updated_at', 'desc')
+            ->skip(($page - 1) * $perPage)
+            ->take($perPage)
             ->get();
-
-        // Return both portfolios and projects in the requested structure
-        return response()->json([
-            'portfolio' => $portfolios,
-            'project' => $projects
-        ]);
+        
+        // Get all project IDs
+        $projectIds = $projects->pluck('project_id')->toArray();
+        
+        // Fetch images for these projects
+        $projectImages = DB::table('project_images')
+            ->whereIn('project_id', $projectIds)
+            ->select('id', 'project_id', 'image')
+            ->get()
+            ->groupBy('project_id');
+        
+        // Attach images to their respective projects
+        $projectsWithImages = $projects->map(function($project) use ($projectImages) {
+            $projectId = $project->project_id;
+            $project->images = $projectImages->get($projectId, collect([]))->map(function($image) {
+                return [
+                    'id' => $image->id,
+                    'image_url' => $image->image
+                ];
+            })->values();
+            
+            return $project;
+        });
+    
+        return response()->json($projectsWithImages);
     }
 
 

@@ -113,7 +113,6 @@ class AuthController extends Controller
     //     return response()->json(['error' => 'Unauthorized role'], 403);
     // }
 
-
     public function loginWithGoogle(Request $request)
     {
         // Validate query parameters
@@ -136,44 +135,48 @@ class AuthController extends Controller
             'photo' => $request->query('photo'),
         ];
     
-        // Check if the email is from a personal domain (not allowed)
-        if ($this->isPersonalEmail($profile['email'])) {
+        // First, check if the email exists in our database
+        $emailExists = User::where('email', $profile['email'])->exists();
+    
+        // If the email does not exist in our database, deny login
+        if (!$emailExists) {
             return response()->json([
-                'error' => 'Personal email addresses are not allowed. Please use your organizational email address.',
-                'user_status' => -2  // Special status to indicate personal email
+                'error' => 'Account not found. Please contact an administrator to register your account.',
+                'user_status' => -1  // Email not found
             ], 401);
         }
+        
+        // Note: We skip the personal email check for existing users
+        // They can log in if they're already in the database
     
         // Try finding user where all three fields match (strict check)
         $user = User::where('google_id', $profile['sub'])
-                  ->where('email', $profile['email'])
-                  ->where('name', $profile['name'])
-                  ->first();
+            ->where('email', $profile['email'])
+            ->where('name', $profile['name'])
+            ->first();
     
         if (!$user) {
             // If strict check failed, check if email exists but other fields don't match
             $emailUser = User::where('email', $profile['email'])->first();
-            
+    
             if ($emailUser) {
-                // Email exists, but either sub or name doesn't match
-                return response()->json([
-                    'error' => 'Authentication failed. User credentials do not match our records.',
-                    'user_status' => -3  // Credentials mismatch
-                ], 401);
-            } else {
-                // Email doesn't exist in our system
-                return response()->json([
-                    'error' => 'Account not found. Please contact an administrator to register your account.',
-                    'user_status' => -1  // User doesn't exist
-                ], 401);
+                // If user has no Google ID linked yet, update it
+                if (!$emailUser->google_id) {
+                    $emailUser->google_id = $profile['sub'];
+                    $emailUser->name = $profile['name'];
+                    if (!empty($profile['photo'])) {
+                        $emailUser->photo = $profile['photo'];
+                    }
+                    $emailUser->save();
+                    $user = $emailUser;
+                } else {
+                    // Email exists, but credentials don't match
+                    return response()->json([
+                        'error' => 'Authentication failed. User credentials do not match our records.',
+                        'user_status' => -3 // Credential mismatch
+                    ], 401);
+                }
             }
-        }
-        
-        // User was found with matching sub, email, and name
-        // Update photo if needed
-        if (!empty($profile['photo']) && $user->photo !== $profile['photo']) {
-            $user->photo = $profile['photo'];
-            $user->save();
         }
     
         // Check if user is banned
@@ -216,77 +219,76 @@ class AuthController extends Controller
     
         return response()->json(['error' => 'Unauthorized role'], 403);
     }
-
     private function isPersonalEmail($email)
-{
-    $domain = strtolower(substr(strrchr($email, "@"), 1));
+    {
+        $domain = strtolower(substr(strrchr($email, "@"), 1));
 
-    $blockedDomains = [
-        // Personal email domains
-        'gmail.com',
-        'yahoo.com',
-        'yahoo.co.id',
-        'yahoo.co.uk',
-        'hotmail.com',
-        'outlook.com',
-        'aol.com',
-        'icloud.com',
-        'mail.com',
-        'zoho.com',
-        'protonmail.com',
-        'pm.me',
-        'gmx.com',
-        'gmx.net',
-        'yandex.com',
-        'ymail.com',
-        'rocketmail.com',
-        'live.com',
-        'msn.com',
-        'hotmail.co.uk',
-        'comcast.net',
-        'verizon.net',
-        'att.net',
-        'sbcglobal.net',
-        'cox.net',
-        'earthlink.net',
-        'me.com',
-        'mac.com',
-        'mail.ru',
-        'inbox.com',
-        'fastmail.com',
-        'fastmail.fm',
+        $blockedDomains = [
+            // Personal email domains
+            'gmail.com',
+            'yahoo.com',
+            'yahoo.co.id',
+            'yahoo.co.uk',
+            'hotmail.com',
+            'outlook.com',
+            'aol.com',
+            'icloud.com',
+            'mail.com',
+            'zoho.com',
+            'protonmail.com',
+            'pm.me',
+            'gmx.com',
+            'gmx.net',
+            'yandex.com',
+            'ymail.com',
+            'rocketmail.com',
+            'live.com',
+            'msn.com',
+            'hotmail.co.uk',
+            'comcast.net',
+            'verizon.net',
+            'att.net',
+            'sbcglobal.net',
+            'cox.net',
+            'earthlink.net',
+            'me.com',
+            'mac.com',
+            'mail.ru',
+            'inbox.com',
+            'fastmail.com',
+            'fastmail.fm',
 
-        // Cambodian university domains
-        'rupp.edu.kh',              // Royal University of Phnom Penh
-        'itc.edu.kh',               // Institute of Technology of Cambodia
-        'uc.edu.kh',                // The University of Cambodia
-        'puc.edu.kh',               // Paññāsāstra University of Cambodia
-        'aupp.edu.kh',             // American University of Phnom Penh
-        'norton-u.com',            // Norton University
-        'num.edu.kh',              // National University of Management
-        'rule.edu.kh',             // Royal University of Law and Economics
-        'ume.edu.kh',              // University of Management and Economics
-        'mekong.edu.kh',           // Cambodian Mekong University
-        'beltei.edu.kh',           // BELTEI International University
-        'uofnphnompenh.com',       // University of the Nations Cambodia
-        'seatech.edu.kh',          // Southeast Asia University of Technology
-        'csu.edu.kh',              // Cambodian University for Specialties
-        'svu.edu.kh',              // Svay Rieng University
-        'tnu.edu.kh',              // The University of Takeo
-        'bbu.edu.kh',              // Build Bright University
-        'umi.edu.kh',              // University of Management and Innovation
-        'cku.edu.kh',              // Chea Sim University of Kamchay Mear
-        'kbk.edu.kh',              // Kampong Cham National Institute of Agriculture
-        'cpu.edu.kh',              // Cambodian Pacific University
-        'nida.edu.kh',             // National Institute of Development Administration
-        'hne.edu.kh',              // Human Resource University
-        'knu.edu.kh',              // Khemarak University
-        'ttc.edu.kh',              // Teacher Training College
-        'pa.edu.kh',               // Police Academy of Cambodia
-    ];
+            // Cambodian university domains
+            'rupp.edu.kh',              // Royal University of Phnom Penh
+            'itc.edu.kh',               // Institute of Technology of Cambodia
+            'uc.edu.kh',                // The University of Cambodia
+            'puc.edu.kh',               // Paññāsāstra University of Cambodia
+            'aupp.edu.kh',             // American University of Phnom Penh
+            'norton-u.com',            // Norton University
+            'num.edu.kh',              // National University of Management
+            'rule.edu.kh',             // Royal University of Law and Economics
+            'ume.edu.kh',              // University of Management and Economics
+            'mekong.edu.kh',           // Cambodian Mekong University
+            'beltei.edu.kh',           // BELTEI International University
+            'uofnphnompenh.com',       // University of the Nations Cambodia
+            'seatech.edu.kh',          // Southeast Asia University of Technology
+            'csu.edu.kh',              // Cambodian University for Specialties
+            'svu.edu.kh',              // Svay Rieng University
+            'tnu.edu.kh',              // The University of Takeo
+            'bbu.edu.kh',              // Build Bright University
+            'umi.edu.kh',              // University of Management and Innovation
+            'cku.edu.kh',              // Chea Sim University of Kamchay Mear
+            'kbk.edu.kh',              // Kampong Cham National Institute of Agriculture
+            'cpu.edu.kh',              // Cambodian Pacific University
+            'nida.edu.kh',             // National Institute of Development Administration
+            'hne.edu.kh',              // Human Resource University
+            'knu.edu.kh',              // Khemarak University
+            'ttc.edu.kh',              // Teacher Training College
+            'pa.edu.kh',               // Police Academy of Cambodia
+        ];
 
-    return in_array($domain, $blockedDomains);
-}
+        return in_array($domain, $blockedDomains);
+    }
 
 
     /**
