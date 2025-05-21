@@ -11,7 +11,7 @@ use App\Models\User;
 
 class AdminController extends Controller
 {
-    
+
     public function adminCreateEndorserAccount(Request $request)
     {
         // Check if the authenticated user is an admin (role_id = 3)
@@ -38,14 +38,14 @@ class AdminController extends Controller
         return response()->json(['message' => 'Success', 'user' => $user]);
     }
 
-   
+
     public function adminCreateAdminAccount(Request $request)
     {
         // Check if the authenticated user is an admin (role_id = 3)
         if ($request->user() && $request->user()->role_id !== 3) {
             return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
         }
-    
+
         // Validate the admin input for the admin email
         $validator = Validator::make($request->all(), [
             'email' => 'required|email|unique:admins,email',
@@ -53,11 +53,11 @@ class AdminController extends Controller
             'password' => 'required|string|min:8',
             'password_confirmation' => 'required|same:password',
         ]);
-    
+
         if ($validator->fails()) {
             return response()->json(['error' => $validator->errors()], 400);
         }
-    
+
         // Create the admin with email and password
         $admin = Admin::create([
             'email' => $request->email,
@@ -66,7 +66,7 @@ class AdminController extends Controller
             'role_id' => 3, // Admin role
             'photo' => null, // Default photo is set to null
         ]);
-    
+
 
         return response()->json([
             'message' => 'Admin account created successfully',
@@ -214,7 +214,7 @@ class AdminController extends Controller
 
     public function adminSearchPortfolio(Request $request)
     {
-        $searchTerm = $request->input('name');
+        $searchTerm = $request->query('name'); // Now getting from URL query parameter
 
         $portfolios = DB::table('portfolios')
             ->join('users', 'portfolios.user_id', '=', 'users.google_id')
@@ -233,11 +233,14 @@ class AdminController extends Controller
                 'users.role_id as role',
                 'users.photo'
             )
-            ->where('users.name', 'LIKE', '%' . $searchTerm . '%')
+            ->when($searchTerm, function ($query, $searchTerm) {
+                return $query->where('users.name', 'LIKE', '%' . $searchTerm . '%');
+            })
             ->get();
 
         return response()->json($portfolios);
     }
+
 
 
 
@@ -247,10 +250,10 @@ class AdminController extends Controller
         if ($request->user() && $request->user()->role_id !== 3) {
             return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
         }
-    
+
         $page = $request->input('page', 1); // Default page to 1 if not provided
         $perPage = 2; // Fixed number of portfolios per page
-    
+
         // Fetch portfolios with pagination
         $portfolios = DB::table('portfolios')
             ->join('users', 'portfolios.user_id', '=', 'users.google_id')
@@ -273,21 +276,21 @@ class AdminController extends Controller
             ->skip(($page - 1) * $perPage) // Skip previous pages
             ->take($perPage) // Take only perPage number of records
             ->get();
-    
+
         return response()->json($portfolios);
     }
-    
-   
+
+
     public function adminViewAllProject(Request $request)
     {
         // Check if the authenticated user is an admin (role_id = 3)
         if ($request->user() && $request->user()->role_id !== 3) {
             return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
         }
-    
+
         $page = $request->input('page', 1); // Default page to 1 if not provided
         $perPage = 2; // Fixed number of projects per page
-    
+
         // Fetch projects with pagination
         $projects = DB::table('projects')
             ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
@@ -308,30 +311,30 @@ class AdminController extends Controller
             ->skip(($page - 1) * $perPage)
             ->take($perPage)
             ->get();
-        
+
         // Get all project IDs
         $projectIds = $projects->pluck('project_id')->toArray();
-        
+
         // Fetch images for these projects
         $projectImages = DB::table('project_images')
             ->whereIn('project_id', $projectIds)
             ->select('id', 'project_id', 'image')
             ->get()
             ->groupBy('project_id');
-        
+
         // Attach images to their respective projects
-        $projectsWithImages = $projects->map(function($project) use ($projectImages) {
+        $projectsWithImages = $projects->map(function ($project) use ($projectImages) {
             $projectId = $project->project_id;
-            $project->images = $projectImages->get($projectId, collect([]))->map(function($image) {
+            $project->images = $projectImages->get($projectId, collect([]))->map(function ($image) {
                 return [
                     'id' => $image->id,
                     'image_url' => $image->image
                 ];
             })->values();
-            
+
             return $project;
         });
-    
+
         return response()->json($projectsWithImages);
     }
 
@@ -439,14 +442,14 @@ class AdminController extends Controller
         if ($request->user() && $request->user()->role_id !== 3) {
             return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
         }
-    
+
         // Find the user by Google ID
         $user = User::where('google_id', $google_id)->first();
-    
+
         if (!$user) {
             return response()->json(['error' => 'User not found'], 404);
         }
-    
+
         $portfolio = DB::table('portfolios')
             ->join('users', 'portfolios.user_id', '=', 'users.google_id')
             ->select(
@@ -466,11 +469,11 @@ class AdminController extends Controller
             )
             ->where('portfolios.user_id', $google_id)
             ->first();
-    
+
         if (!$portfolio) {
             return response()->json(['error' => 'Portfolio not found.'], 404);
         }
-    
+
         // Check if user has been banned (status = 0)
         // if ($portfolio->status === 0) {
         //     return response()->json([
@@ -478,9 +481,9 @@ class AdminController extends Controller
         //         'status' => 0
         //     ], 200);
         // }
-    
+
         $portfolioId = $portfolio->id;
-    
+
         // Get projects that the user owns
         $ownedProjects = DB::table('projects')
             ->select(
@@ -501,7 +504,7 @@ class AdminController extends Controller
                 ];
             })
             ->toArray();
-    
+
         // Get projects where the user is a collaborator
         $collaboratedProjects = DB::table('project_collaborators')
             ->join('projects', 'project_collaborators.project_id', '=', 'projects.id')
@@ -533,22 +536,22 @@ class AdminController extends Controller
                 ];
             })
             ->toArray();
-    
+
         // Merge the owned and collaborated projects
         $projects = array_merge($ownedProjects, $collaboratedProjects);
-    
+
         // Get other related data like education, achievements, skills, etc.
         $education = DB::table('education')->where('portfolio_id', $portfolioId)->get();
         $achievements = DB::table('achievements')->where('portfolio_id', $portfolioId)->get();
         $skills = DB::table('skills')->where('portfolio_id', $portfolioId)->get();
         $experiences = DB::table('experiences')->where('portfolio_id', $portfolioId)->get();
-    
+
         // Modify experiences and achievements if needed, as done earlier
         foreach ($experiences as $experience) {
             $company = DB::table('companies')->where('id', $experience->company_id)->first();
             $experience->company_name = $company ? $company->company_name : 'Unknown';
             unset($experience->company_id);
-    
+
             $rawEndorsers = DB::table('experience_endorsers')
                 ->join('users', 'experience_endorsers.user_id', '=', 'users.google_id')
                 ->join('experience_endorsement_statuses', function ($join) use ($experience) {
@@ -566,12 +569,12 @@ class AdminController extends Controller
                 )
                 ->where('experience_endorsers.experience_id', $experience->id)
                 ->get();
-    
+
             $experience->endorsers = collect($rawEndorsers)
                 ->unique('id')
                 ->values();
         }
-    
+
         foreach ($achievements as $achievement) {
             $achievement->endorsers = DB::table('achievement_endorsers')
                 ->join('users', 'achievement_endorsers.user_id', '=', 'users.google_id')
@@ -584,7 +587,7 @@ class AdminController extends Controller
                 ->distinct()
                 ->get();
         }
-    
+
         // Add skill endorsers with endorsement statuses
         foreach ($skills as $skill) {
             $skill->endorsers = DB::table('skill_endorsement_statuses')
@@ -602,7 +605,7 @@ class AdminController extends Controller
                 ->distinct()  // Ensure distinct records
                 ->get();
         }
-    
+
         // Return the response with all the data
         return response()->json([
             'portfolio' => $portfolio,
@@ -631,13 +634,11 @@ class AdminController extends Controller
         }
 
         return response()->json($project);
-
-        
     }
 
     public function adminSearchProject(Request $request)
     {
-        $searchTerm = $request->input('name');
+        $searchTerm = $request->query('name'); // Use query param instead of input()
 
         $projects = DB::table('projects')
             ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
@@ -654,10 +655,29 @@ class AdminController extends Controller
                 'users.google_id as user_google_id',
                 'users.email as user_email'
             )
-            ->where('projects.title', 'LIKE', '%' . $searchTerm . '%')
-            ->orWhere('projects.description', 'LIKE', '%' . $searchTerm . '%')
+            ->when($searchTerm, function ($query, $searchTerm) {
+                return $query->where(function ($q) use ($searchTerm) {
+                    $q->where('projects.title', 'LIKE', '%' . $searchTerm . '%')
+                        ->orWhere('projects.description', 'LIKE', '%' . $searchTerm . '%');
+                });
+            })
             ->get();
 
         return response()->json($projects);
+    }
+
+
+    public function adminSearchUser(Request $request)
+    {
+        $searchTerm = $request->query('name'); // Use query param instead of input()
+
+        $users = DB::table('users')
+            ->select('google_id', 'name', 'email', 'photo', 'role_id', 'status')
+            ->when($searchTerm, function ($query, $searchTerm) {
+                return $query->where('name', 'LIKE', '%' . $searchTerm . '%');
+            })
+            ->get();
+
+        return response()->json($users);
     }
 }
