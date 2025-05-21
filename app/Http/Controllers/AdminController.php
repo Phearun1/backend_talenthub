@@ -240,66 +240,6 @@ class AdminController extends Controller
     }
 
 
-    // public function adminViewAllPortfolioAndProject(Request $request)
-    // {
-    //     // Check if the authenticated user is an admin (role_id = 3)
-    //     if ($request->user() && $request->user()->role_id !== 3) {
-    //         return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
-    //     }
-
-    //     $page = $request->input('page', 1); // Default page to 1 if not provided
-    //     $perPage = 2; // Fixed number of portfolios per page
-
-    //     // Fetch portfolios with pagination
-    //     $portfolios = DB::table('portfolios')
-    //         ->join('users', 'portfolios.user_id', '=', 'users.google_id')
-    //         ->select(
-    //             'portfolios.id',
-    //             'portfolios.user_id',
-    //             'portfolios.major_id as major',
-    //             'portfolios.phone_number',
-    //             'portfolios.about',
-    //             'portfolios.working_status',
-    //             'users.status as status',
-    //             'portfolios.created_at',
-    //             'portfolios.updated_at',
-    //             'users.name as name',
-    //             'users.email',
-    //             'users.photo',
-    //             'users.role_id as role'
-    //         )
-    //         ->orderBy('portfolios.updated_at', 'desc') // Order by most recently updated
-    //         ->skip(($page - 1) * $perPage) // Skip previous pages
-    //         ->take($perPage) // Take only perPage number of records
-    //         ->get();
-
-    //     // Get all portfolio IDs
-    //     $portfolioIds = $portfolios->pluck('id')->toArray();
-
-    //     // Fetch projects associated with these portfolios
-    //     $projects = DB::table('projects')
-    //         ->whereIn('portfolio_id', $portfolioIds)
-    //         ->select(
-    //             'projects.id as project_id',
-    //             'projects.portfolio_id',
-    //             'projects.title',
-    //             'projects.description',
-    //             'projects.project_visibility_status',
-    //             'projects.created_at',
-    //             'projects.updated_at'
-    //         )
-    //         ->orderBy('projects.updated_at', 'desc') // Use projects table for ordering
-    //         ->skip(($page - 1) * $perPage) // Skip previous pages
-    //         ->take($perPage) // Take only perPage number of records
-    //         ->get();
-
-    //     // Return both portfolios and projects in the requested structure
-    //     return response()->json([
-    //         'portfolio' => $portfolios,
-    //         'project' => $projects
-    //     ]);
-    // }
-
 
     public function adminViewAllPortfolio(Request $request)
     {
