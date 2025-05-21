@@ -136,4 +136,7 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
     Route::middleware('role:3')->get('/admin_view_employment_rate', [AdminController::class, 'viewEmploymentRate']);
     Route::middleware('role:3')->get('/admin_view_top_10_job_title', [AdminController::class, 'viewTop10JobTitle']);
     Route::middleware('role:3')->get('/admin_view_top_10_companies', [AdminController::class, 'viewTop10Companies']);
+
+    Route::middleware('role:3')->get('/admin_view_project_detail/{project_id}', [AdminController::class, 'viewProjectDetail']);
+    Route::middleware('role:3')->get('/admin_view_portfolio_detail/{google_id}', [AdminController::class, 'viewPortfolioDetail']);
 });

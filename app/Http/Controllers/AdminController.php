@@ -492,4 +492,52 @@ class AdminController extends Controller
 
         return response()->json($topCompanies);
     }
+
+    public function viewPortfolioDetail(Request $request, $google_id)
+    {
+        // Check if the authenticated user is an admin (role_id = 3)
+        if ($request->user() && $request->user()->role_id !== 3) {
+            return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
+        }
+
+        // Find the user by Google ID
+        $user = User::where('google_id', $google_id)->first();
+
+        if (!$user) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
+
+        // Fetch the portfolio details
+        $portfolio = DB::table('portfolios')
+            ->where('user_id', $google_id)
+            ->first();
+
+        if (!$portfolio) {
+            return response()->json(['error' => 'Portfolio not found'], 404);
+        }
+
+        return response()->json([
+            'user' => $user,
+            'portfolio' => $portfolio
+        ]);
+    }
+
+    public function viewProjectDetail(Request $request, $project_id)
+    {
+        // Check if the authenticated user is an admin (role_id = 3)
+        if ($request->user() && $request->user()->role_id !== 3) {
+            return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
+        }
+
+        // Fetch the project details
+        $project = DB::table('projects')
+            ->where('id', $project_id)
+            ->first();
+
+        if (!$project) {
+            return response()->json(['error' => 'Project not found'], 404);
+        }
+
+        return response()->json($project);
+    }
 }
