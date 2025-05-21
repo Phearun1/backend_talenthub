@@ -12,7 +12,7 @@ class PortfolioController extends Controller
     public function viewAllPortfolio(Request $request)
     {
         $page = $request->input('page', 1); // Default page to 1 if not provided
-        $perPage = 16; // Fixed number of portfolios per page
+        $perPage = 2; // Fixed number of portfolios per page
 
         $portfolios = DB::table('portfolios')
             ->join('users', 'portfolios.user_id', '=', 'users.google_id')
