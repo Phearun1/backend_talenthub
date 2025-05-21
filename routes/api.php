@@ -139,4 +139,6 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
 
     Route::middleware('role:3')->get('/admin_view_project_detail/{project_id}', [AdminController::class, 'viewProjectDetail']);
     Route::middleware('role:3')->get('/admin_view_portfolio_detail/{google_id}', [AdminController::class, 'viewPortfolioDetail']);
+    Route::middleware('role:3')->get('/admin_search_portfolio/{name}', [AdminController::class, 'adminSearchPortfolio']);
+    Route::middleware('role:3')->get('/admin_search_project/{name}', [AdminController::class, 'adminSearchProject']);
 });

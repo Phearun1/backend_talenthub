@@ -632,10 +632,32 @@ class AdminController extends Controller
 
         return response()->json($project);
 
-
         
+    }
 
+    public function adminSearchProject(Request $request)
+    {
+        $searchTerm = $request->input('name');
 
-        
+        $projects = DB::table('projects')
+            ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
+            ->join('users', 'portfolios.user_id', '=', 'users.google_id')
+            ->select(
+                'projects.id as project_id',
+                'projects.portfolio_id',
+                'projects.title',
+                'projects.description',
+                'projects.project_visibility_status',
+                'projects.created_at',
+                'projects.updated_at',
+                'users.name as user_name',
+                'users.google_id as user_google_id',
+                'users.email as user_email'
+            )
+            ->where('projects.title', 'LIKE', '%' . $searchTerm . '%')
+            ->orWhere('projects.description', 'LIKE', '%' . $searchTerm . '%')
+            ->get();
+
+        return response()->json($projects);
     }
 }
