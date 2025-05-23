@@ -328,7 +328,7 @@ class AdminController extends Controller
             $project->images = $projectImages->get($projectId, collect([]))->map(function ($image) {
                 return [
                     'id' => $image->id,
-                    'image_url' => $image->image
+                    'image_url' => 'https://talenthub.newlinkmarketing.com/storage/' . $image->image
                 ];
             })->values();
 
