@@ -324,8 +324,8 @@ class ProjectController extends Controller
         $request->validate([
             'portfolio_id' => 'required|integer',
             'title' => 'required|string|max:255',
-            'description' => 'required|string|max:255',
-            'instruction' => 'required|string|max:255',
+            'description' => 'required|string',
+            'instruction' => 'required|string',
             'link' => 'nullable|string|max:255',
             'file' => 'nullable|file',  // Validate file
             'image' => 'nullable|array',  // Ensure image is an array for multiple upload
@@ -498,8 +498,8 @@ class ProjectController extends Controller
             // Validate request
             $request->validate([
                 'title' => 'required|string|max:255',
-                'description' => 'required|string|max:255',
-                'instruction' => 'required|string|max:255',
+                'description' => 'required|string',
+                'instruction' => 'required|string',
                 'link' => 'nullable|string|max:255',
                 'file' => 'nullable|mimes:zip',
                 'image' => 'nullable',
