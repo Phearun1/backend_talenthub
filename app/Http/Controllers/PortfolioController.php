@@ -221,7 +221,7 @@ class PortfolioController extends Controller
         $request->validate([
             'major_id' => 'nullable|integer',
             'phone_number' => 'nullable|string|max:255',
-            'about' => 'nullable|string|max:255',
+            'about' => 'nullable|string',
             'working_status' => 'nullable|integer',
             'photo' => 'nullable|image', // Validate photo as an image
         ]);
