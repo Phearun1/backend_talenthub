@@ -252,7 +252,7 @@ class AdminController extends Controller
         }
 
         $page = $request->input('page', 1); // Default page to 1 if not provided
-        $perPage = 2; // Fixed number of portfolios per page
+        $perPage = 18; // Fixed number of portfolios per page
 
         // Fetch portfolios with pagination
         $portfolios = DB::table('portfolios')
@@ -289,7 +289,7 @@ class AdminController extends Controller
         }
 
         $page = $request->input('page', 1); // Default page to 1 if not provided
-        $perPage = 2; // Fixed number of projects per page
+        $perPage = 18; // Fixed number of projects per page
 
         // Fetch projects with pagination
         $projects = DB::table('projects')
