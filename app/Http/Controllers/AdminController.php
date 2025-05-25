@@ -191,6 +191,15 @@ class AdminController extends Controller
             return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
         }
 
+        // Validate the request to ensure status is valid
+        $validator = Validator::make($request->all(), [
+            'status' => 'required|in:0,1',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => 'Invalid status value. Must be 0 (ban) or 1 (unban).'], 400);
+        }
+
         // Find the user by Google ID instead of internal ID
         $user = User::where('google_id', $google_id)->first();
 
@@ -198,12 +207,14 @@ class AdminController extends Controller
             return response()->json(['error' => 'User not found'], 404);
         }
 
-        // Ban the user by setting their status to 0 (banned)
-        $user->status = 0;
+        // Set status based on request (0 for ban, 1 for unban)
+        $user->status = $request->status;
         $user->save();
 
+        $action = $request->status == 0 ? 'banned' : 'unbanned';
+
         return response()->json([
-            'message' => 'User banned successfully',
+            'message' => "User {$action} successfully",
             'id' => $user->id,
             'google_id' => $user->google_id,
             'email' => $user->email,
