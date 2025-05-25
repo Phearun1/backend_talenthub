@@ -330,57 +330,57 @@ class ProjectController extends Controller
             'file' => 'nullable|file',  // Validate file
             'image' => 'nullable|array',  // Ensure image is an array for multiple upload
             'image.*' => 'image|mimes:jpeg,png,jpg,gif,svg', // Validate each image in array
-            'programming_languages' => 'nullable|array', // Changed to array of languages
+            'programming_languages' => 'nullable|array', // Changed to nullable array of languages
             'programming_languages.*' => 'string|max:255', // Validate each language
         ]);
-
+    
         // Get the authenticated user's ID
         $userId = $request->user()->google_id;
-
+    
         // Check if the portfolio belongs to the authenticated user
         $portfolio = DB::table('portfolios')->where('id', $request->input('portfolio_id'))->first();
-
+    
         if (!$portfolio || $portfolio->user_id != $userId) {
             return response()->json(['error' => 'You are not authorized to create a project for this portfolio.'], 403);
         }
-
+    
         // Process languages - create any that don't exist and collect IDs
         $programmingLanguageIds = [];
-        $programmingLanguageNames = $request->input('programming_languages');
-
-        foreach ($programmingLanguageNames as $languageName) {
-            // Check if the language already exists
-            $language = DB::table('programming_languages')
-                ->where('programming_language', $languageName)
-                ->first();
-
-            if (!$language) {
-                // Create a new programming language
-                $languageId = DB::table('programming_languages')->insertGetId([
-                    'programming_language' => $languageName,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-                $programmingLanguageIds[] = $languageId;
-            } else {
-                $programmingLanguageIds[] = $language->id;
+        $primaryLanguageId = null;
+        
+        if ($request->has('programming_languages') && is_array($request->input('programming_languages'))) {
+            $programmingLanguageNames = $request->input('programming_languages');
+            
+            foreach ($programmingLanguageNames as $languageName) {
+                // Check if the language already exists
+                $language = DB::table('programming_languages')
+                    ->where('programming_language', $languageName)
+                    ->first();
+    
+                if (!$language) {
+                    // Create a new programming language
+                    $languageId = DB::table('programming_languages')->insertGetId([
+                        'programming_language' => $languageName,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                    $programmingLanguageIds[] = $languageId;
+                } else {
+                    $programmingLanguageIds[] = $language->id;
+                }
             }
+            
+            // Use the first language as the primary language for the project
+            $primaryLanguageId = !empty($programmingLanguageIds) ? $programmingLanguageIds[0] : null;
         }
-
-        // Use the first language as the primary language for the project
-        $primaryLanguageId = !empty($programmingLanguageIds) ? $programmingLanguageIds[0] : null;
-
-        if (!$primaryLanguageId) {
-            return response()->json(['error' => 'At least one programming language is required.'], 422);
-        }
-
+    
         // Handle file upload (for project file)
         $filePath = null;
         if ($request->hasFile('file')) {
             $file = $request->file('file');
             $filePath = $file->store('projects', 'public'); // Store file in 'projects' folder, 'public' disk
         }
-
+    
         // Insert the project into the database and get the ID
         $projectId = DB::table('projects')->insertGetId([
             'portfolio_id' => $request->input('portfolio_id'),
@@ -389,34 +389,36 @@ class ProjectController extends Controller
             'instruction' => $request->input('instruction'),
             'link' => $request->input('link'),
             'file' => $filePath, // Store the file path
-            'programming_language_id' => $primaryLanguageId, // Use the first language as primary
+            'programming_language_id' => $primaryLanguageId, // Use the first language as primary or null
             'project_visibility_status' => 0,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
-
+    
         // Create relationships in project_languages table for all languages
-        foreach ($programmingLanguageIds as $languageId) {
-            DB::table('project_languages')->insert([
-                'project_id' => $projectId,
-                'programming_language_id' => $languageId,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+        if (!empty($programmingLanguageIds)) {
+            foreach ($programmingLanguageIds as $languageId) {
+                DB::table('project_languages')->insert([
+                    'project_id' => $projectId,
+                    'programming_language_id' => $languageId,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
         }
-
+    
         // Handle multiple image uploads with a maximum of 6 images
         $imagePaths = [];
         if ($request->hasFile('image')) {
             $images = $request->file('image');
-
+    
             // Check if the number of images exceeds the limit (6)
             if (count($images) > 6) {
                 return response()->json([
                     'error' => 'Maximum of 6 images allowed per project.',
                 ], 422);
             }
-
+    
             foreach ($images as $image) {
                 try {
                     if ($image->isValid()) {
@@ -430,7 +432,7 @@ class ProjectController extends Controller
                 }
             }
         }
-
+    
         // Insert images into the project_images table
         $imageUrls = [];
         if (!empty($imagePaths)) {
@@ -442,7 +444,7 @@ class ProjectController extends Controller
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);
-
+    
                     // Build image URL
                     $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
                     $imageUrls[] = $baseUrl . $imagePath;
@@ -451,18 +453,21 @@ class ProjectController extends Controller
                 }
             }
         }
-
+    
         // Base URL for accessing the files
         $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
         $fileUrl = $filePath ? $baseUrl . $filePath : null;
-
-        // Get all languages for this project
-        $projectLanguages = DB::table('project_languages')
-            ->join('programming_languages', 'project_languages.programming_language_id', '=', 'programming_languages.id')
-            ->where('project_id', $projectId)
-            ->pluck('programming_languages.programming_language')
-            ->toArray();
-
+    
+        // Get all languages for this project (if any)
+        $projectLanguages = [];
+        if (!empty($programmingLanguageIds)) {
+            $projectLanguages = DB::table('project_languages')
+                ->join('programming_languages', 'project_languages.programming_language_id', '=', 'programming_languages.id')
+                ->where('project_id', $projectId)
+                ->pluck('programming_languages.programming_language')
+                ->toArray();
+        }
+    
         // Fetch the complete project details to return
         $projectDetails = DB::table('projects')
             ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
@@ -476,11 +481,11 @@ class ProjectController extends Controller
             )
             ->where('projects.id', $projectId)
             ->first();
-
+    
         // Add the languages to the response
         $projectDetailsArray = (array)$projectDetails;
         $projectDetailsArray['programming_languages'] = $projectLanguages;
-
+    
         return response()->json([
             'message' => 'Project created successfully.',
             'project' => $projectDetailsArray,
