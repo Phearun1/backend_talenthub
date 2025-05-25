@@ -324,13 +324,13 @@ class ProjectController extends Controller
         $request->validate([
             'portfolio_id' => 'required|integer',
             'title' => 'required|string|max:255',
-            'description' => 'required|string',
-            'instruction' => 'required|string',
+            'description' => 'nullable|string',
+            'instruction' => 'nullable|string',
             'link' => 'nullable|string|max:255',
             'file' => 'nullable|file',  // Validate file
             'image' => 'nullable|array',  // Ensure image is an array for multiple upload
             'image.*' => 'image|mimes:jpeg,png,jpg,gif,svg', // Validate each image in array
-            'programming_languages' => 'required|array', // Changed to array of languages
+            'programming_languages' => 'nullable|array', // Changed to array of languages
             'programming_languages.*' => 'string|max:255', // Validate each language
         ]);
 
@@ -498,13 +498,13 @@ class ProjectController extends Controller
             // Validate request
             $request->validate([
                 'title' => 'required|string|max:255',
-                'description' => 'required|string',
-                'instruction' => 'required|string',
+                'description' => 'nullable|string',
+                'instruction' => 'nullable|string',
                 'link' => 'nullable|string|max:255',
                 'file' => 'nullable|mimes:zip',
                 'image' => 'nullable',
                 'image.*' => 'image|mimes:jpeg,png,jpg,gif,svg',
-                'programming_languages' => 'required|array',
+                'programming_languages' => 'nullable|array',
                 'programming_languages.*' => 'string|max:255',
             ]);
 
