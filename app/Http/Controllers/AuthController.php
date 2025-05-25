@@ -42,18 +42,20 @@ class AuthController extends Controller
         // First, try finding user by Google ID
         $user = User::where('google_id', $profile['sub'])->first();
 
+        //endorser added by admin
         // If not found, try matching by email
         if (!$user) {
             $user = User::where('email', $profile['email'])->first();
 
             // If user exists but doesn't have google_id linked, update it
             if ($user && !$user->google_id) {
-                $user->google_id = $profile['sub'];
-                // Also update the user's photo if provided
-                if (!empty($profile['photo'])) {
-                    $user->photo = $profile['photo'];
-                }
-                $user->save();
+            $user->google_id = $profile['sub'];
+            $user->name = $profile['name'];
+            // Also update the user's photo if provided
+            if (!empty($profile['photo'])) {
+                $user->photo = $profile['photo'];
+            }
+            $user->save();
             }
         }
 
