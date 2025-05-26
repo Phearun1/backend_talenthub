@@ -228,6 +228,7 @@ class NotificationController extends Controller
                 ->orderBy('pes.updated_at', 'desc')
                 ->select(
                     'pes.id',
+                    'p.id as project_id',
                     'pes.updated_at as created_at',
                     'endorser.google_id as endorser_google_id',
                     'endorser.name as endorser_name',
@@ -239,6 +240,7 @@ class NotificationController extends Controller
             foreach ($projectResponses as $row) {
                 $notifications[] = [
                     'id' => $row->id,
+                    'project_id' => $row->project_id,
                     'owner_google_id' => $userGoogleId, // User is the owner
                     'receiver_google_id' => $row->endorser_google_id,
                     'owner_name' => $currentUser->name,
