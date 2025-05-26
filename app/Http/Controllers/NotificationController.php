@@ -194,6 +194,7 @@ class NotificationController extends Controller
                 ->orderBy('pcis.created_at', 'desc')
                 ->select(
                     'pcis.id',
+                    'p.id as project_id',
                     'pcis.created_at',
                     'requestor.google_id as requestor_google_id',
                     'requestor.name as requestor_name',
@@ -204,6 +205,7 @@ class NotificationController extends Controller
             foreach ($collaborationRequests as $row) {
                 $notifications[] = [
                     'id' => $row->id,
+                    'project_id' => $row->project_id,
                     'owner_google_id' => $row->requestor_google_id, // Owner is the project owner
                     'receiver_google_id' => $userGoogleId,
                     'owner_name' => $row->requestor_name,
@@ -370,6 +372,7 @@ class NotificationController extends Controller
                 ->orderBy('pcis.updated_at', 'desc')
                 ->select(
                     'pcis.id',
+                    'p.id as project_id',
                     'pcis.updated_at as created_at',
                     'collaborator.google_id as collaborator_google_id',
                     'collaborator.name as collaborator_name',
@@ -381,6 +384,7 @@ class NotificationController extends Controller
             foreach ($collaborationResponses as $row) {
                 $notifications[] = [
                     'id' => $row->id,
+                    'project_id' => $row->project_id,
                     'owner_google_id' => $userGoogleId, // User is the project owner
                     'receiver_google_id' => $row->collaborator_google_id,
                     'owner_name' => $currentUser->name,
