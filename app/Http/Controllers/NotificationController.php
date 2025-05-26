@@ -240,7 +240,7 @@ class NotificationController extends Controller
             foreach ($projectResponses as $row) {
                 $notifications[] = [
                     'id' => $row->id,
-                    'project_id' => $row->project_id,
+                    'project_id' => $row->project_id,	
                     'owner_google_id' => $userGoogleId, // User is the owner
                     'receiver_google_id' => $row->endorser_google_id,
                     'owner_name' => $currentUser->name,
