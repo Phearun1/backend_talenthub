@@ -333,30 +333,30 @@ class ProjectController extends Controller
             'programming_languages' => 'nullable|array', // Changed to nullable array of languages
             'programming_languages.*' => 'string|max:255', // Validate each language
         ]);
-    
+
         // Get the authenticated user's ID
         $userId = $request->user()->google_id;
-    
+
         // Check if the portfolio belongs to the authenticated user
         $portfolio = DB::table('portfolios')->where('id', $request->input('portfolio_id'))->first();
-    
+
         if (!$portfolio || $portfolio->user_id != $userId) {
             return response()->json(['error' => 'You are not authorized to create a project for this portfolio.'], 403);
         }
-    
+
         // Process languages - create any that don't exist and collect IDs
         $programmingLanguageIds = [];
         $primaryLanguageId = null;
-        
+
         if ($request->has('programming_languages') && is_array($request->input('programming_languages'))) {
             $programmingLanguageNames = $request->input('programming_languages');
-            
+
             foreach ($programmingLanguageNames as $languageName) {
                 // Check if the language already exists
                 $language = DB::table('programming_languages')
                     ->where('programming_language', $languageName)
                     ->first();
-    
+
                 if (!$language) {
                     // Create a new programming language
                     $languageId = DB::table('programming_languages')->insertGetId([
@@ -369,18 +369,18 @@ class ProjectController extends Controller
                     $programmingLanguageIds[] = $language->id;
                 }
             }
-            
+
             // Use the first language as the primary language for the project
             $primaryLanguageId = !empty($programmingLanguageIds) ? $programmingLanguageIds[0] : null;
         }
-    
+
         // Handle file upload (for project file)
         $filePath = null;
         if ($request->hasFile('file')) {
             $file = $request->file('file');
             $filePath = $file->store('projects', 'public'); // Store file in 'projects' folder, 'public' disk
         }
-    
+
         // Insert the project into the database and get the ID
         $projectId = DB::table('projects')->insertGetId([
             'portfolio_id' => $request->input('portfolio_id'),
@@ -394,7 +394,7 @@ class ProjectController extends Controller
             'created_at' => now(),
             'updated_at' => now(),
         ]);
-    
+
         // Create relationships in project_languages table for all languages
         if (!empty($programmingLanguageIds)) {
             foreach ($programmingLanguageIds as $languageId) {
@@ -406,19 +406,19 @@ class ProjectController extends Controller
                 ]);
             }
         }
-    
+
         // Handle multiple image uploads with a maximum of 6 images
         $imagePaths = [];
         if ($request->hasFile('image')) {
             $images = $request->file('image');
-    
+
             // Check if the number of images exceeds the limit (6)
             if (count($images) > 6) {
                 return response()->json([
                     'error' => 'Maximum of 6 images allowed per project.',
                 ], 422);
             }
-    
+
             foreach ($images as $image) {
                 try {
                     if ($image->isValid()) {
@@ -432,7 +432,7 @@ class ProjectController extends Controller
                 }
             }
         }
-    
+
         // Insert images into the project_images table
         $imageUrls = [];
         if (!empty($imagePaths)) {
@@ -444,7 +444,7 @@ class ProjectController extends Controller
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);
-    
+
                     // Build image URL
                     $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
                     $imageUrls[] = $baseUrl . $imagePath;
@@ -453,11 +453,11 @@ class ProjectController extends Controller
                 }
             }
         }
-    
+
         // Base URL for accessing the files
         $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
         $fileUrl = $filePath ? $baseUrl . $filePath : null;
-    
+
         // Get all languages for this project (if any)
         $projectLanguages = [];
         if (!empty($programmingLanguageIds)) {
@@ -467,7 +467,7 @@ class ProjectController extends Controller
                 ->pluck('programming_languages.programming_language')
                 ->toArray();
         }
-    
+
         // Fetch the complete project details to return
         $projectDetails = DB::table('projects')
             ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
@@ -481,11 +481,11 @@ class ProjectController extends Controller
             )
             ->where('projects.id', $projectId)
             ->first();
-    
+
         // Add the languages to the response
         $projectDetailsArray = (array)$projectDetails;
         $projectDetailsArray['programming_languages'] = $projectLanguages;
-    
+
         return response()->json([
             'message' => 'Project created successfully.',
             'project' => $projectDetailsArray,
@@ -510,37 +510,37 @@ class ProjectController extends Controller
                 'programming_languages' => 'nullable|array',
                 'programming_languages.*' => 'string|max:255',
             ]);
-    
+
             // Fetch project
             $project = DB::table('projects')->where('id', $id)->first();
             if (!$project) {
                 return response()->json(['error' => 'Project not found.'], 404);
             }
-    
+
             // Check authorization
             $portfolio = DB::table('portfolios')->where('id', $project->portfolio_id)->first();
             $userId = $request->user()->google_id;
-    
+
             if (!$portfolio || $portfolio->user_id != $userId) {
                 return response()->json(['error' => 'Unauthorized.'], 403);
             }
-    
+
             // Check image count
             if ($request->hasFile('image')) {
                 $newImageCount = count($request->file('image'));
-    
+
                 // Count existing images
                 $existingImageCount = DB::table('project_images')
                     ->where('project_id', $id)
                     ->count();
-    
+
                 if ($existingImageCount + $newImageCount > 6) {
                     return response()->json([
                         'error' => 'Maximum of 6 images allowed per project.',
                     ], 422);
                 }
             }
-    
+
             // Handle programming languages
             $programmingLanguageIds = [];
             if ($request->has('programming_languages') && is_array($request->input('programming_languages'))) {
@@ -548,7 +548,7 @@ class ProjectController extends Controller
                     $language = DB::table('programming_languages')
                         ->where('programming_language', $languageName)
                         ->first();
-    
+
                     if (!$language) {
                         $languageId = DB::table('programming_languages')->insertGetId([
                             'programming_language' => $languageName,
@@ -561,10 +561,10 @@ class ProjectController extends Controller
                     }
                 }
             }
-    
+
             // Set primary language ID or null if no languages provided
             $primaryLanguageId = !empty($programmingLanguageIds) ? $programmingLanguageIds[0] : null;
-    
+
             // Handle file upload
             $filePath = $project->file;
             if ($request->hasFile('file')) {
@@ -574,7 +574,7 @@ class ProjectController extends Controller
                     if ($project->file && file_exists($oldFilePath)) {
                         unlink($oldFilePath);
                     }
-    
+
                     // Store new file
                     $file = $request->file('file');
                     $filename = time() . '_' . $file->getClientOriginalName();
@@ -588,14 +588,14 @@ class ProjectController extends Controller
                     return response()->json(['error' => 'File upload failed', 'message' => $e->getMessage()], 500);
                 }
             }
-    
+
             // Handle image upload
             if ($request->hasFile('image')) {
                 foreach ($request->file('image') as $index => $image) {
                     try {
                         if ($image->isValid()) {
                             $imagePath = $image->store('project_images', 'public');
-    
+
                             DB::table('project_images')->insert([
                                 'project_id' => $id,
                                 'image' => $imagePath,
@@ -608,7 +608,7 @@ class ProjectController extends Controller
                     }
                 }
             }
-    
+
             // Update project record
             DB::table('projects')->where('id', $id)->update([
                 'title' => $request->input('title'),
@@ -619,10 +619,10 @@ class ProjectController extends Controller
                 'programming_language_id' => $primaryLanguageId,
                 'updated_at' => now(),
             ]);
-    
+
             // Sync languages
             DB::table('project_languages')->where('project_id', $id)->delete();
-            
+
             // Only insert languages if we have any
             if (!empty($programmingLanguageIds)) {
                 foreach ($programmingLanguageIds as $languageId) {
@@ -634,7 +634,7 @@ class ProjectController extends Controller
                     ]);
                 }
             }
-    
+
             // Prepare response
             $fileUrl = $filePath ? asset('storage/' . $filePath) : null;
             $allImages = DB::table('project_images')->where('project_id', $id)->get()->map(function ($image) {
@@ -643,7 +643,7 @@ class ProjectController extends Controller
                     'url' => asset('storage/' . $image->image),
                 ];
             });
-    
+
             $programmingLanguages = DB::table('project_languages')
                 ->join('programming_languages', 'project_languages.programming_language_id', '=', 'programming_languages.id')
                 ->where('project_languages.project_id', $id)
@@ -655,7 +655,7 @@ class ProjectController extends Controller
                         'name' => $lang->programming_language,
                     ];
                 });
-    
+
             $projectDetails = DB::table('projects')
                 ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
                 ->select(
@@ -669,10 +669,10 @@ class ProjectController extends Controller
                 )
                 ->where('projects.id', $id)
                 ->first();
-    
+
             $projectDetailsArray = (array) $projectDetails;
             $projectDetailsArray['programming_languages'] = $programmingLanguages;
-    
+
             return response()->json([
                 'message' => 'Project updated successfully.',
                 'project' => $projectDetailsArray,
@@ -712,11 +712,11 @@ class ProjectController extends Controller
             ->where('project_id', $image->project_id)
             ->count();
 
-        if ($imageCount <= 1) {
-            return response()->json([
-                'error' => 'Cannot delete the last image. Projects must have at least one image.',
-            ], 422);
-        }
+        // if ($imageCount <= 1) {
+        //     return response()->json([
+        //         'error' => 'Cannot delete the last image. Projects must have at least one image.',
+        //     ], 422);
+        // }
 
         // Delete image from storage
         $imagePath = storage_path('app/public/' . $image->image);
@@ -877,7 +877,7 @@ class ProjectController extends Controller
         ]);
     }
 
-    
+
 
     public function deleteEndorserRequest(Request $request, $projectId)
     {
@@ -1242,7 +1242,7 @@ class ProjectController extends Controller
     //         ], 500);
     //     }
     // }
-    
+
     // public function addCollaboratorToProject(Request $request, $projectId)
     // {
     //     try {
@@ -1406,53 +1406,53 @@ class ProjectController extends Controller
                 'emails' => 'required|array',
                 'emails.*' => 'email|max:255',
             ]);
-    
+
             // Check if the project exists
             $project = DB::table('projects')->where('id', $projectId)->first();
             if (!$project) {
                 return response()->json(['error' => 'Project not found.'], 404);
             }
-    
+
             // Check if the authenticated user is the project owner
             $portfolio = DB::table('portfolios')->where('id', $project->portfolio_id)->first();
             if (!$portfolio) {
                 return response()->json(['error' => 'Portfolio not found.'], 404);
             }
-    
+
             if ($portfolio->user_id !== $request->user()->google_id) {
                 return response()->json(['error' => 'You are not authorized to add endorsers to this project.'], 403);
             }
-    
+
             // Get project owner's email to filter it out
             $ownerEmail = $request->user()->email;
-    
+
             $endorser = [];
             $notFoundUsers = [];
             $notEndorserRoleUsers = [];
             $selfAddAttempt = false;
-    
+
             // Set the default endorsement status to 1 (pending)
             $endorsementStatusId = 1; // Pending status
             $rejectedStatusId = 3;   // Rejected status
-    
+
             foreach ($request->input('emails') as $email) {
                 // Check if owner is trying to add themselves
                 if (strtolower($email) === strtolower($ownerEmail)) {
                     $selfAddAttempt = true;
                     continue; // Skip this email
                 }
-    
+
                 // Find user by email
                 $user = DB::table('users')->where('email', $email)->first();
-    
+
                 if (!$user) {
                     $notFoundUsers[] = $email;
                     continue;
                 }
-    
+
                 // Check if user has role_id = 2 (endorser role)
                 $hasEndorserRole = $user->role_id === 2;
-    
+
                 if (!$hasEndorserRole) {
                     $notEndorserRoleUsers[] = [
                         'email' => $email,
@@ -1460,31 +1460,31 @@ class ProjectController extends Controller
                     ];
                     continue;
                 }
-    
+
                 // Rest of your existing code for processing valid endorsers
                 // Check if the endorser already exists for this project
                 $existingEndorser = DB::table('project_endorsers')
                     ->where('project_id', $projectId)
                     ->where('user_id', $user->google_id)
                     ->first();
-    
+
                 $isNewEndorser = !$existingEndorser;
-    
+
                 // Check if this endorser previously rejected the request
                 $existingStatus = DB::table('project_endorsement_statuses')
                     ->where('project_id', $projectId)
                     ->where('endorser_id', $user->google_id)
                     ->first();
-    
+
                 $wasRejected = $existingStatus && $existingStatus->endorsement_status_id === $rejectedStatusId;
-    
+
                 // If endorser already exists but previously rejected, allow a new request
                 if (!$isNewEndorser && !$wasRejected) {
                     // Get current status info for response
                     $currentStatus = $existingStatus;
                 } else {
                     // This is either a new endorser or one who previously rejected
-    
+
                     if ($wasRejected) {
                         // Endorser previously rejected, creating new request
                     } else {
@@ -1498,7 +1498,7 @@ class ProjectController extends Controller
                             ]);
                         }
                     }
-    
+
                     // Update or insert endorsement status
                     if ($wasRejected) {
                         // Update existing record if it was rejected
@@ -1519,19 +1519,19 @@ class ProjectController extends Controller
                             'updated_at' => now(),
                         ]);
                     }
-    
+
                     // Get updated status for response
                     $currentStatus = DB::table('project_endorsement_statuses')
                         ->where('project_id', $projectId)
                         ->where('endorser_id', $user->google_id)
                         ->first();
                 }
-    
+
                 // Get the status name for the response
                 $statusName = DB::table('endorsement_statuses')
                     ->where('id', $currentStatus ? $currentStatus->endorsement_status_id : $endorsementStatusId)
                     ->value('status') ?? 'Pending';
-    
+
                 $endorser[] = [
                     'id' => $user->id,
                     'email' => $email,
@@ -1543,25 +1543,25 @@ class ProjectController extends Controller
                     ],
                 ];
             }
-    
+
             // Prepare response with warning if owner tried to add themselves
             $response = [
                 'message' => 'Endorsers processed successfully',
                 'endorser' => $endorser,
             ];
-    
+
             if ($selfAddAttempt) {
                 $response['warning'] = 'You cannot add yourself as an endorser to your own project.';
             }
-    
+
             if (count($notFoundUsers) > 0) {
                 $response['not_found'] = $notFoundUsers;
             }
-    
+
             if (count($notEndorserRoleUsers) > 0) {
                 $response['not_endorsers'] = $notEndorserRoleUsers;
             }
-    
+
             return response()->json($response, 200);
         } catch (\Exception $e) {
             return response()->json([
@@ -1570,7 +1570,7 @@ class ProjectController extends Controller
             ], 500);
         }
     }
-    
+
     public function addCollaboratorToProject(Request $request, $projectId)
     {
         try {
@@ -1579,72 +1579,72 @@ class ProjectController extends Controller
                 'emails' => 'required|array',
                 'emails.*' => 'email|max:255',
             ]);
-    
+
             // Check if the project exists
             $project = DB::table('projects')->where('id', $projectId)->first();
             if (!$project) {
                 return response()->json(['error' => 'Project not found.'], 404);
             }
-    
+
             // Check if the authenticated user is the project owner
             $portfolio = DB::table('portfolios')->where('id', $project->portfolio_id)->first();
             if (!$portfolio) {
                 return response()->json(['error' => 'Portfolio not found.'], 404);
             }
-    
+
             if ($portfolio->user_id !== $request->user()->google_id) {
                 return response()->json(['error' => 'You are not authorized to add collaborators to this project.'], 403);
             }
-    
+
             // Get the project owner's email and name for comparison and emails
             $projectOwner = DB::table('users')
                 ->where('google_id', $portfolio->user_id)
                 ->first();
-    
+
             if (!$projectOwner) {
                 return response()->json(['error' => 'Project owner information not found.'], 404);
             }
-    
+
             $collaborator = [];
             $notFoundUsers = [];
             $selfAddAttempt = false;
-    
+
             // Set the default collaboration status to 1 (pending)
             $collaborationStatusId = 1; // Pending status
             $rejectedStatusId = 3;     // Rejected status
-    
+
             foreach ($request->input('emails') as $email) {
                 // Check if owner is trying to add themselves
                 if (strtolower($email) === strtolower($projectOwner->email)) {
                     $selfAddAttempt = true;
                     continue; // Skip this email
                 }
-                
+
                 // Find user by email
                 $user = DB::table('users')->where('email', $email)->first();
-    
+
                 if (!$user) {
                     $notFoundUsers[] = $email;
                     continue;
                 }
-    
+
                 // Rest of your existing code for processing valid collaborators
                 // Check if the collaborator already exists for this project
                 $existingCollaborator = DB::table('project_collaborators')
                     ->where('project_id', $projectId)
                     ->where('user_id', $user->google_id)
                     ->first();
-    
+
                 $isNewCollaborator = !$existingCollaborator;
-    
+
                 // Check if this collaborator previously rejected the request
                 $existingStatus = DB::table('project_collaborator_invitation_statuses')
                     ->where('project_id', $projectId)
                     ->where('collaborator_id', $user->google_id)
                     ->first();
-    
+
                 $wasRejected = $existingStatus && $existingStatus->project_collab_status_id === $rejectedStatusId;
-    
+
                 // If collaborator already exists but previously rejected, allow a new request
                 if (!$isNewCollaborator && !$wasRejected) {
                     // Collaborator already exists and did not reject
@@ -1652,7 +1652,7 @@ class ProjectController extends Controller
                     $currentStatus = $existingStatus;
                 } else {
                     // This is either a new collaborator or one who previously rejected
-    
+
                     if ($wasRejected) {
                         // Collaborator previously rejected, creating new request
                     } else {
@@ -1666,7 +1666,7 @@ class ProjectController extends Controller
                             ]);
                         }
                     }
-    
+
                     // Update or insert collaboration status
                     if ($wasRejected) {
                         // Update existing record if it was rejected
@@ -1687,7 +1687,7 @@ class ProjectController extends Controller
                             'updated_at' => now(),
                         ]);
                     }
-    
+
                     // // Send email notification for new or renewed requests
                     // $this->sendCollaborationInvitationEmail(
                     //     $email,
@@ -1696,19 +1696,19 @@ class ProjectController extends Controller
                     //     $project->title,
                     //     $projectId
                     // );
-    
+
                     // Get updated status for response
                     $currentStatus = DB::table('project_collaborator_invitation_statuses')
                         ->where('project_id', $projectId)
                         ->where('collaborator_id', $user->google_id)
                         ->first();
                 }
-    
+
                 // Get the status name for the response using the correct field name
                 $statusName = DB::table('project_collaboration_statuses')
                     ->where('id', $currentStatus ? $currentStatus->project_collab_status_id : $collaborationStatusId)
                     ->value('status') ?? 'Pending';
-    
+
                 $collaborator[] = [
                     'id' => $user->id,
                     'email' => $email,
@@ -1720,21 +1720,21 @@ class ProjectController extends Controller
                     ]
                 ];
             }
-    
+
             // Prepare response with warning if owner tried to add themselves
             $response = [
                 'message' => 'Collaborators processed successfully',
                 'collaborator' => $collaborator,
             ];
-    
+
             if ($selfAddAttempt) {
                 $response['warning'] = 'You cannot add yourself as a collaborator to your own project.';
             }
-    
+
             if (count($notFoundUsers) > 0) {
                 $response['not_found'] = $notFoundUsers;
             }
-    
+
             return response()->json($response, 200);
         } catch (\Exception $e) {
             return response()->json([
@@ -1963,25 +1963,25 @@ class ProjectController extends Controller
             $request->validate([
                 'visibility_status' => 'required|integer|in:0,1', // 0 = public, 1 = private
             ]);
-    
+
             // Check if the project exists
             $project = DB::table('projects')->where('id', $projectId)->first();
-    
+
             if (!$project) {
                 return response()->json(['error' => 'Project not found.'], 404);
             }
-    
+
             // Check if the authenticated user is the project owner
             $portfolio = DB::table('portfolios')->where('id', $project->portfolio_id)->first();
-    
+
             if (!$portfolio) {
                 return response()->json(['error' => 'Portfolio not found.'], 404);
             }
-    
+
             if ($portfolio->user_id !== auth()->user()->google_id) {
                 return response()->json(['error' => 'You are not authorized to update this project.'], 403);
             }
-    
+
             // Update the project visibility - use visibility_status which is what you're validating
             DB::table('projects')
                 ->where('id', $projectId)
@@ -1989,7 +1989,7 @@ class ProjectController extends Controller
                     'project_visibility_status' => $request->input('visibility_status'),
                     'updated_at' => now(),
                 ]);
-    
+
             return response()->json([
                 'message' => 'Project visibility updated successfully.',
                 'project' => DB::table('projects')->where('id', $projectId)->first()
