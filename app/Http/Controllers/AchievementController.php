@@ -490,6 +490,7 @@ class AchievementController extends Controller
                     $endorserDetails[] = [
                         'name' => $endorserUser->name,
                         'email' => $endorserUser->email,
+                        'photo' => $user->photo ?? null,
                         'status_id' => 1,
                         'status' => $statusName,
                     ];
@@ -503,6 +504,7 @@ class AchievementController extends Controller
                     $endorserDetails[] = [
                         'name' => $endorserUser->name,
                         'email' => $endorserUser->email,
+                        'photo' => $user->photo ?? null,
                         'status_id' => $existingEndorsers[$googleId],
                         'status' => $statusName,
                     ];
