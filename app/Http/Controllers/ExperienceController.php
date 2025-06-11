@@ -301,6 +301,7 @@ class ExperienceController extends Controller
                 'id' => $googleId,
                 'name' => $user->name ?? 'Unknown',
                 'email' => $user->email ?? 'Unknown',
+                'photo' => $user->photo ?? null,
                 'status' => $statusName ?? 'Pending',
                 'status_id' => $status->experience_status_id ?? 1,
             ];
