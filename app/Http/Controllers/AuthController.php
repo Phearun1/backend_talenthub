@@ -391,4 +391,33 @@ class AuthController extends Controller
 
         return response()->json(['message' => 'Admin successfully logged out']);
     }
+
+
+    public function checkToken(Request $request)
+    {
+        // Get the token from the request
+        $token = $request->bearerToken();
+
+        if (!$token) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No token provided'
+            ], 401);
+        }
+
+        // Verify the token (you can implement your own logic here)
+        $isValid = $this->verifyToken($token);
+
+        if (!$isValid) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid token'
+            ], 401);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Token is valid'
+        ], 200);
+    }
 }

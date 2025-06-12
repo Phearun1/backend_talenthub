@@ -28,6 +28,7 @@ Route::get('/download_project/{id}', [ProjectController::class, 'downloadProject
 
 Route::get('/search_portfolio', [PortfolioController::class, 'searchPortfolio']); // search portfolio
 Route::post('/send_contact', [ContactController::class, 'sendContact']);
+Route::post('/check_token', [AuthController::class, 'checkToken']); // Check token validity
 // view all projects
 
 
