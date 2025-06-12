@@ -395,29 +395,53 @@ class AuthController extends Controller
 
     public function checkToken(Request $request)
     {
-        // Get the token from the request
-        $token = $request->bearerToken();
-
-        if (!$token) {
+        try {
+            // Get the authenticated user from the token
+            $user = $request->user();
+    
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid or expired token'
+                ], 401);
+            }
+    
+            // Check if the token has expired (if you're using expires_at)
+            $currentToken = $user->currentAccessToken();
+            if ($currentToken && $currentToken->expires_at && $currentToken->expires_at->isPast()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Token has expired'
+                ], 401);
+            }
+    
+            // Check if user is banned
+            if ($user->status === 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Account has been suspended'
+                ], 401);
+            }
+    
+            return response()->json([
+                'success' => true,
+                'message' => 'Token is valid',
+                'user' => [
+                    'id' => $user->id,
+                    'google_id' => $user->google_id,
+                    'email' => $user->email,
+                    'name' => $user->name,
+                    'role_id' => $user->role_id,
+                    'photo' => $user->photo
+                ]
+            ], 200);
+    
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'No token provided'
+                'message' => 'Invalid token',
+                'error' => $e->getMessage()
             ], 401);
         }
-
-        // Verify the token (you can implement your own logic here)
-        $isValid = $this->verifyToken($token);
-
-        if (!$isValid) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Invalid token'
-            ], 401);
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Token is valid'
-        ], 200);
     }
 }
