@@ -122,7 +122,7 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
     
     
     // POST /api/contacts/view - Get contact information by google_id
-    Route::post('/view_incoming_contact', [ContactController::class, 'viewIncomingContact']);
+    Route::get('/view_incoming_contact', [ContactController::class, 'viewIncomingContact']);
 
     // Admin route 
     Route::middleware('role:3')->post('/admin/create_admin_account', [AdminController::class, 'adminCreateAdminAccount']);
