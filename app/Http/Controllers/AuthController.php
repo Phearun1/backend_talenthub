@@ -160,7 +160,7 @@ class AuthController extends Controller
                 ]);
 
                 // Log the new user creation
-                Log::info('New user created with non-personal email: ' . $profile['email']);
+                // Log::info('New user created with non-personal email: ' . $profile['email']);
             }
         } else {
             // Email exists 
@@ -173,7 +173,7 @@ class AuthController extends Controller
                 // User found by Google ID and email, but we should also verify the name
                 if ($user->name !== $profile['name']) {
                     // The name doesn't match - this could be suspicious
-                    Log::warning("Login attempt with correct Google ID and email but wrong name. Email: {$profile['email']}, Provided name: {$profile['name']}, Stored name: {$user->name}");
+                    // Log::warning("Login attempt with correct Google ID and email but wrong name. Email: {$profile['email']}, Provided name: {$profile['name']}, Stored name: {$user->name}");
 
                     return response()->json([
                         'error' => 'Authentication failed. User credentials do not match our records.',
@@ -205,7 +205,7 @@ class AuthController extends Controller
                     } else {
                         // Email exists with a DIFFERENT Google ID - this is suspicious!
                         // Someone might be trying to take over an account
-                        Log::warning("Login attempt with wrong Google ID. Email: {$profile['email']}, Provided sub: {$profile['sub']}, Stored sub: {$emailUser->google_id}");
+                        // Log::warning("Login attempt with wrong Google ID. Email: {$profile['email']}, Provided sub: {$profile['sub']}, Stored sub: {$emailUser->google_id}");
 
                         return response()->json([
                             'error' => 'Authentication failed. User credentials do not match our records.',
@@ -398,11 +398,11 @@ class AuthController extends Controller
         try {
             // Debug: Log the incoming token
             $authHeader = $request->header('Authorization');
-            Log::info('Authorization header: ' . $authHeader);
+            // Log::info('Authorization header: ' . $authHeader);
 
             // Get the authenticated user from the token
             $user = $request->user();
-            Log::info('User from token: ' . ($user ? $user->id : 'null'));
+            // Log::info('User from token: ' . ($user ? $user->id : 'null'));
 
             if (!$user) {
                 return response()->json([
@@ -413,8 +413,8 @@ class AuthController extends Controller
 
             // Check if the token has expired (if you're using expires_at)
             $currentToken = $user->currentAccessToken();
-            Log::info('Current token: ' . ($currentToken ? $currentToken->id : 'null'));
-            Log::info('Token expires at: ' . ($currentToken && $currentToken->expires_at ? $currentToken->expires_at : 'null'));
+            // Log::info('Current token: ' . ($currentToken ? $currentToken->id : 'null'));
+            // Log::info('Token expires at: ' . ($currentToken && $currentToken->expires_at ? $currentToken->expires_at : 'null'));
 
             if ($currentToken && $currentToken->expires_at && $currentToken->expires_at->isPast()) {
                 return response()->json([
@@ -434,17 +434,9 @@ class AuthController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Token is valid',
-                'user' => [
-                    'id' => $user->id,
-                    'google_id' => $user->google_id,
-                    'email' => $user->email,
-                    'name' => $user->name,
-                    'role_id' => $user->role_id,
-                    'photo' => $user->photo
-                ]
             ], 200);
         } catch (\Exception $e) {
-            Log::error('Token check error: ' . $e->getMessage());
+            // Log::error('Token check error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid token',

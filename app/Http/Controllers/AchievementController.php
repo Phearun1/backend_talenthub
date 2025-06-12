@@ -116,7 +116,7 @@ class AchievementController extends Controller
             if ($user && $user->google_id) {
                 // Check if the user has role_id = 2
                 if ($user->role_id != 2) {
-                    Log::warning("Skipped user: {$email} — they do not have role_id = 2.");
+                    // Log::warning("Skipped user: {$email} — they do not have role_id = 2.");
                     continue;
                 }
 
@@ -145,7 +145,7 @@ class AchievementController extends Controller
                     'status' => 'Pending',
                 ];
             } else {
-                Log::warning("Skipped endorser: {$email} — user not found or missing google_id.");
+                // Log::warning("Skipped endorser: {$email} — user not found or missing google_id.");
             }
         }
 
@@ -177,7 +177,7 @@ class AchievementController extends Controller
         ], 200);
     } catch (\Exception $e) {
         DB::rollBack();
-        Log::error('Error creating achievement: ' . $e->getMessage());
+        // Log::error('Error creating achievement: ' . $e->getMessage());
         return response()->json(['message' => 'Something went wrong.'], 500);
     }
 }
@@ -554,7 +554,7 @@ class AchievementController extends Controller
             ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Error updating achievement: ' . $e->getMessage());
+            // Log::error('Error updating achievement: ' . $e->getMessage());
             return response()->json(['message' => 'Something went wrong.'], 500);
         }
     }
@@ -600,7 +600,7 @@ class AchievementController extends Controller
                     unlink($fullPath); // Delete the image
                     // Log::info('Deleted image from storage: ' . $fullPath);
                 } else {
-                    Log::warning('Image not found for deletion: ' . $fullPath);
+                    // Log::warning('Image not found for deletion: ' . $fullPath);
                 }
             }
 
@@ -616,7 +616,7 @@ class AchievementController extends Controller
             }
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Error deleting achievement: ' . $e->getMessage());
+            // Log::error('Error deleting achievement: ' . $e->getMessage());
             return response()->json(['message' => 'Something went wrong'], 500);
         }
     }

@@ -54,7 +54,7 @@ class SkillController extends Controller
                 // Skip if the endorser is the portfolio owner (self-endorsement)
                 if ($email === $portfolio->owner_email) {
                     $skippedEndorsers[] = $email;
-                    Log::warning("Skipped self-endorsement: {$email}");
+                    // Log::warning("Skipped self-endorsement: {$email}");
                     continue;
                 }
 
@@ -64,7 +64,7 @@ class SkillController extends Controller
                     // Check if user has role_id = 2 (endorser role)
                     if ($user->role_id != 2) {
                         $skippedEndorsers[] = $email;
-                        Log::warning("Skipped user with email {$email} as they don't have role_id = 2.");
+                        // Log::warning("Skipped user with email {$email} as they don't have role_id = 2.");
                         continue;
                     }
 
@@ -86,20 +86,20 @@ class SkillController extends Controller
                     ];
                 } else {
                     $skippedEndorsers[] = $email;
-                    Log::warning("User with email {$email} not found or missing google_id.");
+                    // Log::warning("User with email {$email} not found or missing google_id.");
                 }
             }
 
             // Insert into skill_endorsers
             if (!empty($endorserLinkData)) {
                 DB::table('skill_endorsers')->insert($endorserLinkData);
-                Log::info('Inserted into skill_endorsers:', $endorserLinkData);
+                // Log::info('Inserted into skill_endorsers:', $endorserLinkData);
             }
 
             // Insert into skill_endorsement_statuses
             if (!empty($endorsementStatusData)) {
                 DB::table('skill_endorsement_statuses')->insert($endorsementStatusData);
-                Log::info('Inserted into skill_endorsement_statuses:', $endorsementStatusData);
+                // Log::info('Inserted into skill_endorsement_statuses:', $endorsementStatusData);
             }
 
             DB::commit();
@@ -142,7 +142,7 @@ class SkillController extends Controller
             ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Error creating skill: ' . $e->getMessage());
+            // Log::error('Error creating skill: ' . $e->getMessage());
             return response()->json(['message' => 'Something went wrong.', 'error' => $e->getMessage()], 500);
         }
     }
@@ -306,7 +306,7 @@ class SkillController extends Controller
             }
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Error deleting skill: ' . $e->getMessage());
+            // Log::error('Error deleting skill: ' . $e->getMessage());
             return response()->json(['message' => 'Something went wrong.'], 500);
         }
     }

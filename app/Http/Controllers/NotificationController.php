@@ -408,9 +408,9 @@ class NotificationController extends Controller
     
             return response()->json($notifications);
         } catch (\Exception $e) {
-            Log::error('Error fetching notifications: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
-            ]);
+            // Log::error('Error fetching notifications: ' . $e->getMessage(), [
+            //     'trace' => $e->getTraceAsString()
+            // ]);
     
             return response()->json([
                 'error' => 'An error occurred while fetching notifications.',

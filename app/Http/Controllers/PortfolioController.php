@@ -284,7 +284,7 @@ class PortfolioController extends Controller
                         unlink($oldFilePath); // Delete the old file
                         // Log::info('Deleted old photo from storage: ' . $oldFilePath);
                     } else {
-                        Log::warning('Old photo not found for deletion: ' . $oldFilePath);
+                        // Log::warning('Old photo not found for deletion: ' . $oldFilePath);
                     }
                 }
 
@@ -309,7 +309,7 @@ class PortfolioController extends Controller
                 // Log user photo update
                 // Log::info('User photo updated for user ID: ' . $user->google_id);
             } else {
-                Log::error('Uploaded photo is not valid.');
+                // Log::error('Uploaded photo is not valid.');
             }
         }
 

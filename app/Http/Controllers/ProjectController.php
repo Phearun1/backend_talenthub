@@ -1827,20 +1827,20 @@ class ProjectController extends Controller
             $endorsementType = $request->input('endorsement_type'); // Only if type is 2
             $status = $request->input('status'); // 2 = Approved, 3 = Declined
 
-            Log::info('changeEndorsementCollaborationRequest called', [
-                'id' => $recordId,
-                'receiver_google_id' => $receiverGoogleId,
-                'type' => $type,
-                'endorsement_type' => $endorsementType,
-                'status' => $status
-            ]);
+            // Log::info('changeEndorsementCollaborationRequest called', [
+            //     'id' => $recordId,
+            //     'receiver_google_id' => $receiverGoogleId,
+            //     'type' => $type,
+            //     'endorsement_type' => $endorsementType,
+            //     'status' => $status
+            // ]);
 
             // Verify that the receiver_google_id in the request matches the authenticated user
             if ($receiverGoogleId !== auth()->user()->google_id) {
-                Log::error('Mismatched receiver ID', [
-                    'request_receiver_id' => $receiverGoogleId,
-                    'auth_user_id' => auth()->user()->google_id
-                ]);
+                // Log::error('Mismatched receiver ID', [
+                //     'request_receiver_id' => $receiverGoogleId,
+                //     'auth_user_id' => auth()->user()->google_id
+                // ]);
                 return response()->json([
                     'error' => 'The receiver ID in the request does not match your account.',
                     'provided_id' => $receiverGoogleId,
@@ -1850,10 +1850,10 @@ class ProjectController extends Controller
 
             // Validate endorsement_type based on type
             if ($type === 2 && !in_array($endorsementType, [1, 2, 3, 4])) {
-                Log::error('Invalid endorsement type', [
-                    'type' => $type,
-                    'endorsement_type' => $endorsementType
-                ]);
+                // Log::error('Invalid endorsement type', [
+                //     'type' => $type,
+                //     'endorsement_type' => $endorsementType
+                // ]);
                 return response()->json([
                     'error' => 'Invalid endorsement type. Expected values are: 1 (Skill), 2 (Project), 3 (Experience), or 4 (Achievement).',
                     'provided_endorsement_type' => $endorsementType
@@ -1944,10 +1944,10 @@ class ProjectController extends Controller
             }
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Error in changeEndorsementCollaborationRequest', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
+            // Log::error('Error in changeEndorsementCollaborationRequest', [
+            //     'error' => $e->getMessage(),
+            //     'trace' => $e->getTraceAsString()
+            // ]);
 
             return response()->json([
                 'error' => 'An error occurred while processing the request.',
