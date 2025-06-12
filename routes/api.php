@@ -10,6 +10,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\EducationController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\ContactController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -26,7 +27,7 @@ Route::post('/send-welcome-email', [NotificationController::class, 'sendWelcomeE
 Route::get('/download_project/{id}', [ProjectController::class, 'downloadProject']);
 
 Route::get('/search_portfolio', [PortfolioController::class, 'searchPortfolio']); // search portfolio
-
+Route::post('/send_contact', [ContactController::class, 'sendContact']);
 // view all projects
 
 
@@ -117,6 +118,11 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
 
     Route::post('/update_project_visibility/{projectId}', [ProjectController::class, 'updateProjectVisibility']);
 
+
+    
+    
+    // POST /api/contacts/view - Get contact information by google_id
+    Route::post('/view_incoming_contact', [ContactController::class, 'viewIncomingContact']);
 
     // Admin route 
     Route::middleware('role:3')->post('/admin/create_admin_account', [AdminController::class, 'adminCreateAdminAccount']);
