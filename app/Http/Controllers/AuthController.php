@@ -49,13 +49,13 @@ class AuthController extends Controller
 
             // If user exists but doesn't have google_id linked, update it
             if ($user && !$user->google_id) {
-            $user->google_id = $profile['sub'];
-            $user->name = $profile['name'];
-            // Also update the user's photo if provided
-            if (!empty($profile['photo'])) {
-                $user->photo = $profile['photo'];
-            }
-            $user->save();
+                $user->google_id = $profile['sub'];
+                $user->name = $profile['name'];
+                // Also update the user's photo if provided
+                if (!empty($profile['photo'])) {
+                    $user->photo = $profile['photo'];
+                }
+                $user->save();
             }
         }
 
@@ -396,25 +396,33 @@ class AuthController extends Controller
     public function checkToken(Request $request)
     {
         try {
+            // Debug: Log the incoming token
+            $authHeader = $request->header('Authorization');
+            Log::info('Authorization header: ' . $authHeader);
+
             // Get the authenticated user from the token
             $user = $request->user();
-    
+            Log::info('User from token: ' . ($user ? $user->id : 'null'));
+
             if (!$user) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Invalid or expired token'
                 ], 401);
             }
-    
+
             // Check if the token has expired (if you're using expires_at)
             $currentToken = $user->currentAccessToken();
+            Log::info('Current token: ' . ($currentToken ? $currentToken->id : 'null'));
+            Log::info('Token expires at: ' . ($currentToken && $currentToken->expires_at ? $currentToken->expires_at : 'null'));
+
             if ($currentToken && $currentToken->expires_at && $currentToken->expires_at->isPast()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Token has expired'
                 ], 401);
             }
-    
+
             // Check if user is banned
             if ($user->status === 0) {
                 return response()->json([
@@ -422,7 +430,7 @@ class AuthController extends Controller
                     'message' => 'Account has been suspended'
                 ], 401);
             }
-    
+
             return response()->json([
                 'success' => true,
                 'message' => 'Token is valid',
@@ -435,8 +443,8 @@ class AuthController extends Controller
                     'photo' => $user->photo
                 ]
             ], 200);
-    
         } catch (\Exception $e) {
+            Log::error('Token check error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid token',

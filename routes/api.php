@@ -28,7 +28,7 @@ Route::get('/download_project/{id}', [ProjectController::class, 'downloadProject
 
 Route::get('/search_portfolio', [PortfolioController::class, 'searchPortfolio']); // search portfolio
 Route::post('/send_contact', [ContactController::class, 'sendContact']);
-Route::post('/check_token', [AuthController::class, 'checkToken']); // Check token validity
+// Check token validity
 // view all projects
 
 
@@ -52,7 +52,7 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
     // Protected route for logout (requires authentication via Sanctum)
     Route::post('/logout', [AuthController::class, 'logout']);
 
-
+    Route::post('/check_token', [AuthController::class, 'checkToken']); 
     // User route
 
     Route::middleware('role:1')->post('/create_company', [ExperienceController::class, 'createCompany']);
