@@ -108,7 +108,7 @@ class ContactController extends Controller
 
             return response()->json([
                 'success' => true,
-                $contact
+                'contact' => $contact
             ], 200);
 
         } catch (\Exception $e) {
