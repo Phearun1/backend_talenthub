@@ -23,7 +23,7 @@ class ContactController extends Controller
                 ->where('google_id', $validatedData['google_id'])
                 ->where('email', $validatedData['email'])
                 ->first();
-                
+
             if ($existingContact) {
                 // Update existing contact
                 $updated = DB::table('contact')
@@ -97,7 +97,7 @@ class ContactController extends Controller
             $contact = DB::table('contact')
                 ->select('id', 'google_id', 'email', 'phone_number', 'created_at', 'updated_at')
                 ->where('google_id', $googleId)
-                ->first();
+                ->get();
 
             if (!$contact) {
                 return response()->json([
