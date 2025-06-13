@@ -61,7 +61,7 @@ class ContactController extends Controller
                     'success' => true,
                     'message' => 'Contact sent successfully',
                     'contact' => $contact
-                ], 201);
+                ], 200);
             }
 
         } catch (ValidationException $e) {
