@@ -18,11 +18,12 @@ class ContactController extends Controller
                 'phone_number' => 'required|string|max:255'
             ]);
 
-            // Check if contact already exists
+            // Check if contact already exists for this google_id and email combination
             $existingContact = DB::table('contact')
                 ->where('google_id', $validatedData['google_id'])
+                ->where('email', $validatedData['email'])
                 ->first();
-            
+                
             if ($existingContact) {
                 // Update existing contact
                 $updated = DB::table('contact')
