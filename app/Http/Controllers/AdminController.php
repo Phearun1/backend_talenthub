@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use App\Models\Admin;
 use App\Models\User;
 
@@ -750,34 +751,68 @@ class AdminController extends Controller
     }
 
 
-    public function approveDeclineEndorserRequest(Request $request, $id)
+    public function updateEndorserRequest(Request $request, $id)
     {
-        // Check if the authenticated user is an admin (role_id = 3)
-        if ($request->user() && $request->user()->role_id !== 3) {
-            return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
+        try {
+            // Validate the request
+            $request->validate([
+                'status' => 'required|integer|in:1,2', // 1=approved, 2=declined
+            ]);
+    
+            // Check if endorser request exists
+            $endorserRequest = DB::table('endorser_request')->where('id', $id)->first();
+            if (!$endorserRequest) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Endorser request not found'
+                ], 404);
+            }
+    
+            $status = $request->input('status');
+            $statusText = $status == 1 ? 'approved' : 'declined';
+    
+            // Update the status
+            DB::table('endorser_request')
+                ->where('id', $id)
+                ->update([
+                    'status' => $status,
+                    'updated_at' => now()
+                ]);
+    
+            // Get updated record with only required fields
+            $updatedRequest = DB::table('endorser_request')
+                ->select('name', 'email', 'contact', 'image', 'status')
+                ->where('id', $id)
+                ->first();
+    
+            // Build image URL
+            $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
+            $imageUrl = $updatedRequest->image ? $baseUrl . $updatedRequest->image : null;
+    
+            return response()->json([
+                'success' => true,
+                'message' => "Endorser request has been {$statusText} successfully",
+                'data' => [
+                    'name' => $updatedRequest->name,
+                    'email' => $updatedRequest->email,
+                    'contact' => $updatedRequest->contact,
+                    'image_url' => $imageUrl,
+                    'status' => $updatedRequest->status
+                ]
+            ], 200);
+    
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while updating endorser status',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        // Validate the request
-        $validator = Validator::make($request->all(), [
-            'status' => 'required|in:approved,declined',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['error' => 'Invalid status value. Must be "approved" or "declined".'], 400);
-        }
-
-        // Find the endorser request by ID
-        $endorserRequest = DB::table('endorser_request')->where('id', $id)->first();
-
-        if (!$endorserRequest) {
-            return response()->json(['error' => 'Endorser request not found'], 404);
-        }
-
-        // Update the status of the endorser request
-        DB::table('endorser_request')
-            ->where('id', $id)
-            ->update(['status' => $request->status]);
-
-        return response()->json(['message' => 'Endorser request updated successfully']);
     }
 }
