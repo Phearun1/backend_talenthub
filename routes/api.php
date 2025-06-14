@@ -25,7 +25,7 @@ Route::post('/send-email', [NotificationController::class, 'sendTestEmail']);
 
 Route::post('/send-welcome-email', [NotificationController::class, 'sendWelcomeEmail']);
 Route::get('/download_project/{id}', [ProjectController::class, 'downloadProject']);
-
+Route::post('/become_endorser', [AuthController::class, 'becomeEndorser']); // become endorser
 Route::get('/search_portfolio', [PortfolioController::class, 'searchPortfolio']); // search portfolio
 Route::post('/send_contact', [ContactController::class, 'sendContact']);
 // Check token validity
