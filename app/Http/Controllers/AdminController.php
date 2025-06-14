@@ -691,4 +691,98 @@ class AdminController extends Controller
 
         return response()->json($users);
     }
+
+    public function viewAllEndorserRequests(Request $request)
+    {
+        try {
+            $endorserRequests = DB::table('endorser_request')
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->map(function ($request) {
+                    // Parse student_name from JSON to array
+                    $request->student_name = json_decode($request->student_name, true);
+                    $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
+                    $request->image_url = $request->image ? $baseUrl . $request->image : null;
+                    return $request;
+                });
+
+            return response()->json([
+                'success' => true,
+                'data' => $endorserRequests,
+                'count' => $endorserRequests->count()
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving endorser requests',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function viewEndorserRequestDetail(Request $request, $id)
+    {
+        try {
+            $endorserRequest = DB::table('endorser_request')
+                ->where('id', $id)
+                ->first();
+
+            if (!$endorserRequest) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Endorser request not found'
+                ], 404);
+            }
+
+            // Parse student_name from JSON to array
+            $endorserRequest->student_name = json_decode($endorserRequest->student_name, true);
+            $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
+            $endorserRequest->image_url = $endorserRequest->image ? $baseUrl . $endorserRequest->image : null;
+
+            return response()->json([
+                'success' => true,
+                'data' => $endorserRequest
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving endorser request',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+    public function approveDeclineEndorserRequest(Request $request, $id)
+    {
+        // Check if the authenticated user is an admin (role_id = 3)
+        if ($request->user() && $request->user()->role_id !== 3) {
+            return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
+        }
+
+        // Validate the request
+        $validator = Validator::make($request->all(), [
+            'status' => 'required|in:approved,declined',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => 'Invalid status value. Must be "approved" or "declined".'], 400);
+        }
+
+        // Find the endorser request by ID
+        $endorserRequest = DB::table('endorser_request')->where('id', $id)->first();
+
+        if (!$endorserRequest) {
+            return response()->json(['error' => 'Endorser request not found'], 404);
+        }
+
+        // Update the status of the endorser request
+        DB::table('endorser_request')
+            ->where('id', $id)
+            ->update(['status' => $request->status]);
+
+        return response()->json(['message' => 'Endorser request updated successfully']);
+    }
 }

@@ -494,6 +494,7 @@ class AuthController extends Controller
                 'working_position' => $request->input('working_position'),
                 'student_name' => $studentNameJson, // Can be null
                 'image' => $imagePath,
+                'status' => 0, // Default status is 0 (pending)
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
@@ -524,12 +525,12 @@ class AuthController extends Controller
                     'company' => $endorserRequest->company,
                     'working_position' => $endorserRequest->working_position,
                     'student_name' => $studentNames, // Will be null or array
-                    'image' => $endorserRequest->image,
+                    // 'image' => $endorserRequest->image,
                     'image_url' => $imageUrl,
                     'created_at' => $endorserRequest->created_at,
                     'updated_at' => $endorserRequest->updated_at
                 ]
-            ], 201);
+            ], 200);
     
         } catch (ValidationException $e) {
             return response()->json([
