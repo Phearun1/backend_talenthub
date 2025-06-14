@@ -692,26 +692,21 @@ class AdminController extends Controller
         return response()->json($users);
     }
 
-    public function viewAllEndorserRequests(Request $request)
+    public function viewAllEndorserRequest(Request $request)
     {
         try {
             $endorserRequests = DB::table('endorser_request')
+                ->select('name', 'email', 'contact') // Only select these fields
                 ->orderBy('created_at', 'desc')
-                ->get()
-                ->map(function ($request) {
-                    // Parse student_name from JSON to array
-                    $request->student_name = json_decode($request->student_name, true);
-                    $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
-                    $request->image_url = $request->image ? $baseUrl . $request->image : null;
-                    return $request;
-                });
-
+                ->get();
+    
             return response()->json([
                 'success' => true,
-                'data' => $endorserRequests,
-                'count' => $endorserRequests->count()
+                'count' => $endorserRequests->count(),
+                'data' => $endorserRequests
+                
             ], 200);
-
+    
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -740,10 +735,7 @@ class AdminController extends Controller
             $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
             $endorserRequest->image_url = $endorserRequest->image ? $baseUrl . $endorserRequest->image : null;
 
-            return response()->json([
-                'success' => true,
-                'data' => $endorserRequest
-            ], 200);
+            return response()->json($endorserRequest, 200);
 
         } catch (\Exception $e) {
             return response()->json([
