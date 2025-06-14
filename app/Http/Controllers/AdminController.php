@@ -694,19 +694,23 @@ class AdminController extends Controller
 
     public function viewAllEndorserRequest(Request $request)
     {
+        // Check if the authenticated user is an admin (role_id = 3)
+        if ($request->user() && $request->user()->role_id !== 3) {
+            return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
+        }
+
         try {
             $endorserRequests = DB::table('endorser_request')
                 ->select('name', 'email', 'contact') // Only select these fields
                 ->orderBy('created_at', 'desc')
                 ->get();
-    
+
             return response()->json([
                 'success' => true,
                 'count' => $endorserRequests->count(),
                 'data' => $endorserRequests
-                
+
             ], 200);
-    
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -736,7 +740,6 @@ class AdminController extends Controller
             $endorserRequest->image_url = $endorserRequest->image ? $baseUrl . $endorserRequest->image : null;
 
             return response()->json($endorserRequest, 200);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
