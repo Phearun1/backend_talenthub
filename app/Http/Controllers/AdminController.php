@@ -701,7 +701,7 @@ class AdminController extends Controller
 
         try {
             $endorserRequests = DB::table('endorser_request')
-                ->select('id', 'name', 'email', 'contact') // Only select these fields
+                ->select('id', 'name', 'email', 'contact', 'created_at') // Only select these fields
                 ->orderBy('created_at', 'desc')
                 ->get();
 
