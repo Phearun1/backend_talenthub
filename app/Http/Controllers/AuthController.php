@@ -455,30 +455,36 @@ class AuthController extends Controller
                 'email' => 'required|email|max:255',
                 'company' => 'required|string|max:255',
                 'working_position' => 'required|string|max:255',
-                'student_name' => 'required|array|min:1', // Always expect array
-                'student_name.*' => 'required|string|max:255', // Each element must be string
+                'student_name' => 'nullable|array', // Made nullable
+                'student_name.*' => 'required|string|max:255', // Each element must be string if array exists
                 'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             ]);
-
+    
             // Check if email already exists in endorser requests
             $existingRequest = DB::table('endorser_request')
                 ->where('email', $request->input('email'))
                 ->first();
-
+    
             if ($existingRequest) {
                 return response()->json([
                     'success' => false,
                     'message' => 'An endorser request with this email already exists'
                 ], 409); // Conflict status code
             }
-
+    
             // Handle image upload
             $imagePath = null;
             if ($request->hasFile('image')) {
                 $image = $request->file('image');
                 $imagePath = $image->store('endorser_images', 'public');
             }
-
+    
+            // Handle student_name - can be null or array
+            $studentNameJson = null;
+            if ($request->has('student_name') && $request->input('student_name') !== null) {
+                $studentNameJson = json_encode($request->input('student_name'));
+            }
+    
             // Create endorser request
             $endorserRequestId = DB::table('endorser_request')->insertGetId([
                 'name' => $request->input('name'),
@@ -486,24 +492,27 @@ class AuthController extends Controller
                 'email' => $request->input('email'),
                 'company' => $request->input('company'),
                 'working_position' => $request->input('working_position'),
-                'student_name' => json_encode($request->input('student_name')), // Store as JSON array
+                'student_name' => $studentNameJson, // Can be null
                 'image' => $imagePath,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
-
+    
             // Get the created record
             $endorserRequest = DB::table('endorser_request')
                 ->where('id', $endorserRequestId)
                 ->first();
-
-            // Parse student_name back to array for response
-            $endorserRequest->student_name = json_decode($endorserRequest->student_name, true);
-
+    
+            // Parse student_name back to array for response (handle null case)
+            $studentNames = null;
+            if ($endorserRequest->student_name) {
+                $studentNames = json_decode($endorserRequest->student_name, true);
+            }
+    
             // Build full image URL
             $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
             $imageUrl = $imagePath ? $baseUrl . $imagePath : null;
-
+    
             return response()->json([
                 'success' => true,
                 'message' => 'Endorser request submitted successfully. Your application will be reviewed.',
@@ -514,13 +523,14 @@ class AuthController extends Controller
                     'email' => $endorserRequest->email,
                     'company' => $endorserRequest->company,
                     'working_position' => $endorserRequest->working_position,
-                    'student_name' => $endorserRequest->student_name,
+                    'student_name' => $studentNames, // Will be null or array
                     'image' => $endorserRequest->image,
                     'image_url' => $imageUrl,
                     'created_at' => $endorserRequest->created_at,
                     'updated_at' => $endorserRequest->updated_at
                 ]
-            ], 200);
+            ], 201);
+    
         } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
