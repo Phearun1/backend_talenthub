@@ -90,27 +90,28 @@ class ContactController extends Controller
                     'message' => 'Unauthorized. Please provide a valid bearer token.'
                 ], 401);
             }
-
+    
             $googleId = $authenticatedUser->google_id;
-
-            // Find contact by google_id using raw database query
+    
+            // Find contact by google_id using raw database query - sorted by newest first
             $contact = DB::table('contact')
                 ->select('id', 'google_id', 'email', 'phone_number', 'created_at', 'updated_at')
                 ->where('google_id', $googleId)
+                ->orderBy('created_at', 'desc') // Newest first
                 ->get();
-
-            if (!$contact) {
+    
+            if ($contact->isEmpty()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Contact not found'
                 ], 404);
             }
-
+    
             return response()->json([
                 'success' => true,
-                'contact' => $contact
+                'data' => $contact
             ], 200);
-
+    
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
