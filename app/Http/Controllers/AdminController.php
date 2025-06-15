@@ -751,14 +751,14 @@ class AdminController extends Controller
     }
 
 
-    public function updateEndorserRequest(Request $request, $id)
+    public function updateEndorserStatus(Request $request, $id)
     {
         try {
             // Validate the request
             $request->validate([
                 'status' => 'required|integer|in:1,2', // 1=approved, 2=declined
             ]);
-    
+
             // Check if endorser request exists
             $endorserRequest = DB::table('endorser_request')->where('id', $id)->first();
             if (!$endorserRequest) {
@@ -767,31 +767,71 @@ class AdminController extends Controller
                     'message' => 'Endorser request not found'
                 ], 404);
             }
-    
+
             $status = $request->input('status');
-            $statusText = $status == 1 ? 'approved' : 'declined';
-    
-            // Update the status
-            DB::table('endorser_request')
-                ->where('id', $id)
-                ->update([
-                    'status' => $status,
-                    'updated_at' => now()
-                ]);
-    
+
+            // Use database transaction
+            DB::beginTransaction();
+
+            try {
+                // If status is approved (1), create user account
+                if ($status == 1) {
+                    // Check if user with this email already exists
+                    $existingUser = DB::table('users')->where('email', $endorserRequest->email)->first();
+
+                    if ($existingUser) {
+                        DB::rollBack();
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'A user with this email already exists'
+                        ], 409);
+                    }
+
+                    // Create new user with role_id = 2 (endorser)
+                    DB::table('users')->insert([
+                        'name' => null,
+                        'email' => $endorserRequest->email,
+                        'role_id' => 2, // Endorser role
+                        'status' => 1, // Active status
+                        'google_id' => null, // Will be set when user logs in with Google
+                        'photo' => null, // Will be set from Google profile
+                        'created_at' => now(),
+                        'updated_at' => now(),
+
+                    ]);
+                }
+
+                // Update the endorser request status
+                DB::table('endorser_request')
+                    ->where('id', $id)
+                    ->update([
+                        'status' => $status,
+                        'updated_at' => now()
+                    ]);
+
+                DB::commit();
+            } catch (\Exception $e) {
+                DB::rollBack();
+                throw $e;
+            }
+
             // Get updated record with only required fields
             $updatedRequest = DB::table('endorser_request')
                 ->select('name', 'email', 'contact', 'image', 'status')
                 ->where('id', $id)
                 ->first();
-    
+
             // Build image URL
             $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
             $imageUrl = $updatedRequest->image ? $baseUrl . $updatedRequest->image : null;
-    
+
+            $responseMessage = $status == 1
+                ? "Endorser request approved successfully and user account created"
+                : "Endorser request declined successfully";
+
             return response()->json([
                 'success' => true,
-                'message' => "Endorser request has been {$statusText} successfully",
+                'message' => $responseMessage,
                 'data' => [
                     'name' => $updatedRequest->name,
                     'email' => $updatedRequest->email,
@@ -800,7 +840,6 @@ class AdminController extends Controller
                     'status' => $updatedRequest->status
                 ]
             ], 200);
-    
         } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
