@@ -311,7 +311,7 @@ class AuthController extends Controller
                 'working_position' => 'required|string|max:255',
                 'student_name' => 'nullable|array', // Made nullable
                 'student_name.*' => 'required|string|max:255', // Each element must be string if array exists
-                'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+                'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:4096',
             ]);
     
             // Check if email already exists in endorser requests

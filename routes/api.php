@@ -152,5 +152,5 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
 
     Route::middleware('role:3')->get('/admin_view_all_endorser_request', [AdminController::class, 'viewAllEndorserRequest']);
     Route::middleware('role:3')->get('/admin_view_endorser_request_detail/{id}', [AdminController::class, 'viewEndorserRequestDetail']);
-    Route::middleware('role:3')->post('/admin_update_endorser_request/{id}', [AdminController::class, 'updateEndorserRequest']);
+    Route::middleware('role:3')->put('/admin_update_endorser_request/{id}', [AdminController::class, 'updateEndorserRequest']);
 });

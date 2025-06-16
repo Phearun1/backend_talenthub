@@ -327,9 +327,9 @@ class ProjectController extends Controller
             'description' => 'nullable|string',
             'instruction' => 'nullable|string',
             'link' => 'nullable|string|max:255',
-            'file' => 'nullable|file',  // Validate file
-            'image' => 'nullable|array',  // Ensure image is an array for multiple upload
-            'image.*' => 'image|mimes:jpeg,png,jpg,gif,svg', // Validate each image in array
+            'file' => 'nullable|file|mimes:zip,pdf|max:25600',  // Validate file with 25MB max size, only ZIP and PDF files
+            'image' => 'nullable|array', // Ensure image is an array for multiple upload
+            'image.*' => 'image|mimes:jpeg,png,jpg,gif,svg|max:4096', // Validate each image in array
             'programming_languages' => 'nullable|array', // Changed to nullable array of languages
             'programming_languages.*' => 'string|max:255', // Validate each language
         ]);
@@ -504,9 +504,9 @@ class ProjectController extends Controller
                 'description' => 'nullable|string',
                 'instruction' => 'nullable|string',
                 'link' => 'nullable|string|max:255',
-                'file' => 'nullable|mimes:zip',
+                'file' => 'nullable|file|mimes:zip,pdf|max:46080',
                 'image' => 'nullable',
-                'image.*' => 'image|mimes:jpeg,png,jpg,gif,svg',
+                'image.*' => 'image|mimes:jpeg,png,jpg,gif,svg|max:4096',
                 'programming_languages' => 'nullable|array',
                 'programming_languages.*' => 'string|max:255',
             ]);
@@ -688,7 +688,6 @@ class ProjectController extends Controller
             ], 500);
         }
     }
-
 
 
     public function removeProjectImage(Request $request, $imageId)

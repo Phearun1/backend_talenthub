@@ -223,7 +223,7 @@ class PortfolioController extends Controller
             'phone_number' => 'nullable|string|max:255',
             'about' => 'nullable|string',
             'working_status' => 'nullable|integer',
-            'photo' => 'nullable|image', // Validate photo as an image
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:4096', // Validate photo as an image
         ]);
 
         // Get the authenticated user (via the token)
