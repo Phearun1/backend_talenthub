@@ -632,7 +632,7 @@ class AdminController extends Controller
     public function viewProjectDetail(Request $request, $id)
     {
         try {
-            // Get authenticated user's google_id from bearer token
+            // Get authenticated user from bearer token
             $authenticatedUser = $request->user();
             if (!$authenticatedUser) {
                 return response()->json([
@@ -641,13 +641,18 @@ class AdminController extends Controller
                 ], 401);
             }
     
-            $googleId = $authenticatedUser->google_id;
+            // Check if user is admin (role_id = 1)
+            if ($authenticatedUser->role_id != 1) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Access denied. Admin privileges required.'
+                ], 403);
+            }
     
-            // Find project by ID and google_id
+            // Find project by ID (no google_id check for admin)
             $project = DB::table('projects')
-                ->select('id', 'google_id', 'project_name', 'description', 'created_at', 'updated_at')
+                ->select('id', 'project_name', 'description', 'created_at', 'updated_at')
                 ->where('id', $id)
-                ->where('google_id', $googleId)
                 ->first();
     
             if (!$project) {
@@ -666,18 +671,21 @@ class AdminController extends Controller
     
             // Build full image URLs
             $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
-            $imageUrls = $projectImages->map(function ($img) use ($baseUrl) {
-                return $img->image ? $baseUrl . $img->image : null;
-            })->filter(); // Remove null values
+            $images = $projectImages->map(function ($img) use ($baseUrl) {
+                return [
+                    'id' => $img->id,
+                    'image' => $img->image ? $baseUrl . $img->image : null, // Full URL
+                    'created_at' => $img->created_at
+                ];
+            });
     
             return response()->json([
                 'success' => true,
                 'data' => [
                     'id' => $project->id,
-                    'google_id' => $project->google_id,
                     'project_name' => $project->project_name,
                     'description' => $project->description,
-                    'image' => $imageUrls->values(), // Array of image URLs only
+                    'image' => $images, // Array of project images
                     'created_at' => $project->created_at,
                     'updated_at' => $project->updated_at
                 ]
