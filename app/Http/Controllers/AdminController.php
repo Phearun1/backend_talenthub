@@ -629,46 +629,35 @@ class AdminController extends Controller
         ]);
     }
 
+
     public function viewProjectDetail(Request $request, $id)
     {
         try {
-            // Get authenticated user from bearer token
-            $authenticatedUser = $request->user();
-            if (!$authenticatedUser) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized. Please provide a valid bearer token.'
-                ], 401);
+            // Check if the authenticated user is an admin (role_id = 3)
+            if ($request->user() && $request->user()->role_id !== 3) {
+                return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
             }
-    
-            // Check if user is admin (role_id = 1)
-            if ($authenticatedUser->role_id != 1) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Access denied. Admin privileges required.'
-                ], 403);
-            }
-    
+
             // Find project by ID (no google_id check for admin)
             $project = DB::table('projects')
                 ->select('id', 'project_name', 'description', 'created_at', 'updated_at')
                 ->where('id', $id)
                 ->first();
-    
+
             if (!$project) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Project not found'
                 ], 404);
             }
-    
+
             // Get all images for this project from project_images table
             $projectImages = DB::table('project_images')
                 ->select('id', 'image', 'created_at')
                 ->where('project_id', $id)
                 ->orderBy('created_at', 'desc')
                 ->get();
-    
+
             // Build full image URLs
             $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
             $images = $projectImages->map(function ($img) use ($baseUrl) {
@@ -678,7 +667,7 @@ class AdminController extends Controller
                     'created_at' => $img->created_at
                 ];
             });
-    
+
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -690,7 +679,6 @@ class AdminController extends Controller
                     'updated_at' => $project->updated_at
                 ]
             ], 200);
-    
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
