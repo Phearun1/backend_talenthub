@@ -965,14 +965,17 @@ class AdminController extends Controller
     }
 
 
-    public function updateEndorserRequestStatus(Request $request, $id)
+    public function updateEndorserStatus(Request $request, $id)
     {
         try {
             // Validate the request
             $request->validate([
-                'status' => 'required|integer|in:1,2', // 1=approved, 2=declined
+                'status' => 'required|in:1,2,"1","2"', // Accept both integer and string
             ]);
-
+    
+            // Convert to integer
+            $status = (int) $request->input('status');
+    
             // Check if endorser request exists
             $endorserRequest = DB::table('endorser_request')->where('id', $id)->first();
             if (!$endorserRequest) {
@@ -981,18 +984,24 @@ class AdminController extends Controller
                     'message' => 'Endorser request not found'
                 ], 404);
             }
-
-            $status = $request->input('status');
-
+    
+            // Check if already processed
+            if ($endorserRequest->status != 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This endorser request has already been processed'
+                ], 400);
+            }
+    
             // Use database transaction
             DB::beginTransaction();
-
+    
             try {
                 // If status is approved (1), create user account
                 if ($status == 1) {
                     // Check if user with this email already exists
                     $existingUser = DB::table('users')->where('email', $endorserRequest->email)->first();
-
+                    
                     if ($existingUser) {
                         DB::rollBack();
                         return response()->json([
@@ -1000,10 +1009,10 @@ class AdminController extends Controller
                             'message' => 'A user with this email already exists'
                         ], 409);
                     }
-
+    
                     // Create new user with role_id = 2 (endorser)
                     DB::table('users')->insert([
-                        'name' => null,
+                        'name' => $endorserRequest->name,
                         'email' => $endorserRequest->email,
                         'role_id' => 2, // Endorser role
                         'status' => 1, // Active status
@@ -1011,49 +1020,44 @@ class AdminController extends Controller
                         'photo' => null, // Will be set from Google profile
                         'created_at' => now(),
                         'updated_at' => now(),
-
                     ]);
                 }
-
-                // Update the endorser request status
-                DB::table('endorser_request')
-                    ->where('id', $id)
-                    ->update([
-                        'status' => $status,
-                        'updated_at' => now()
-                    ]);
-
+    
+                // Delete the image file if exists before deleting the record
+                if ($endorserRequest->image) {
+                    $imagePath = public_path('storage/' . $endorserRequest->image);
+                    if (file_exists($imagePath)) {
+                        unlink($imagePath);
+                    }
+                }
+    
+                // Delete the endorser request record
+                DB::table('endorser_request')->where('id', $id)->delete();
+    
                 DB::commit();
+    
             } catch (\Exception $e) {
                 DB::rollBack();
                 throw $e;
             }
-
-            // Get updated record with only required fields
-            $updatedRequest = DB::table('endorser_request')
-                ->select('name', 'email', 'contact', 'image', 'status')
-                ->where('id', $id)
-                ->first();
-
-            // Build image URL
-            $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
-            $imageUrl = $updatedRequest->image ? $baseUrl . $updatedRequest->image : null;
-
-            $responseMessage = $status == 1
-                ? "Endorser request approved successfully and user account created"
-                : "Endorser request declined successfully";
-
+    
+            $responseMessage = $status == 1 
+                ? "Endorser request approved successfully, user account created, and request record deleted"
+                : "Endorser request declined successfully and request record deleted";
+    
             return response()->json([
                 'success' => true,
                 'message' => $responseMessage,
                 'data' => [
-                    'name' => $updatedRequest->name,
-                    'email' => $updatedRequest->email,
-                    'contact' => $updatedRequest->contact,
-                    'image_url' => $imageUrl,
-                    'status' => $updatedRequest->status
+                    'processed_request' => [
+                        'name' => $endorserRequest->name,
+                        'email' => $endorserRequest->email,
+                        'contact' => $endorserRequest->contact,
+                        'status' => $status == 1 ? 'approved' : 'declined'
+                    ]
                 ]
             ], 200);
+    
         } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
@@ -1061,6 +1065,7 @@ class AdminController extends Controller
                 'errors' => $e->errors()
             ], 422);
         } catch (\Exception $e) {
+            \Log::error('Update endorser status error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while updating endorser status',
