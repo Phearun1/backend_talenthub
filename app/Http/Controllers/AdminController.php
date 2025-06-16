@@ -629,23 +629,67 @@ class AdminController extends Controller
         ]);
     }
 
-    public function viewProjectDetail(Request $request, $project_id)
+    public function viewProjectDetail(Request $request, $id)
     {
-        // Check if the authenticated user is an admin (role_id = 3)
-        if ($request->user() && $request->user()->role_id !== 3) {
-            return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
+        try {
+            // Get authenticated user's google_id from bearer token
+            $authenticatedUser = $request->user();
+            if (!$authenticatedUser) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized. Please provide a valid bearer token.'
+                ], 401);
+            }
+    
+            $googleId = $authenticatedUser->google_id;
+    
+            // Find project by ID and google_id
+            $project = DB::table('projects')
+                ->select('id', 'google_id', 'project_name', 'description', 'created_at', 'updated_at')
+                ->where('id', $id)
+                ->where('google_id', $googleId)
+                ->first();
+    
+            if (!$project) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Project not found'
+                ], 404);
+            }
+    
+            // Get all images for this project from project_images table
+            $projectImages = DB::table('project_images')
+                ->select('id', 'image', 'created_at')
+                ->where('project_id', $id)
+                ->orderBy('created_at', 'desc')
+                ->get();
+    
+            // Build full image URLs
+            $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
+            $imageUrls = $projectImages->map(function ($img) use ($baseUrl) {
+                return $img->image ? $baseUrl . $img->image : null;
+            })->filter(); // Remove null values
+    
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'id' => $project->id,
+                    'google_id' => $project->google_id,
+                    'project_name' => $project->project_name,
+                    'description' => $project->description,
+                    'image' => $imageUrls->values(), // Array of image URLs only
+                    'created_at' => $project->created_at,
+                    'updated_at' => $project->updated_at
+                ]
+            ], 200);
+    
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving project details',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        // Fetch the project details
-        $project = DB::table('projects')
-            ->where('id', $project_id)
-            ->first();
-
-        if (!$project) {
-            return response()->json(['error' => 'Project not found'], 404);
-        }
-
-        return response()->json($project);
     }
 
     public function adminSearchProject(Request $request)
