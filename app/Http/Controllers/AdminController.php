@@ -633,52 +633,69 @@ class AdminController extends Controller
     public function viewProjectDetail(Request $request, $id)
     {
         try {
-            // Check if the authenticated user is an admin (role_id = 3)
-            if ($request->user() && $request->user()->role_id !== 3) {
-                return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
+            // Get authenticated user from bearer token
+            $authenticatedUser = $request->user();
+            if (!$authenticatedUser) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized. Please provide a valid bearer token.'
+                ], 401);
             }
-
-            // Find project by ID (no google_id check for admin)
+    
+            // Check if user is admin (role_id = 1)
+            if ($authenticatedUser->role_id != 1) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Access denied. Admin privileges required.'
+                ], 403);
+            }
+    
+            // Find project by ID with correct column names
             $project = DB::table('projects')
-                ->select('id', 'project_name', 'description', 'created_at', 'updated_at')
+                ->select('id', 'portfolio_id', 'title', 'description', 'instruction', 'link', 'file', 'programming_language_id', 'project_visibility_status', 'created_at', 'updated_at')
                 ->where('id', $id)
                 ->first();
-
+    
             if (!$project) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Project not found'
                 ], 404);
             }
-
+    
             // Get all images for this project from project_images table
             $projectImages = DB::table('project_images')
                 ->select('id', 'image', 'created_at')
                 ->where('project_id', $id)
                 ->orderBy('created_at', 'desc')
                 ->get();
-
+    
             // Build full image URLs
             $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
-            $images = $projectImages->map(function ($img) use ($baseUrl) {
-                return [
-                    'id' => $img->id,
-                    'image' => $img->image ? $baseUrl . $img->image : null, // Full URL
-                    'created_at' => $img->created_at
-                ];
-            });
-
+            $imageUrls = $projectImages->map(function ($img) use ($baseUrl) {
+                return $img->image ? $baseUrl . $img->image : null;
+            })->filter()->values(); // Remove null values and reindex
+    
+            // Build file URL if exists
+            $fileUrl = $project->file ? $baseUrl . $project->file : null;
+    
             return response()->json([
                 'success' => true,
                 'data' => [
                     'id' => $project->id,
-                    'project_name' => $project->project_name,
+                    'portfolio_id' => $project->portfolio_id,
+                    'title' => $project->title,
                     'description' => $project->description,
-                    'image' => $images, // Array of project images
+                    'instruction' => $project->instruction,
+                    'link' => $project->link,
+                    'file' => $fileUrl, // Full file URL only
+                    'programming_language_id' => $project->programming_language_id,
+                    'image' => $imageUrls, // Array of image URLs only
                     'created_at' => $project->created_at,
                     'updated_at' => $project->updated_at
                 ]
             ], 200);
+    
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
