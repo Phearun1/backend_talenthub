@@ -630,66 +630,236 @@ class AdminController extends Controller
     }
 
 
-    public function viewProjectDetail(Request $request, $id)
+    // public function viewProjectDetail(Request $request, $id)
+    // {
+    //     try {
+    //         // Check if the authenticated user is an admin (role_id = 3)
+    //         if ($request->user() && $request->user()->role_id !== 3) {
+    //             return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
+    //         }
+
+    //         // Find project by ID with correct column names
+    //         $project = DB::table('projects')
+    //             ->select('id', 'portfolio_id', 'title', 'description', 'instruction', 'link', 'file', 'programming_language_id', 'project_visibility_status', 'created_at', 'updated_at')
+    //             ->where('id', $id)
+    //             ->first();
+
+    //         if (!$project) {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Project not found'
+    //             ], 404);
+    //         }
+
+    //         // Get all images for this project from project_images table
+    //         $projectImages = DB::table('project_images')
+    //             ->select('id', 'image', 'created_at')
+    //             ->where('project_id', $id)
+    //             ->orderBy('created_at', 'desc')
+    //             ->get();
+
+    //         // Build full image URLs
+    //         $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
+    //         $imageUrls = $projectImages->map(function ($img) use ($baseUrl) {
+    //             return $img->image ? $baseUrl . $img->image : null;
+    //         })->filter()->values(); // Remove null values and reindex
+
+    //         // Build file URL if exists
+    //         $fileUrl = $project->file ? $baseUrl . $project->file : null;
+
+    //         // Get programming languages for this project
+    //         $programmingLanguages = DB::table('project_languages')
+    //             ->join('programming_languages', 'project_languages.programming_language_id', '=', 'programming_languages.id')
+    //             ->where('project_languages.project_id', $id)
+    //             ->select('programming_languages.id', 'programming_languages.programming_language')
+    //             ->get()
+    //             ->map(function ($lang) {
+    //                 return [
+    //                     'id' => $lang->id,
+    //                     'name' => $lang->programming_language,
+    //                 ];
+    //             });
+    //         return response()->json([
+    //             'success' => true,
+    //             'data' => [
+    //                 'id' => $project->id,
+    //                 'portfolio_id' => $project->portfolio_id,
+    //                 'title' => $project->title,
+    //                 'description' => $project->description,
+    //                 'instruction' => $project->instruction,
+    //                 'link' => $project->link,
+    //                 'file' => $fileUrl, // Full file URL only
+    //                 'programming_languages' => $programmingLanguages,
+    //                 'image' => $imageUrls, // Array of image URLs only
+    //                 'created_at' => $project->created_at,
+    //                 'updated_at' => $project->updated_at
+    //             ]
+    //         ], 200);
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'An error occurred while retrieving project details',
+    //             'error' => $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
+
+
+
+    public function viewProjectDetail($projectId, Request $request)
     {
-        try {
-            // Check if the authenticated user is an admin (role_id = 3)
-            if ($request->user() && $request->user()->role_id !== 3) {
-                return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
-            }
 
-            // Find project by ID with correct column names
-            $project = DB::table('projects')
-                ->select('id', 'portfolio_id', 'title', 'description', 'instruction', 'link', 'file', 'programming_language_id', 'project_visibility_status', 'created_at', 'updated_at')
-                ->where('id', $id)
-                ->first();
-
-            if (!$project) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Project not found'
-                ], 404);
-            }
-
-            // Get all images for this project from project_images table
-            $projectImages = DB::table('project_images')
-                ->select('id', 'image', 'created_at')
-                ->where('project_id', $id)
-                ->orderBy('created_at', 'desc')
-                ->get();
-
-            // Build full image URLs
-            $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
-            $imageUrls = $projectImages->map(function ($img) use ($baseUrl) {
-                return $img->image ? $baseUrl . $img->image : null;
-            })->filter()->values(); // Remove null values and reindex
-
-            // Build file URL if exists
-            $fileUrl = $project->file ? $baseUrl . $project->file : null;
-
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'id' => $project->id,
-                    'portfolio_id' => $project->portfolio_id,
-                    'title' => $project->title,
-                    'description' => $project->description,
-                    'instruction' => $project->instruction,
-                    'link' => $project->link,
-                    'file' => $fileUrl, // Full file URL only
-                    'programming_language_id' => $project->programming_language_id,
-                    'image' => $imageUrls, // Array of image URLs only
-                    'created_at' => $project->created_at,
-                    'updated_at' => $project->updated_at
-                ]
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'An error occurred while retrieving project details',
-                'error' => $e->getMessage()
-            ], 500);
+        // Check if the authenticated user is an admin (role_id = 3)
+        if ($request->user() && $request->user()->role_id !== 3) {
+            return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
         }
+
+        // Retrieve the project details with user's authentication token
+        $project = DB::table('projects')
+            ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
+            ->join('users', 'portfolios.user_id', '=', 'users.google_id') // Use users.google_id for authentication
+            ->select(
+                'portfolios.id as portfolio_id',
+                'projects.id as project_id',
+                'projects.title',
+                'users.google_id as user_id',
+                'projects.project_visibility_status',
+                'users.status as user_status' // Added user_status field
+            )
+            ->where('projects.id', $projectId)
+            ->first();
+
+        // Check if the project exists
+        if (!$project) {
+            return response()->json(['error' => 'Project not found.'], 404);
+        }
+
+        return $this->getFullProjectDetails($projectId);
+    }
+
+
+    // Method to return full project details
+    private function getFullProjectDetails($projectId)
+    {
+        // Get full project details (the rest of your original logic)
+        $fullProject = DB::table('projects')
+            ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
+            ->join('users', 'portfolios.user_id', '=', 'users.google_id') // Use users.id for authentication
+            ->select(
+                'portfolios.id as portfolio_id',
+                'projects.id as project_id',
+                'projects.title',
+                'projects.description',
+                'projects.instruction',
+                'projects.link',
+                DB::raw("CASE
+                WHEN projects.file IS NOT NULL 
+                THEN CONCAT('https://talenthub.newlinkmarketing.com/storage/', projects.file)
+                ELSE NULL
+            END as file"),
+                'projects.project_visibility_status',
+                'users.name as owner_name',
+                'users.photo as owner_photo',
+                'users.google_id as google_id',
+                'users.status as user_status'
+            )
+            ->where('projects.id', $projectId)
+            ->first();
+
+        // Get all programming languages for this project
+        $programmingLanguages = DB::table('project_languages')
+            ->join('programming_languages', 'project_languages.programming_language_id', '=', 'programming_languages.id')
+            ->where('project_languages.project_id', $projectId)
+            ->select('programming_languages.id', 'programming_languages.programming_language')
+            ->get()
+            ->map(function ($language) {
+                return [
+                    'id' => $language->id,
+                    'name' => $language->programming_language
+                ];
+            })
+            ->toArray();
+
+        // Get project images
+        $images = DB::table('project_images')
+            ->where('project_id', $projectId)
+            ->get()
+            ->map(function ($image) {
+                return [
+                    'id' => $image->id,
+                    'url' => 'https://talenthub.newlinkmarketing.com/storage/' . $image->image
+                ];
+            });
+
+
+
+        // Get project endorsers with their endorsement status
+        $endorsers = DB::table('project_endorsers')
+            ->join('users', 'project_endorsers.user_id', '=', 'users.google_id') // Use users.id for authentication
+            ->leftJoin('project_endorsement_statuses', function ($join) use ($projectId) {
+                $join->on('project_endorsers.user_id', '=', 'project_endorsement_statuses.endorser_id')
+                    ->where('project_endorsement_statuses.project_id', '=', DB::raw('project_endorsers.project_id'));
+            })
+            ->where('project_endorsers.project_id', $projectId)
+            ->select(
+                'users.id',
+                'users.name',
+                'users.email',
+                'users.google_id',
+                'users.photo',
+                'project_endorsement_statuses.endorsement_status_id'
+            )
+            ->get()
+            ->map(function ($endorser) {
+                return [
+                    'id' => $endorser->id,
+                    'name' => $endorser->name,
+                    'email' => $endorser->email,
+                    'google_id' => $endorser->google_id,
+                    'photo' => $endorser->photo,
+                    'endorsement_status' => $endorser->endorsement_status_id ?? 0, // Default to 0 if null
+                ];
+            })
+            ->toArray();
+
+        // Get project collaborators with their invitation status
+        $collaborators = DB::table('project_collaborators')
+            ->join('users', 'project_collaborators.user_id', '=', 'users.google_id') // Use users.id for authentication
+            ->leftJoin('project_collaborator_invitation_statuses', function ($join) use ($projectId) {
+                $join->on('project_collaborators.user_id', '=', 'project_collaborator_invitation_statuses.collaborator_id')
+                    ->where('project_collaborator_invitation_statuses.project_id', '=', DB::raw('project_collaborators.project_id'));
+            })
+            ->where('project_collaborators.project_id', $projectId)
+            ->select(
+                'users.id',
+                'users.name',
+                'users.email',
+                'users.photo',
+                'users.google_id',
+                'project_collaborator_invitation_statuses.project_collab_status_id'
+            )
+            ->get()
+            ->map(function ($collaborator) {
+                return [
+                    'id' => $collaborator->id,
+                    'name' => $collaborator->name,
+                    'email' => $collaborator->email,
+                    'google_id' => $collaborator->google_id,
+                    'photo' => $collaborator->photo,
+                    'collaboration_status' => $collaborator->project_collab_status_id ?? 0, // Default to 0 if null
+                ];
+            })
+            ->toArray();
+
+        // Combine project details with images, languages, endorsers and collaborators
+        $response = (array) $fullProject;
+        $response['programming_languages'] = $programmingLanguages;
+        $response['images'] = $images;
+        $response['endorsers'] = $endorsers;
+        $response['collaborators'] = $collaborators;
+
+        // Return the project details
+        return response()->json($response, 200, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     }
 
     public function adminSearchProject(Request $request)
