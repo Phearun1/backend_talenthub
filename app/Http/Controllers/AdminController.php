@@ -1048,14 +1048,6 @@ class AdminController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => $responseMessage,
-                'data' => [
-                    'processed_request' => [
-                        'name' => $endorserRequest->name,
-                        'email' => $endorserRequest->email,
-                        'contact' => $endorserRequest->contact,
-                        'status' => $status == 1 ? 'approved' : 'declined'
-                    ]
-                ]
             ], 200);
     
         } catch (ValidationException $e) {
