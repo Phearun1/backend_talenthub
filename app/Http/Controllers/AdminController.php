@@ -965,7 +965,7 @@ class AdminController extends Controller
     }
 
 
-    public function updateEndorserStatus(Request $request, $id)
+    public function updateEndorserRequest(Request $request, $id)
     {
         try {
             // Validate the request
