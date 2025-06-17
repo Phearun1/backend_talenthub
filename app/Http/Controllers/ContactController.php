@@ -144,7 +144,7 @@ class ContactController extends Controller
             $userGoogleId = $authenticatedUser->google_id;
     
             // Find the contact by ID and check ownership
-            $contact = DB::table('contacts')
+            $contact = DB::table('contact')
                 ->where('id', $contactId)
                 ->first();
     
@@ -167,16 +167,14 @@ class ContactController extends Controller
             $deletedContactData = [
                 'id' => $contact->id,
                 'google_id' => $contact->google_id,
-                'name' => $contact->name ?? null,
-                'email' => $contact->email ?? null,
-                'phone' => $contact->phone ?? null,
-                'company' => $contact->company ?? null,
-                'position' => $contact->position ?? null,
-                'created_at' => $contact->created_at
+                'email' => $contact->email,
+                'phone_number' => $contact->phone_number,
+                'created_at' => $contact->created_at,
+                'updated_at' => $contact->updated_at
             ];
     
             // Delete the contact
-            $deleted = DB::table('contacts')
+            $deleted = DB::table('contact')
                 ->where('id', $contactId)
                 ->where('google_id', $userGoogleId) // Double-check ownership
                 ->delete();
@@ -185,7 +183,7 @@ class ContactController extends Controller
                 return response()->json([
                     'success' => true,
                     'message' => 'Contact deleted successfully',
-                   
+                    
                 ], 200);
             } else {
                 return response()->json([
