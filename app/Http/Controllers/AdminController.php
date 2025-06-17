@@ -110,7 +110,7 @@ class AdminController extends Controller
         }
 
         $page = $request->input('page', 1); // Default page to 1 if not provided
-        $perPage = 10; // Fixed number of users per page
+        $perPage = 20; // Fixed number of users per page
 
         // Fetch users with pagination
         $users = DB::table('users')
@@ -264,7 +264,7 @@ class AdminController extends Controller
         }
 
         $page = $request->input('page', 1); // Default page to 1 if not provided
-        $perPage = 20; // Fixed number of portfolios per page
+        $perPage = 18; // Fixed number of portfolios per page
 
         // Fetch portfolios with pagination
         $portfolios = DB::table('portfolios')
