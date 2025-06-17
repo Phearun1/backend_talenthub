@@ -120,4 +120,87 @@ class ContactController extends Controller
             ], 500);
         }
     }
+
+    public function deleteContact(Request $request, $contactId)
+    {
+        try {
+            // Get authenticated user from bearer token
+            $authenticatedUser = $request->user();
+            if (!$authenticatedUser) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized. Please provide a valid bearer token.'
+                ], 401);
+            }
+    
+            // Validate contact ID
+            if (!$contactId || !is_numeric($contactId)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid contact ID provided'
+                ], 400);
+            }
+    
+            $userGoogleId = $authenticatedUser->google_id;
+    
+            // Find the contact by ID and check ownership
+            $contact = DB::table('contacts')
+                ->where('id', $contactId)
+                ->first();
+    
+            if (!$contact) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Contact not found'
+                ], 404);
+            }
+    
+            // Check if the authenticated user's google_id matches the contact's google_id
+            if ($contact->google_id !== $userGoogleId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Access denied. You do not own this contact.'
+                ], 403);
+            }
+    
+            // Store contact details for response before deletion
+            $deletedContactData = [
+                'id' => $contact->id,
+                'google_id' => $contact->google_id,
+                'name' => $contact->name ?? null,
+                'email' => $contact->email ?? null,
+                'phone' => $contact->phone ?? null,
+                'company' => $contact->company ?? null,
+                'position' => $contact->position ?? null,
+                'created_at' => $contact->created_at
+            ];
+    
+            // Delete the contact
+            $deleted = DB::table('contacts')
+                ->where('id', $contactId)
+                ->where('google_id', $userGoogleId) // Double-check ownership
+                ->delete();
+    
+            if ($deleted) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Contact deleted successfully',
+                   
+                ], 200);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to delete contact'
+                ], 500);
+            }
+    
+        } catch (\Exception $e) {
+            \Log::error('Delete contact error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while deleting the contact',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

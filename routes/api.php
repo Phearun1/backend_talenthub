@@ -127,12 +127,12 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
     
     // POST /api/contacts/view - Get contact information by google_id
     Route::get('/view_incoming_contact', [ContactController::class, 'viewIncomingContact']);
-
+    Route::delete('/delete_contact/{id}', [ContactController::class, 'deleteContact']);
     // Admin route 
     Route::middleware('role:3')->post('/admin/create_admin_account', [AdminController::class, 'adminCreateAdminAccount']);
     Route::middleware('role:3')->post('/admin/create_endorser_account', [AdminController::class, 'adminCreateEndorserAccount']);
 
-
+    
     // User Management
 
     Route::middleware('role:3')->get('/admin_view_all_portfolio', [AdminController::class, 'adminViewAllPortfolio']);
