@@ -59,7 +59,7 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
 
     Route::post('/update_portfolio/{id}', [PortfolioController::class, 'updatePortfolio']); // Edit portfolio
 
-
+    
     //skill
 
     Route::post('/create_skill', [SkillController::class, 'createSkill']);  // Create skill
@@ -99,7 +99,9 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
     Route::delete('/delete_education/{id}', [EducationController::class, 'deleteEducation']);
 
 
+    //remove endorserment
 
+    Route::delete('/remove_endorsement', [PortfolioController::class, 'removeEndorsement']);
     // Experience
 
     Route::post('/create_experience', [ExperienceController::class, 'createExperience']);
@@ -109,6 +111,7 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
 
     // Delete an experience
     Route::delete('/delete_experience/{id}', [ExperienceController::class, 'deleteExperience']);
+
 
 
     Route::post('/change_endorsement_collaboration_request', [ProjectController::class, 'changeEndorsementCollaborationRequest']);

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 class PortfolioController extends Controller
 {
@@ -375,5 +376,154 @@ class PortfolioController extends Controller
             ->get();
 
         return response()->json($portfolios);
+    }
+
+    public function removeEndorsement(Request $request)
+    {
+        try {
+            // Get authenticated user from bearer token
+            $authenticatedUser = $request->user();
+            if (!$authenticatedUser) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized. Please provide a valid bearer token.'
+                ], 401);
+            }
+    
+            // Check if user is endorser (role_id = 2)
+            if ($authenticatedUser->role_id != 2) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Access denied. Endorser privileges required.'
+                ], 403);
+            }
+    
+            // Validate the request
+            $request->validate([
+                'type' => 'required|integer|in:1,2,3,4', // 1=skill, 2=experience, 3=achievement, 4=project
+                'id' => 'required|integer|min:1'
+            ]);
+    
+            $type = $request->input('type');
+            $itemId = $request->input('id');
+            $endorserUserId = $authenticatedUser->google_id; // Using google_id as user identifier
+    
+            // Determine table configurations based on type
+            $tableMap = [
+                1 => [
+                    'endorser_table' => 'skill_endorsers',
+                    'status_table' => 'skill_endorsement_statuses',
+                    'item_column' => 'skill_id',
+                    'type_name' => 'skill'
+                ],
+                2 => [
+                    'endorser_table' => 'experience_endorsers',
+                    'status_table' => 'experience_endorsement_statuses',
+                    'item_column' => 'experience_id',
+                    'type_name' => 'experience'
+                ],
+                3 => [
+                    'endorser_table' => 'achievement_endorsers',
+                    'status_table' => 'achievement_endorsement_statuses',
+                    'item_column' => 'achievement_id',
+                    'type_name' => 'achievement'
+                ],
+                4 => [
+                    'endorser_table' => 'project_endorsers',
+                    'status_table' => 'project_endorsement_statuses',
+                    'item_column' => 'project_id',
+                    'type_name' => 'project'
+                ]
+            ];
+    
+            $tableInfo = $tableMap[$type];
+            $endorserTable = $tableInfo['endorser_table'];
+            $statusTable = $tableInfo['status_table'];
+            $itemColumn = $tableInfo['item_column'];
+            $typeName = $tableInfo['type_name'];
+    
+            // Use database transaction
+            DB::beginTransaction();
+    
+            try {
+                // Check if endorser record exists
+                $endorserRecord = DB::table($endorserTable)
+                    ->where($itemColumn, $itemId)
+                    ->where('user_id', $endorserUserId)
+                    ->first();
+    
+                if (!$endorserRecord) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'message' => "You have not endorsed this {$typeName}"
+                    ], 404);
+                }
+    
+                // Remove from endorser table
+                $deletedFromEndorser = DB::table($endorserTable)
+                    ->where($itemColumn, $itemId)
+                    ->where('user_id', $endorserUserId)
+                    ->delete();
+    
+                // Remove from status table (using the correct column name for each type)
+                $statusColumnMap = [
+                    1 => 'endorsement_status_id', // skill
+                    2 => 'experience_status_id',  // experience  
+                    3 => 'endorsement_status_id', // achievement
+                    4 => 'endorsement_status_id'  // project
+                ];
+    
+                $statusColumn = $statusColumnMap[$type];
+    
+                $deletedFromStatus = DB::table($statusTable)
+                    ->where($itemColumn, $itemId)
+                    ->where('endorser_id', $endorserUserId)
+                    ->delete();
+    
+                DB::commit();
+    
+                if ($deletedFromEndorser || $deletedFromStatus) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => "Endorsement for {$typeName} removed successfully",
+                        'data' => [
+                            'type' => $type,
+                            'type_name' => $typeName,
+                            'id' => $itemId,
+                            'endorser_user_id' => $endorserUserId,
+                            'records_removed' => [
+                                'from_endorser_table' => $deletedFromEndorser,
+                                'from_status_table' => $deletedFromStatus
+                            ],
+                            'removed_at' => now()
+                        ]
+                    ], 200);
+                } else {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "No endorsement records found to remove"
+                    ], 404);
+                }
+    
+            } catch (\Exception $e) {
+                DB::rollBack();
+                throw $e;
+            }
+    
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            \Log::error('Remove endorsement error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while removing endorsement',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }
