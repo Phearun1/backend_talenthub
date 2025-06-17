@@ -487,17 +487,6 @@ class PortfolioController extends Controller
                     return response()->json([
                         'success' => true,
                         'message' => "Endorsement for {$typeName} removed successfully",
-                        'data' => [
-                            'type' => $type,
-                            'type_name' => $typeName,
-                            'id' => $itemId,
-                            'endorser_user_id' => $endorserUserId,
-                            'records_removed' => [
-                                'from_endorser_table' => $deletedFromEndorser,
-                                'from_status_table' => $deletedFromStatus
-                            ],
-                            'removed_at' => now()
-                        ]
                     ], 200);
                 } else {
                     return response()->json([
