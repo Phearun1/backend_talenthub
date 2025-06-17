@@ -116,7 +116,127 @@ class AuthController extends Controller
     }
 
 
-    
+
+    public function loginwithGoogle2(Request $request)
+    {
+        try {
+            // Validate request
+            $request->validate([
+                'google_id' => 'required|string',
+                'email' => 'required|email',
+                'name' => 'required|string',
+                'photo' => 'nullable|string'
+            ]);
+
+            $googleId = $request->input('google_id');
+            $email = $request->input('email');
+            $name = $request->input('name');
+            $photo = $request->input('photo');
+
+            // Check if it's a personal email
+            if ($this->isPersonalEmail($email)) {
+                // If personal email, check if it exists in database
+                if (!$this->isPersonalEmailAllowed($email)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Personal email not authorized. Only pre-registered personal emails are allowed to login.'
+                    ], 403);
+                }
+            }
+
+            // Check if user exists by Google ID
+            $user = DB::table('users')->where('google_id', $googleId)->first();
+
+            if (!$user) {
+                // Check if user exists by email
+                $user = DB::table('users')->where('email', $email)->first();
+
+                if ($user) {
+                    // Update existing user with Google ID
+                    DB::table('users')
+                        ->where('id', $user->id)
+                        ->update([
+                            'google_id' => $googleId,
+                            'photo' => $photo,
+                            'updated_at' => now()
+                        ]);
+
+                    // Get updated user data
+                    $user = DB::table('users')->where('id', $user->id)->first();
+                } else {
+                    // Create new user (only if email is authorized)
+                    $userId = DB::table('users')->insertGetId([
+                        'google_id' => $googleId,
+                        'email' => $email,
+                        'name' => $name,
+                        'photo' => $photo,
+                        'role_id' => 3, // Default role for new users
+                        'status' => 1, // Active status
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ]);
+
+                    $user = DB::table('users')->where('id', $userId)->first();
+                }
+            } else {
+                // Update existing Google user info
+                DB::table('users')
+                    ->where('google_id', $googleId)
+                    ->update([
+                        'email' => $email,
+                        'name' => $name,
+                        'photo' => $photo,
+                        'updated_at' => now()
+                    ]);
+
+                // Get updated user data
+                $user = DB::table('users')->where('google_id', $googleId)->first();
+            }
+
+            // Check if user is banned
+            if ($user->status == 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Your account has been banned. Please contact administrator.'
+                ], 403);
+            }
+
+            // Create token using Sanctum
+            $token = $user->createToken('google_auth_token')->plainTextToken;
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Google login successful',
+                'data' => [
+                    'user' => [
+                        'id' => $user->id,
+                        'google_id' => $user->google_id,
+                        'email' => $user->email,
+                        'name' => $user->name,
+                        'photo' => $user->photo,
+                        'role_id' => $user->role_id,
+                        'status' => $user->status
+                    ],
+                ]
+            ], 200);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            \Log::error('Google login error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Google login failed',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+
     private function isPersonalEmail($email)
     {
         $domain = strtolower(substr(strrchr($email, "@"), 1));
@@ -313,32 +433,32 @@ class AuthController extends Controller
                 'student_name.*' => 'required|string|max:255', // Each element must be string if array exists
                 'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:4096',
             ]);
-    
+
             // Check if email already exists in endorser requests
             $existingRequest = DB::table('endorser_request')
                 ->where('email', $request->input('email'))
                 ->first();
-    
+
             if ($existingRequest) {
                 return response()->json([
                     'success' => false,
                     'message' => 'An endorser request with this email already exists'
                 ], 409); // Conflict status code
             }
-    
+
             // Handle image upload
             $imagePath = null;
             if ($request->hasFile('image')) {
                 $image = $request->file('image');
                 $imagePath = $image->store('endorser_images', 'public');
             }
-    
+
             // Handle student_name - can be null or array
             $studentNameJson = null;
             if ($request->has('student_name') && $request->input('student_name') !== null) {
                 $studentNameJson = json_encode($request->input('student_name'));
             }
-    
+
             // Create endorser request
             $endorserRequestId = DB::table('endorser_request')->insertGetId([
                 'name' => $request->input('name'),
@@ -352,22 +472,22 @@ class AuthController extends Controller
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
-    
+
             // Get the created record
             $endorserRequest = DB::table('endorser_request')
                 ->where('id', $endorserRequestId)
                 ->first();
-    
+
             // Parse student_name back to array for response (handle null case)
             $studentNames = null;
             if ($endorserRequest->student_name) {
                 $studentNames = json_decode($endorserRequest->student_name, true);
             }
-    
+
             // Build full image URL
             $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
             $imageUrl = $imagePath ? $baseUrl . $imagePath : null;
-    
+
             return response()->json([
                 'success' => true,
                 'message' => 'Endorser request submitted successfully. Your application will be reviewed.',
@@ -385,7 +505,6 @@ class AuthController extends Controller
                     'updated_at' => $endorserRequest->updated_at
                 ]
             ], 200);
-    
         } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,

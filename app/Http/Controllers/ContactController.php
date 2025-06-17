@@ -18,52 +18,23 @@ class ContactController extends Controller
                 'phone_number' => 'required|string|max:255'
             ]);
 
-            // Check if contact already exists for this google_id and email combination
-            $existingContact = DB::table('contact')
-                ->where('google_id', $validatedData['google_id'])
-                ->where('email', $validatedData['email'])
-                ->first();
+            // Create new contact
+            $contactId = DB::table('contact')->insertGetId([
+                'google_id' => $validatedData['google_id'],
+                'email' => $validatedData['email'],
+                'phone_number' => $validatedData['phone_number'],
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
 
-            if ($existingContact) {
-                // Update existing contact
-                $updated = DB::table('contact')
-                    ->where('google_id', $validatedData['google_id'])
-                    ->update([
-                        'email' => $validatedData['email'],
-                        'phone_number' => $validatedData['phone_number'],
-                        'updated_at' => now()
-                    ]);
-                
-                // Get updated contact data
-                $contact = DB::table('contact')
-                    ->where('google_id', $validatedData['google_id'])
-                    ->first();
-                
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Contact sent successfully',
-                    'contact' => $contact
-                ], 200);
-            } else {
-                // Create new contact
-                $contactId = DB::table('contact')->insertGetId([
-                    'google_id' => $validatedData['google_id'],
-                    'email' => $validatedData['email'],
-                    'phone_number' => $validatedData['phone_number'],
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ]);
+            // Get newly created contact
+            $contact = DB::table('contact')->where('id', $contactId)->first();
 
-                // Get newly created contact
-                $contact = DB::table('contact')->where('id', $contactId)->first();
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Contact sent successfully',
-                    'contact' => $contact
-                ], 200);
-            }
-
+            return response()->json([
+                'success' => true,
+                'message' => 'Contact sent successfully',
+                'contact' => $contact
+            ], 200);
         } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
@@ -78,7 +49,6 @@ class ContactController extends Controller
             ], 500);
         }
     }
-
     public function viewIncomingContact(Request $request)
     {
         try {
@@ -90,28 +60,27 @@ class ContactController extends Controller
                     'message' => 'Unauthorized. Please provide a valid bearer token.'
                 ], 401);
             }
-    
+
             $googleId = $authenticatedUser->google_id;
-    
+
             // Find contact by google_id using raw database query - sorted by newest first
             $contact = DB::table('contact')
                 ->select('id', 'google_id', 'email', 'phone_number', 'created_at', 'updated_at')
                 ->where('google_id', $googleId)
                 ->orderBy('created_at', 'desc') // Newest first
                 ->get();
-    
+
             if ($contact->isEmpty()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Contact not found'
                 ], 404);
             }
-    
+
             return response()->json([
                 'success' => true,
                 'data' => $contact
             ], 200);
-    
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -132,7 +101,7 @@ class ContactController extends Controller
                     'message' => 'Unauthorized. Please provide a valid bearer token.'
                 ], 401);
             }
-    
+
             // Validate contact ID
             if (!$contactId || !is_numeric($contactId)) {
                 return response()->json([
@@ -140,21 +109,21 @@ class ContactController extends Controller
                     'message' => 'Invalid contact ID provided'
                 ], 400);
             }
-    
+
             $userGoogleId = $authenticatedUser->google_id;
-    
+
             // Find the contact by ID and check ownership
             $contact = DB::table('contact')
                 ->where('id', $contactId)
                 ->first();
-    
+
             if (!$contact) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Contact not found'
                 ], 404);
             }
-    
+
             // Check if the authenticated user's google_id matches the contact's google_id
             if ($contact->google_id !== $userGoogleId) {
                 return response()->json([
@@ -162,7 +131,7 @@ class ContactController extends Controller
                     'message' => 'Access denied. You do not own this contact.'
                 ], 403);
             }
-    
+
             // Store contact details for response before deletion
             $deletedContactData = [
                 'id' => $contact->id,
@@ -172,18 +141,18 @@ class ContactController extends Controller
                 'created_at' => $contact->created_at,
                 'updated_at' => $contact->updated_at
             ];
-    
+
             // Delete the contact
             $deleted = DB::table('contact')
                 ->where('id', $contactId)
                 ->where('google_id', $userGoogleId) // Double-check ownership
                 ->delete();
-    
+
             if ($deleted) {
                 return response()->json([
                     'success' => true,
                     'message' => 'Contact deleted successfully',
-                    
+
                 ], 200);
             } else {
                 return response()->json([
@@ -191,7 +160,6 @@ class ContactController extends Controller
                     'message' => 'Failed to delete contact'
                 ], 500);
             }
-    
         } catch (\Exception $e) {
             \Log::error('Delete contact error: ' . $e->getMessage());
             return response()->json([
