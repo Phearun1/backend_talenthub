@@ -122,13 +122,13 @@ class AuthController extends Controller
         try {
             // Validate request
             $request->validate([
-                'google_id' => 'required|string',
+                'sub' => 'required|string',
                 'email' => 'required|email',
                 'name' => 'required|string',
                 'photo' => 'nullable|string'
             ]);
 
-            $googleId = $request->input('google_id');
+            $googleId = $request->input('sub');
             $email = $request->input('email');
             $name = $request->input('name');
             $photo = $request->input('photo');
