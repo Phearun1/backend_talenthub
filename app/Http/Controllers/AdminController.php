@@ -787,37 +787,76 @@ class AdminController extends Controller
         return response()->json($response, 200, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     }
 
-    public function adminSearchProject(Request $request)
-    {
-        $searchTerm = $request->query('name'); // Use query param instead of input()
-
-        $projects = DB::table('projects')
-            ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
-            ->join('users', 'portfolios.user_id', '=', 'users.google_id')
-            ->select(
-                'projects.id as project_id',
-                'projects.portfolio_id',
-                'projects.title',
-                'projects.description',
-                'projects.project_visibility_status',
-                'projects.created_at',
-                'projects.updated_at',
-                'users.name as user_name',
-                'users.google_id as user_google_id',
-                'users.email as user_email'
-            )
-            ->when($searchTerm, function ($query, $searchTerm) {
-                return $query->where(function ($q) use ($searchTerm) {
-                    $q->where('projects.title', 'LIKE', '%' . $searchTerm . '%')
-                        ->orWhere('projects.description', 'LIKE', '%' . $searchTerm . '%');
-                });
-            })
-            ->get();
-
-        return response()->json($projects);
+    <?php
+public function searchProject(Request $request)
+{
+    // Check if the authenticated user is an admin (role_id = 3)
+    if ($request->user() && $request->user()->role_id !== 3) {
+        return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
     }
 
+    $page = $request->input('page', 1); // Default page to 1 if not provided
+    $perPage = 18; // Fixed number of projects per page
+    $searchTerm = $request->input('search', ''); // Get search term from request
 
+    // Build the query with search functionality
+    $query = DB::table('projects')
+        ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
+        ->join('users', 'portfolios.user_id', '=', 'users.google_id')
+        ->select(
+            'projects.id as project_id',
+            'projects.portfolio_id',
+            'projects.title',
+            'projects.description',
+            'projects.project_visibility_status',
+            'projects.created_at',
+            'projects.updated_at',
+            'users.name as user_name',
+            'users.google_id as user_google_id',
+            'users.email as user_email'
+        );
+
+    // Add search condition if search term is provided
+    if (!empty($searchTerm)) {
+        $query->where(function ($query) use ($searchTerm) {
+            $query->where('projects.title', 'like', '%' . $searchTerm . '%')
+                ->orWhere('projects.description', 'like', '%' . $searchTerm . '%')
+                ->orWhere('users.name', 'like', '%' . $searchTerm . '%')
+                ->orWhere('users.email', 'like', '%' . $searchTerm . '%');
+        });
+    }
+
+    // Execute the query with pagination
+    $projects = $query->orderBy('projects.updated_at', 'desc')
+        ->skip(($page - 1) * $perPage)
+        ->take($perPage)
+        ->get();
+
+    // Get all project IDs
+    $projectIds = $projects->pluck('project_id')->toArray();
+
+    // Fetch images for these projects
+    $projectImages = DB::table('project_images')
+        ->whereIn('project_id', $projectIds)
+        ->select('id', 'project_id', 'image')
+        ->get()
+        ->groupBy('project_id');
+
+    // Attach images to their respective projects
+    $projectsWithImages = $projects->map(function ($project) use ($projectImages) {
+        $projectId = $project->project_id;
+        $project->images = $projectImages->get($projectId, collect([]))->map(function ($image) {
+            return [
+                'id' => $image->id,
+                'image_url' => 'https://talenthub.newlinkmarketing.com/storage/' . $image->image
+            ];
+        })->values();
+
+        return $project;
+    });
+
+    return response()->json($projectsWithImages);
+}
     public function adminSearchUser(Request $request)
     {
         $searchTerm = $request->query('name'); // Use query param instead of input()

@@ -116,131 +116,116 @@ class AuthController extends Controller
     }
 
 
-
-    public function loginwithGoogle2(Request $request)
+        <?php
+    public function loginWithGoogle2(Request $request)
     {
-        try {
-            // Validate request
-            $request->validate([
-                'sub' => 'required|string',
-                'email' => 'required|email',
-                'name' => 'required|string',
-                'photo' => 'nullable|string'
-            ]);
-
-            $googleId = $request->input('sub');
-            $email = $request->input('email');
-            $name = $request->input('name');
-            $photo = $request->input('photo');
-
-            // Check if it's a personal email
-            if ($this->isPersonalEmail($email)) {
-                // If personal email, check if it exists in database
-                if (!$this->isPersonalEmailAllowed($email)) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Personal email not authorized. Only pre-registered personal emails are allowed to login.'
-                    ], 403);
-                }
-            }
-
-            // Check if user exists by Google ID
-            $user = DB::table('users')->where('google_id', $googleId)->first();
-
-            if (!$user) {
-                // Check if user exists by email
-                $user = DB::table('users')->where('email', $email)->first();
-
-                if ($user) {
-                    // Update existing user with Google ID
-                    DB::table('users')
-                        ->where('id', $user->id)
-                        ->update([
-                            'google_id' => $googleId,
-                            'photo' => $photo,
-                            'updated_at' => now()
-                        ]);
-
-                    // Get updated user data
-                    $user = DB::table('users')->where('id', $user->id)->first();
-                } else {
-                    // Create new user (only if email is authorized)
-                    $userId = DB::table('users')->insertGetId([
-                        'google_id' => $googleId,
-                        'email' => $email,
-                        'name' => $name,
-                        'photo' => $photo,
-                        'role_id' => 3, // Default role for new users
-                        'status' => 1, // Active status
-                        'created_at' => now(),
-                        'updated_at' => now()
-                    ]);
-
-                    $user = DB::table('users')->where('id', $userId)->first();
-                }
-            } else {
-                // Update existing Google user info
-                DB::table('users')
-                    ->where('google_id', $googleId)
-                    ->update([
-                        'email' => $email,
-                        'name' => $name,
-                        'photo' => $photo,
-                        'updated_at' => now()
-                    ]);
-
-                // Get updated user data
-                $user = DB::table('users')->where('google_id', $googleId)->first();
-            }
-
-            // Check if user is banned
-            if ($user->status == 0) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Your account has been banned. Please contact administrator.'
-                ], 403);
-            }
-
-            // Create token using Sanctum
-            $token = $user->createToken('google_auth_token')->plainTextToken;
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Google login successful',
-                'data' => [
-                    'user' => [
-                        'id' => $user->id,
-                        'google_id' => $user->google_id,
-                        'email' => $user->email,
-                        'name' => $user->name,
-                        'photo' => $user->photo,
-                        'role_id' => $user->role_id,
-                        'status' => $user->status
-                    ],
-                ]
-            ], 200);
-        } catch (ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'errors' => $e->errors()
-            ], 422);
-        } catch (\Exception $e) {
-            \Log::error('Google login error: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Google login failed',
-                'error' => $e->getMessage()
-            ], 500);
+        // Validate query parameters
+        $validator = Validator::make($request->all(), [
+            'sub' => 'required|string',
+            'email' => 'required|email',
+            'name' => 'required|string',
+            'photo' => 'nullable|string',
+        ]);
+    
+        if ($validator->fails()) {
+            return response()->json(['error' => 'Invalid profile data'], 400);
         }
+    
+        // Retrieve parameters directly from query string
+        $profile = [
+            'sub' => $request->query('sub'),
+            'email' => $request->query('email'),
+            'name' => $request->query('name'),
+            'photo' => $request->query('photo'),
+        ];
+    
+        // First, try finding user by Google ID
+        $user = User::where('google_id', $profile['sub'])->first();
+    
+        //endorser added by admin
+        // If not found, try matching by email
+        if (!$user) {
+            $user = User::where('email', $profile['email'])->first();
+    
+            // If user exists but doesn't have google_id linked, update it
+            if ($user && !$user->google_id) {
+                $user->google_id = $profile['sub'];
+                $user->name = $profile['name'];
+                // Also update the user's photo if provided
+                if (!empty($profile['photo'])) {
+                    $user->photo = $profile['photo'];
+                }
+                $user->save();
+            }
+        }
+    
+        // If user doesn't exist at all, create new
+        if (!$user) {
+            // Check if it's a personal email for new user creation
+            if ($this->isPersonalEmail($profile['email'])) {
+                return response()->json([
+                    'error' => 'Personal email addresses are not allowed for new registrations'
+                ], 422);
+            }
+    
+            // Assign role_id = 1 (student) for all users
+            $roleId = 1;
+    
+            $user = User::create([
+                'google_id' => $profile['sub'],
+                'email' => $profile['email'],
+                'name' => $profile['name'],
+                'photo' => $profile['photo'],
+                'role_id' => $roleId,
+                'status' => 1, // Set default status to active (1)
+            ]);
+        }
+    
+        // Check if user is banned
+        if ($user->status === 0) {
+            return response()->json([
+                'error' => 'Your account has been suspended. Please contact an administrator.',
+                'user_status' => 0
+            ], 200);
+        }
+    
+        // Auto-create portfolio only if not already created
+        $existingPortfolio = Portfolio::where('user_id', $user->google_id)->first();
+        if (!$existingPortfolio) {
+            Portfolio::create([
+                'user_id' => $user->google_id,
+                'major_id' => null,
+                'phone_number' => '',
+                'about' => '',
+                'working_status' => 2,
+            ]);
+        }
+    
+        // Token & role check
+        $roleId = $user->role_id;
+        if ($roleId === 1 || $roleId === 2) {
+            $expiresAt = Carbon::now()->addMonth();
+            $token = $user->createToken('API Token')->plainTextToken;
+    
+            $user->tokens->last()->update([
+                'expires_at' => $expiresAt,
+            ]);
+    
+            return response()->json([
+                'token' => $token,
+                'role_id' => $roleId,
+                'photo' => $user->photo,
+                'google_id' => $user->google_id,
+            ]);
+        }
+    
+        return response()->json(['error' => 'Unauthorized role'], 403);
     }
-
-
-
+    
     private function isPersonalEmail($email)
     {
         $domain = strtolower(substr(strrchr($email, "@"), 1));
-
+    
         $blockedDomains = [
             // Personal email domains
             'gmail.com',
@@ -275,7 +260,7 @@ class AuthController extends Controller
             'inbox.com',
             'fastmail.com',
             'fastmail.fm',
-
+    
             // Cambodian university domains
             'rupp.edu.kh',              // Royal University of Phnom Penh
             'itc.edu.kh',               // Institute of Technology of Cambodia
@@ -304,9 +289,11 @@ class AuthController extends Controller
             'ttc.edu.kh',              // Teacher Training College
             'pa.edu.kh',               // Police Academy of Cambodia
         ];
-
+    
         return in_array($domain, $blockedDomains);
     }
+
+
 
     public function adminLogin(Request $request)
     {
