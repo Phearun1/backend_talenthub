@@ -787,75 +787,75 @@ class AdminController extends Controller
         return response()->json($response, 200, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     }
 
-public function searchProject(Request $request)
-{
-    // Check if the authenticated user is an admin (role_id = 3)
-    if ($request->user() && $request->user()->role_id !== 3) {
-        return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
-    }
+    public function searchProject(Request $request)
+    {
+        // Check if the authenticated user is an admin (role_id = 3)
+        if ($request->user() && $request->user()->role_id !== 3) {
+            return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
+        }
 
-    $page = $request->input('page', 1); // Default page to 1 if not provided
-    $perPage = 18; // Fixed number of projects per page
-    $searchTerm = $request->input('search', ''); // Get search term from request
+        $page = $request->input('page', 1); // Default page to 1 if not provided
+        $perPage = 18; // Fixed number of projects per page
+        $searchTerm = $request->input('search', ''); // Get search term from request
 
-    // Build the query with search functionality
-    $query = DB::table('projects')
-        ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
-        ->join('users', 'portfolios.user_id', '=', 'users.google_id')
-        ->select(
-            'projects.id as project_id',
-            'projects.portfolio_id',
-            'projects.title',
-            'projects.description',
-            'projects.project_visibility_status',
-            'projects.created_at',
-            'projects.updated_at',
-            'users.name as user_name',
-            'users.google_id as user_google_id',
-            'users.email as user_email'
-        );
+        // Build the query with search functionality
+        $query = DB::table('projects')
+            ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
+            ->join('users', 'portfolios.user_id', '=', 'users.google_id')
+            ->select(
+                'projects.id as project_id',
+                'projects.portfolio_id',
+                'projects.title',
+                'projects.description',
+                'projects.project_visibility_status',
+                'projects.created_at',
+                'projects.updated_at',
+                'users.name as user_name',
+                'users.google_id as user_google_id',
+                'users.email as user_email'
+            );
 
-    // Add search condition if search term is provided
-    if (!empty($searchTerm)) {
-        $query->where(function ($query) use ($searchTerm) {
-            $query->where('projects.title', 'like', '%' . $searchTerm . '%')
-                ->orWhere('projects.description', 'like', '%' . $searchTerm . '%')
-                ->orWhere('users.name', 'like', '%' . $searchTerm . '%')
-                ->orWhere('users.email', 'like', '%' . $searchTerm . '%');
+        // Add search condition if search term is provided
+        if (!empty($searchTerm)) {
+            $query->where(function ($query) use ($searchTerm) {
+                $query->where('projects.title', 'like', '%' . $searchTerm . '%')
+                    ->orWhere('projects.description', 'like', '%' . $searchTerm . '%')
+                    ->orWhere('users.name', 'like', '%' . $searchTerm . '%')
+                    ->orWhere('users.email', 'like', '%' . $searchTerm . '%');
+            });
+        }
+
+        // Execute the query with pagination
+        $projects = $query->orderBy('projects.updated_at', 'desc')
+            ->skip(($page - 1) * $perPage)
+            ->take($perPage)
+            ->get();
+
+        // Get all project IDs
+        $projectIds = $projects->pluck('project_id')->toArray();
+
+        // Fetch images for these projects
+        $projectImages = DB::table('project_images')
+            ->whereIn('project_id', $projectIds)
+            ->select('id', 'project_id', 'image')
+            ->get()
+            ->groupBy('project_id');
+
+        // Attach images to their respective projects
+        $projectsWithImages = $projects->map(function ($project) use ($projectImages) {
+            $projectId = $project->project_id;
+            $project->images = $projectImages->get($projectId, collect([]))->map(function ($image) {
+                return [
+                    'id' => $image->id,
+                    'image_url' => 'https://talenthub.newlinkmarketing.com/storage/' . $image->image
+                ];
+            })->values();
+
+            return $project;
         });
+
+        return response()->json($projectsWithImages);
     }
-
-    // Execute the query with pagination
-    $projects = $query->orderBy('projects.updated_at', 'desc')
-        ->skip(($page - 1) * $perPage)
-        ->take($perPage)
-        ->get();
-
-    // Get all project IDs
-    $projectIds = $projects->pluck('project_id')->toArray();
-
-    // Fetch images for these projects
-    $projectImages = DB::table('project_images')
-        ->whereIn('project_id', $projectIds)
-        ->select('id', 'project_id', 'image')
-        ->get()
-        ->groupBy('project_id');
-
-    // Attach images to their respective projects
-    $projectsWithImages = $projects->map(function ($project) use ($projectImages) {
-        $projectId = $project->project_id;
-        $project->images = $projectImages->get($projectId, collect([]))->map(function ($image) {
-            return [
-                'id' => $image->id,
-                'image_url' => 'https://talenthub.newlinkmarketing.com/storage/' . $image->image
-            ];
-        })->values();
-
-        return $project;
-    });
-
-    return response()->json($projectsWithImages);
-}
     public function adminSearchUser(Request $request)
     {
         $searchTerm = $request->query('name'); // Use query param instead of input()
@@ -935,10 +935,10 @@ public function searchProject(Request $request)
             $request->validate([
                 'status' => 'required|in:1,2,"1","2"', // Accept both integer and string
             ]);
-    
+
             // Convert to integer
             $status = (int) $request->input('status');
-    
+
             // Check if endorser request exists
             $endorserRequest = DB::table('endorser_request')->where('id', $id)->first();
             if (!$endorserRequest) {
@@ -947,7 +947,7 @@ public function searchProject(Request $request)
                     'message' => 'Endorser request not found'
                 ], 404);
             }
-    
+
             // Check if already processed
             if ($endorserRequest->status != 0) {
                 return response()->json([
@@ -955,16 +955,16 @@ public function searchProject(Request $request)
                     'message' => 'This endorser request has already been processed'
                 ], 400);
             }
-    
+
             // Use database transaction
             DB::beginTransaction();
-    
+
             try {
                 // If status is approved (1), create user account
                 if ($status == 1) {
                     // Check if user with this email already exists
                     $existingUser = DB::table('users')->where('email', $endorserRequest->email)->first();
-                    
+
                     if ($existingUser) {
                         DB::rollBack();
                         return response()->json([
@@ -972,7 +972,7 @@ public function searchProject(Request $request)
                             'message' => 'A user with this email already exists'
                         ], 409);
                     }
-    
+
                     // Create new user with role_id = 2 (endorser)
                     DB::table('users')->insert([
                         'name' => $endorserRequest->name,
@@ -985,7 +985,7 @@ public function searchProject(Request $request)
                         'updated_at' => now(),
                     ]);
                 }
-    
+
                 // Delete the image file if exists before deleting the record
                 if ($endorserRequest->image) {
                     $imagePath = public_path('storage/' . $endorserRequest->image);
@@ -993,26 +993,24 @@ public function searchProject(Request $request)
                         unlink($imagePath);
                     }
                 }
-    
+
                 // Delete the endorser request record
                 DB::table('endorser_request')->where('id', $id)->delete();
-    
+
                 DB::commit();
-    
             } catch (\Exception $e) {
                 DB::rollBack();
                 throw $e;
             }
-    
-            $responseMessage = $status == 1 
+
+            $responseMessage = $status == 1
                 ? "Endorser request approved successfully, user account created, and request record deleted"
                 : "Endorser request declined successfully and request record deleted";
-    
+
             return response()->json([
                 'success' => true,
                 'message' => $responseMessage,
             ], 200);
-    
         } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,

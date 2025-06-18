@@ -116,7 +116,6 @@ class AuthController extends Controller
     }
 
 
-        <?php
     public function loginWithGoogle2(Request $request)
     {
         // Validate query parameters
