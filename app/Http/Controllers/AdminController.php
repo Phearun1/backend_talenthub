@@ -787,7 +787,6 @@ class AdminController extends Controller
         return response()->json($response, 200, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     }
 
-    <?php
 public function searchProject(Request $request)
 {
     // Check if the authenticated user is an admin (role_id = 3)
