@@ -787,19 +787,16 @@ class AdminController extends Controller
         return response()->json($response, 200, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     }
 
-    public function searchProject(Request $request)
+    public function adminSearchProject(Request $request)
     {
         // Check if the authenticated user is an admin (role_id = 3)
         if ($request->user() && $request->user()->role_id !== 3) {
             return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
         }
 
-        $page = $request->input('page', 1); // Default page to 1 if not provided
-        $perPage = 18; // Fixed number of projects per page
-        $searchTerm = $request->input('search', ''); // Get search term from request
+        $searchTerm = $request->query('name'); // Use query param instead of input()
 
-        // Build the query with search functionality
-        $query = DB::table('projects')
+        $projects = DB::table('projects')
             ->join('portfolios', 'projects.portfolio_id', '=', 'portfolios.id')
             ->join('users', 'portfolios.user_id', '=', 'users.google_id')
             ->select(
@@ -813,22 +810,14 @@ class AdminController extends Controller
                 'users.name as user_name',
                 'users.google_id as user_google_id',
                 'users.email as user_email'
-            );
-
-        // Add search condition if search term is provided
-        if (!empty($searchTerm)) {
-            $query->where(function ($query) use ($searchTerm) {
-                $query->where('projects.title', 'like', '%' . $searchTerm . '%')
-                    ->orWhere('projects.description', 'like', '%' . $searchTerm . '%')
-                    ->orWhere('users.name', 'like', '%' . $searchTerm . '%')
-                    ->orWhere('users.email', 'like', '%' . $searchTerm . '%');
-            });
-        }
-
-        // Execute the query with pagination
-        $projects = $query->orderBy('projects.updated_at', 'desc')
-            ->skip(($page - 1) * $perPage)
-            ->take($perPage)
+            )
+            ->when($searchTerm, function ($query, $searchTerm) {
+                return $query->where(function ($q) use ($searchTerm) {
+                    $q->where('projects.title', 'LIKE', '%' . $searchTerm . '%')
+                        ->orWhere('projects.description', 'LIKE', '%' . $searchTerm . '%');
+                });
+            })
+            ->orderBy('projects.updated_at', 'desc')
             ->get();
 
         // Get all project IDs
@@ -856,6 +845,8 @@ class AdminController extends Controller
 
         return response()->json($projectsWithImages);
     }
+
+
     public function adminSearchUser(Request $request)
     {
         $searchTerm = $request->query('name'); // Use query param instead of input()
