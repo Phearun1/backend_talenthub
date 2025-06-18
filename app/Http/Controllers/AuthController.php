@@ -117,180 +117,192 @@ class AuthController extends Controller
 
 
     public function loginWithGoogle2(Request $request)
-    {
-        // Validate query parameters
-        $validator = Validator::make($request->all(), [
-            'sub' => 'required|string',
-            'email' => 'required|email',
-            'name' => 'required|string',
-            'photo' => 'nullable|string',
+{
+    // Validate query parameters
+    $validator = Validator::make($request->all(), [
+        'sub' => 'required|string',
+        'email' => 'required|email',
+        'name' => 'required|string',
+        'photo' => 'nullable|string',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json(['error' => 'Invalid profile data'], 400);
+    }
+
+    // Retrieve parameters directly from query string
+    $profile = [
+        'sub' => $request->query('sub'),
+        'email' => $request->query('email'),
+        'name' => $request->query('name'),
+        'photo' => $request->query('photo'),
+    ];
+
+    // Check if email is personal
+    $isPersonalEmail = $this->isPersonalEmail($profile['email']);
+
+    // First, try finding user by Google ID
+    $user = User::where('google_id', $profile['sub'])->first();
+
+    // If not found, try matching by email
+    if (!$user) {
+        $user = User::where('email', $profile['email'])->first();
+
+        // If user exists but doesn't have google_id linked, update it
+        if ($user && !$user->google_id) {
+            $user->google_id = $profile['sub'];
+            $user->name = $profile['name'];
+            // Also update the user's photo if provided
+            if (!empty($profile['photo'])) {
+                $user->photo = $profile['photo'];
+            }
+            $user->save();
+        }
+    }
+
+    // If user doesn't exist at all
+    if (!$user) {
+        // Check if it's a personal email
+        if ($isPersonalEmail) {
+            return response()->json([
+                'error' => 'Personal email domains are not allowed for registration. Please use your institutional email address.',
+                'email_type' => 'personal'
+            ], 403);
+        }
+
+        // Create new user with role_id = 1 (student) for institutional emails
+        $user = User::create([
+            'google_id' => $profile['sub'],
+            'email' => $profile['email'],
+            'name' => $profile['name'],
+            'photo' => $profile['photo'],
+            'role_id' => 1,
+            'status' => 1, // Set default status to active (1)
         ]);
-    
-        if ($validator->fails()) {
-            return response()->json(['error' => 'Invalid profile data'], 400);
-        }
-    
-        // Retrieve parameters directly from query string
-        $profile = [
-            'sub' => $request->query('sub'),
-            'email' => $request->query('email'),
-            'name' => $request->query('name'),
-            'photo' => $request->query('photo'),
-        ];
-    
-        // First, try finding user by Google ID
-        $user = User::where('google_id', $profile['sub'])->first();
-    
-        //endorser added by admin
-        // If not found, try matching by email
-        if (!$user) {
-            $user = User::where('email', $profile['email'])->first();
-    
-            // If user exists but doesn't have google_id linked, update it
-            if ($user && !$user->google_id) {
-                $user->google_id = $profile['sub'];
-                $user->name = $profile['name'];
-                // Also update the user's photo if provided
-                if (!empty($profile['photo'])) {
-                    $user->photo = $profile['photo'];
-                }
-                $user->save();
-            }
-        }
-    
-        // If user doesn't exist at all, create new
-        if (!$user) {
-            // Check if it's a personal email for new user creation
-            if ($this->isPersonalEmail($profile['email'])) {
+    } else {
+        // User exists - check if it's a personal email and validate permissions
+        if ($isPersonalEmail) {
+            // Personal email is only allowed if user is an endorser (role_id = 2)
+            if ($user->role_id !== 2) {
                 return response()->json([
-                    'error' => 'Personal email addresses are not allowed for new registrations'
-                ], 422);
+                    'error' => 'Personal email domains are not allowed. Please use your institutional email address.',
+                    'email_type' => 'personal'
+                ], 403);
             }
-    
-            // Assign role_id = 1 (student) for all users
-            $roleId = 1;
-    
-            $user = User::create([
-                'google_id' => $profile['sub'],
-                'email' => $profile['email'],
-                'name' => $profile['name'],
-                'photo' => $profile['photo'],
-                'role_id' => $roleId,
-                'status' => 1, // Set default status to active (1)
-            ]);
         }
-    
-        // Check if user is banned
-        if ($user->status === 0) {
-            return response()->json([
-                'error' => 'Your account has been suspended. Please contact an administrator.',
-                'user_status' => 0
-            ], 200);
-        }
-    
-        // Auto-create portfolio only if not already created
-        $existingPortfolio = Portfolio::where('user_id', $user->google_id)->first();
-        if (!$existingPortfolio) {
-            Portfolio::create([
-                'user_id' => $user->google_id,
-                'major_id' => null,
-                'phone_number' => '',
-                'about' => '',
-                'working_status' => 2,
-            ]);
-        }
-    
-        // Token & role check
-        $roleId = $user->role_id;
-        if ($roleId === 1 || $roleId === 2) {
-            $expiresAt = Carbon::now()->addMonth();
-            $token = $user->createToken('API Token')->plainTextToken;
-    
-            $user->tokens->last()->update([
-                'expires_at' => $expiresAt,
-            ]);
-    
-            return response()->json([
-                'token' => $token,
-                'role_id' => $roleId,
-                'photo' => $user->photo,
-                'google_id' => $user->google_id,
-            ]);
-        }
-    
-        return response()->json(['error' => 'Unauthorized role'], 403);
     }
-    
-    private function isPersonalEmail($email)
-    {
-        $domain = strtolower(substr(strrchr($email, "@"), 1));
-    
-        $blockedDomains = [
-            // Personal email domains
-            'gmail.com',
-            'yahoo.com',
-            'yahoo.co.id',
-            'yahoo.co.uk',
-            'hotmail.com',
-            'outlook.com',
-            'aol.com',
-            'icloud.com',
-            'mail.com',
-            'zoho.com',
-            'protonmail.com',
-            'pm.me',
-            'gmx.com',
-            'gmx.net',
-            'yandex.com',
-            'ymail.com',
-            'rocketmail.com',
-            'live.com',
-            'msn.com',
-            'hotmail.co.uk',
-            'comcast.net',
-            'verizon.net',
-            'att.net',
-            'sbcglobal.net',
-            'cox.net',
-            'earthlink.net',
-            'me.com',
-            'mac.com',
-            'mail.ru',
-            'inbox.com',
-            'fastmail.com',
-            'fastmail.fm',
-    
-            // Cambodian university domains
-            'rupp.edu.kh',              // Royal University of Phnom Penh
-            'itc.edu.kh',               // Institute of Technology of Cambodia
-            'uc.edu.kh',                // The University of Cambodia
-            'puc.edu.kh',               // Paññāsāstra University of Cambodia
-            'aupp.edu.kh',             // American University of Phnom Penh
-            'norton-u.com',            // Norton University
-            'num.edu.kh',              // National University of Management
-            'rule.edu.kh',             // Royal University of Law and Economics
-            'ume.edu.kh',              // University of Management and Economics
-            'mekong.edu.kh',           // Cambodian Mekong University
-            'beltei.edu.kh',           // BELTEI International University
-            'uofnphnompenh.com',       // University of the Nations Cambodia
-            'seatech.edu.kh',          // Southeast Asia University of Technology
-            'csu.edu.kh',              // Cambodian University for Specialties
-            'svu.edu.kh',              // Svay Rieng University
-            'tnu.edu.kh',              // The University of Takeo
-            'bbu.edu.kh',              // Build Bright University
-            'umi.edu.kh',              // University of Management and Innovation
-            'cku.edu.kh',              // Chea Sim University of Kamchay Mear
-            'kbk.edu.kh',              // Kampong Cham National Institute of Agriculture
-            'cpu.edu.kh',              // Cambodian Pacific University
-            'nida.edu.kh',             // National Institute of Development Administration
-            'hne.edu.kh',              // Human Resource University
-            'knu.edu.kh',              // Khemarak University
-            'ttc.edu.kh',              // Teacher Training College
-            'pa.edu.kh',               // Police Academy of Cambodia
-        ];
-    
-        return in_array($domain, $blockedDomains);
+
+    // Check if user is banned
+    if ($user->status === 0) {
+        return response()->json([
+            'error' => 'Your account has been suspended. Please contact an administrator.',
+            'user_status' => 0
+        ], 200);
     }
+
+    // Auto-create portfolio only if not already created
+    $existingPortfolio = Portfolio::where('user_id', $user->google_id)->first();
+    if (!$existingPortfolio) {
+        Portfolio::create([
+            'user_id' => $user->google_id,
+            'major_id' => null,
+            'phone_number' => '',
+            'about' => '',
+            'working_status' => 2,
+        ]);
+    }
+
+    // Token & role check
+    $roleId = $user->role_id;
+    if ($roleId === 1 || $roleId === 2) {
+        $expiresAt = Carbon::now()->addMonth();
+        $token = $user->createToken('API Token')->plainTextToken;
+
+        $user->tokens->last()->update([
+            'expires_at' => $expiresAt,
+        ]);
+
+        return response()->json([
+            'token' => $token,
+            'role_id' => $roleId,
+            'photo' => $user->photo,
+            'google_id' => $user->google_id,
+        ]);
+    }
+
+    return response()->json(['error' => 'Unauthorized role'], 403);
+}
+
+private function isPersonalEmail($email)
+{
+    $domain = strtolower(substr(strrchr($email, "@"), 1));
+
+    $blockedDomains = [
+        // Personal email domains
+        'gmail.com',
+        'yahoo.com',
+        'yahoo.co.id',
+        'yahoo.co.uk',
+        'hotmail.com',
+        'outlook.com',
+        'aol.com',
+        'icloud.com',
+        'mail.com',
+        'zoho.com',
+        'protonmail.com',
+        'pm.me',
+        'gmx.com',
+        'gmx.net',
+        'yandex.com',
+        'ymail.com',
+        'rocketmail.com',
+        'live.com',
+        'msn.com',
+        'hotmail.co.uk',
+        'comcast.net',
+        'verizon.net',
+        'att.net',
+        'sbcglobal.net',
+        'cox.net',
+        'earthlink.net',
+        'me.com',
+        'mac.com',
+        'mail.ru',
+        'inbox.com',
+        'fastmail.com',
+        'fastmail.fm',
+
+        // Cambodian university domains
+        'rupp.edu.kh',              // Royal University of Phnom Penh
+        'itc.edu.kh',               // Institute of Technology of Cambodia
+        'uc.edu.kh',                // The University of Cambodia
+        'puc.edu.kh',               // Paññāsāstra University of Cambodia
+        'aupp.edu.kh',             // American University of Phnom Penh
+        'norton-u.com',            // Norton University
+        'num.edu.kh',              // National University of Management
+        'rule.edu.kh',             // Royal University of Law and Economics
+        'ume.edu.kh',              // University of Management and Economics
+        'mekong.edu.kh',           // Cambodian Mekong University
+        'beltei.edu.kh',           // BELTEI International University
+        'uofnphnompenh.com',       // University of the Nations Cambodia
+        'seatech.edu.kh',          // Southeast Asia University of Technology
+        'csu.edu.kh',              // Cambodian University for Specialties
+        'svu.edu.kh',              // Svay Rieng University
+        'tnu.edu.kh',              // The University of Takeo
+        'bbu.edu.kh',              // Build Bright University
+        'umi.edu.kh',              // University of Management and Innovation
+        'cku.edu.kh',              // Chea Sim University of Kamchay Mear
+        'kbk.edu.kh',              // Kampong Cham National Institute of Agriculture
+        'cpu.edu.kh',              // Cambodian Pacific University
+        'nida.edu.kh',             // National Institute of Development Administration
+        'hne.edu.kh',              // Human Resource University
+        'knu.edu.kh',              // Khemarak University
+        'ttc.edu.kh',              // Teacher Training College
+        'pa.edu.kh',               // Police Academy of Cambodia
+    ];
+
+    return in_array($domain, $blockedDomains);
+}
 
 
 
