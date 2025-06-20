@@ -1009,7 +1009,7 @@ class AdminController extends Controller
                 'errors' => $e->errors()
             ], 422);
         } catch (\Exception $e) {
-            \Log::error('Update endorser status error: ' . $e->getMessage());
+            // \Log::error('Update endorser status error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while updating endorser status',
