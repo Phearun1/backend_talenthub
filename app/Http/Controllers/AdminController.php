@@ -1017,4 +1017,33 @@ class AdminController extends Controller
             ], 500);
         }
     }
+
+    public function viewAllAdmin()
+    {
+        $admins = DB::table('admins')
+            ->select('id', 'email', 'name', 'photo', 'role_id', 'is_super_admin', 'created_at', 'updated_at')
+            ->get();
+
+        return response()->json($admins);
+    }
+
+    public function removeAdmin(Request $request, $id)
+    {
+        // Check if the authenticated user is a super admin (is_super_admin = 1)
+        if ($request->user() && !$request->user()->is_super_admin) {
+            return response()->json(['error' => 'Unauthorized. Super admin access required.'], 403);
+        }
+
+        // Find the admin by ID
+        $admin = DB::table('admins')->where('id', $id)->first();
+
+        if (!$admin) {
+            return response()->json(['error' => 'Admin not found'], 404);
+        }
+
+        // Delete the admin record
+        DB::table('admins')->where('id', $id)->delete();
+
+        return response()->json(['message' => 'Admin removed successfully']);
+    }
 }
