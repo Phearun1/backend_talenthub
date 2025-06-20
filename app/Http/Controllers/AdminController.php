@@ -65,7 +65,7 @@ class AdminController extends Controller
             'name' => $request->name,
             'password' => Hash::make($request->password), // Hash the provided password
             'role_id' => 3, // Admin role
-            'photo' => null, // Default photo is set to null
+            'is_super_admin' => 0
         ]);
 
 
@@ -76,6 +76,7 @@ class AdminController extends Controller
                 'email' => $admin->email,
                 'name' => $admin->name,
                 'role_id' => $admin->role_id,
+                'is_super_admin' => $admin->is_super_admin,
             ]
         ], 201);
     }
@@ -1021,7 +1022,7 @@ class AdminController extends Controller
     public function viewAllAdmin()
     {
         $admins = DB::table('admins')
-            ->select('id', 'email', 'name', 'photo', 'role_id', 'is_super_admin', 'created_at', 'updated_at')
+            ->select('id', 'email', 'name', 'role_id', 'is_super_admin', 'created_at', 'updated_at')
             ->orderBy('created_at', 'desc')
             ->get();
 
