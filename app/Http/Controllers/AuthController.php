@@ -243,6 +243,7 @@ private function isPersonalEmail($email)
             'email' => $admin->email,
             'name' => $admin->name,
             'role_id' => $admin->role_id,
+            'is_super_admin' => $admin->is_super_admin,
         ]);
     }
 
