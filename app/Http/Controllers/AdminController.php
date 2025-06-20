@@ -1022,6 +1022,7 @@ class AdminController extends Controller
     {
         $admins = DB::table('admins')
             ->select('id', 'email', 'name', 'photo', 'role_id', 'is_super_admin', 'created_at', 'updated_at')
+            ->orderBy('created_at', 'desc')
             ->get();
 
         return response()->json($admins);
