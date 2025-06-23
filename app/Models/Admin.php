@@ -13,7 +13,7 @@ class Admin extends Model
         'email',
         'name',
         'password',
-        'photo',
         'role_id',
+        'is_super_admin',
     ];
 }

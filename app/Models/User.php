@@ -2,13 +2,12 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;  // Use Authenticatable class
 use Laravel\Sanctum\HasApiTokens;
 
-class User extends Model
+class User extends Authenticatable  // Extend Authenticatable
 {
-    use HasFactory, HasApiTokens;
+    use HasApiTokens;
 
     // Define the fillable fields (columns that can be mass-assigned)
     protected $fillable = [
@@ -17,6 +16,7 @@ class User extends Model
         'name',
         'photo', // optional, can be null if no photo provided
         'role_id', // role assignment (default is 1)
+        'status'
     ];
 
     // Optionally, if you are using timestamps manually, you can set:

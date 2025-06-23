@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->integer('skill_id');
             $table->integer('endorsement_status_id');
-            $table->integer('endorser_id');
+            $table->string('endorser_id');
             $table->timestamps();
         });
     }

@@ -44,6 +44,9 @@ return [
             'timeout' => null,
             'auth_mode' => null,
         ],
+        'mailtrap'=>[
+            'transport'=>'mailtrap'
+        ],
 
         'ses' => [
             'transport' => 'ses',

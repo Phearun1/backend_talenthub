@@ -11,10 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('education_verifiers', function (Blueprint $table) {
+        Schema::create('contact', function (Blueprint $table) {
             $table->id();
-            $table->integer('education_id');
-            $table->integer('user_id');
+            $table->string('google_id');
+            $table->string('email');
+            $table->string('phone_number');
             $table->timestamps();
         });
     }
@@ -24,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('education_verifiers');
+        Schema::dropIfExists('contact');
     }
 };

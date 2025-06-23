@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Company;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -18,6 +19,8 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             PortfolioSeeder::class,
             MajorSeeder::class,
+            EndorsementStatusSeeder::class,
+            CompanySeeder::class,
         ]);
     }
 }

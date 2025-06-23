@@ -17,8 +17,11 @@ return new class extends Migration
             $table->integer('company_id');
             $table->integer('work_title');
             $table->string('description');
-            $table->dateTime('start_date');
-            $table->dateTime('end_date');
+            $table->string('employment_type')->nullable();
+            $table->string('start_month');
+            $table->string('end_month');
+            $table->string('start_year')->nullable();
+            $table->string('end_year')->nullable();
             $table->timestamps();
         });
     }
