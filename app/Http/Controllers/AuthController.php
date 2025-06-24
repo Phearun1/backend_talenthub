@@ -388,7 +388,7 @@ private function isPersonalEmail($email)
             }
 
             // Build full image URL
-            $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
+            $baseUrl = 'https://api-talenthub.paragoniu.app/storage/';
             $imageUrl = $imagePath ? $baseUrl . $imagePath : null;
 
             return response()->json([

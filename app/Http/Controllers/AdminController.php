@@ -341,7 +341,7 @@ class AdminController extends Controller
             $project->images = $projectImages->get($projectId, collect([]))->map(function ($image) {
                 return [
                     'id' => $image->id,
-                    'image_url' => 'https://talenthub.newlinkmarketing.com/storage/' . $image->image
+                    'image_url' => 'https://api-talenthub.paragoniu.app/storage/' . $image->image
                 ];
             })->values();
 
@@ -680,7 +680,7 @@ class AdminController extends Controller
                 'projects.link',
                 DB::raw("CASE
                 WHEN projects.file IS NOT NULL 
-                THEN CONCAT('https://talenthub.newlinkmarketing.com/storage/', projects.file)
+                THEN CONCAT('https://api-talenthub.paragoniu.app/storage/', projects.file)
                 ELSE NULL
             END as file"),
                 'projects.project_visibility_status',
@@ -713,7 +713,7 @@ class AdminController extends Controller
             ->map(function ($image) {
                 return [
                     'id' => $image->id,
-                    'url' => 'https://talenthub.newlinkmarketing.com/storage/' . $image->image
+                    'url' => 'https://api-talenthub.paragoniu.app/storage/' . $image->image
                 ];
             });
 
@@ -837,7 +837,7 @@ class AdminController extends Controller
             $project->images = $projectImages->get($projectId, collect([]))->map(function ($image) {
                 return [
                     'id' => $image->id,
-                    'image_url' => 'https://talenthub.newlinkmarketing.com/storage/' . $image->image
+                    'image_url' => 'https://api-talenthub.paragoniu.app/storage/' . $image->image
                 ];
             })->values();
 
@@ -906,7 +906,7 @@ class AdminController extends Controller
 
             // Parse student_name from JSON to array
             $endorserRequest->student_name = json_decode($endorserRequest->student_name, true);
-            $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
+            $baseUrl = 'https://api-talenthub.paragoniu.app/storage/';
             $endorserRequest->image_url = $endorserRequest->image ? $baseUrl . $endorserRequest->image : null;
 
             return response()->json($endorserRequest, 200);

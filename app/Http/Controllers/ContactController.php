@@ -161,7 +161,7 @@ class ContactController extends Controller
                 ], 500);
             }
         } catch (\Exception $e) {
-            \Log::error('Delete contact error: ' . $e->getMessage());
+            // \Log::error('Delete contact error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while deleting the contact',
