@@ -32,7 +32,6 @@ class MajorController extends Controller
         }
     }
 
-        <?php
     public function createMajor(Request $request)
     {
         // Check if the authenticated user is an admin (role_id = 3)
