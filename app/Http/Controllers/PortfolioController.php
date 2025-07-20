@@ -293,7 +293,7 @@ class PortfolioController extends Controller
                 $photoPath = $photo->store('photos', 'public');
 
                 // Base URL for accessing the photo
-                $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
+                $baseUrl = 'https://api-talenthub.paragoniu.app/storage/';
 
                 // Construct the photo URL
                 $photoUrl = $baseUrl . 'photos/' . basename($photoPath);
@@ -515,4 +515,10 @@ class PortfolioController extends Controller
             ], 500);
         }
     }
+
+
+    
 }
+
+
+

@@ -206,7 +206,7 @@ class ProjectController extends Controller
     //             'projects.link',
     //             DB::raw("CASE
     //             WHEN projects.file IS NOT NULL 
-    //             THEN CONCAT('https://talenthub.newlinkmarketing.com/storage/', projects.file)
+    //             THEN CONCAT('https://api-talenthub.paragoniu.app/storage/', projects.file)
     //             ELSE NULL
     //         END as file"),
     //             'projects.project_visibility_status',
@@ -239,7 +239,7 @@ class ProjectController extends Controller
     //         ->map(function ($image) {
     //             return [
     //                 'id' => $image->id,
-    //                 'url' => 'https://talenthub.newlinkmarketing.com/storage/' . $image->image
+    //                 'url' => 'https://api-talenthub.paragoniu.app/storage/' . $image->image
     //             ];
     //         });
 
@@ -412,7 +412,7 @@ private function getFullProjectDetails($projectId)
             'projects.link',
             DB::raw("CASE
             WHEN projects.file IS NOT NULL 
-            THEN CONCAT('https://talenthub.newlinkmarketing.com/storage/', projects.file)
+            THEN CONCAT('https://api-talenthub.paragoniu.app/storage/', projects.file)
             ELSE NULL
         END as file"),
             'projects.project_visibility_status',
@@ -445,7 +445,7 @@ private function getFullProjectDetails($projectId)
         ->map(function ($image) {
             return [
                 'id' => $image->id,
-                'url' => 'https://talenthub.newlinkmarketing.com/storage/' . $image->image
+                'url' => 'https://api-talenthub.paragoniu.app/storage/' . $image->image
             ];
         });
 
@@ -650,7 +650,7 @@ private function getFullProjectDetails($projectId)
                     ]);
 
                     // Build image URL
-                    $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
+                    $baseUrl = 'https://api-talenthub.paragoniu.app/storage/';
                     $imageUrls[] = $baseUrl . $imagePath;
                 } catch (\Exception $e) {
                     // Log error for database insertion failure
@@ -659,7 +659,7 @@ private function getFullProjectDetails($projectId)
         }
 
         // Base URL for accessing the files
-        $baseUrl = 'https://talenthub.newlinkmarketing.com/storage/';
+        $baseUrl = 'https://api-talenthub.paragoniu.app/storage/';
         $fileUrl = $filePath ? $baseUrl . $filePath : null;
 
         // Get all languages for this project (if any)
@@ -1072,7 +1072,7 @@ private function getFullProjectDetails($projectId)
         }
 
         // Return the file URL in the requested format
-        $fileUrl = 'https://talenthub.newlinkmarketing.com/storage/' . $project->file;
+        $fileUrl = 'https://api-talenthub.paragoniu.app/storage/' . $project->file;
 
         // Log::info('Project download response prepared with file URL: ' . $fileUrl);
         return response()->json([
