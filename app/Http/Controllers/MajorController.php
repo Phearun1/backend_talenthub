@@ -8,13 +8,8 @@ use Illuminate\Support\Facades\DB;
 
 class MajorController extends Controller
 {
-    public function viewAllMajors(Request $request)
+    public function viewAllMajors()
     {
-        // Check if the authenticated user is an admin (role_id = 3)
-        if ($request->user() && $request->user()->role_id !== 3) {
-            return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
-        }
-
         try {
             // Fetch all majors ordered by most recently created
             $majors = DB::table('majors')
