@@ -162,7 +162,7 @@ Route::middleware('auth:sanctum', 'token.expiration')->group(function () {
     Route::middleware('role:3')->get('/view_all_admin', [AdminController::class, 'viewAllAdmin']);
     Route::middleware('role:3')->delete('/remove_admin/{id}', [AdminController::class, 'removeAdmin']);
 
-    Route::middleware('role:3')->get('/view_all_majors', [MajorController::class, 'viewAllMajors']);
+    Route::get('/view_all_majors', [MajorController::class, 'viewAllMajors']);
     Route::middleware('role:3')->post('/create_major', [MajorController::class, 'createMajor']);
     Route::middleware('role:3')->put('/update_major/{id}', [MajorController::class, 'updateMajor']);
     Route::middleware('role:3')->delete('/delete_major/{id}', [MajorController::class, 'deleteMajor']);
