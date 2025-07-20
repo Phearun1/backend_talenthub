@@ -21,7 +21,9 @@ class MajorController extends Controller
             $formattedMajors = $majors->map(function ($major) {
                 return [
                     'id' => $major->id,
-                    'name' => $major->major
+                    'name' => $major->major,
+                    'created_at' => $major->created_at,
+                    'updated_at' => $major->updated_at,
                 ];
             });
     
